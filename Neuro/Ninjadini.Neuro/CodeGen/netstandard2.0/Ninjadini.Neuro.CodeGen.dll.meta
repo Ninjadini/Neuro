@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 64159377b6e7d48a1be8901119ef7dbf
+guid: c373afbc5ead1490386b4dc32e86ed70
 labels:
 - RoslynAnalyzer
 PluginImporter:
@@ -12,6 +12,11 @@ PluginImporter:
   isOverridable: 0
   isExplicitlyReferenced: 0
   validateReferences: 1
+  platformData:
+  - first:
+      : Any
+    second:
+      enabled: 0
   userData: 
   assetBundleName: 
   assetBundleVariant: 
