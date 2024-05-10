@@ -1,0 +1,14 @@
+.idea
+*.user
+.DS_Store
+Neuro/Neuro.sln.DotSettings.user
+Neuro/Ninjadini.Neuro.CodeGen.Tests/bin/
+Neuro/Ninjadini.Neuro.CodeGen.Tests/obj/
+Neuro/Ninjadini.Neuro.CodeGen/bin/
+Neuro/Ninjadini.Neuro.CodeGen/obj/
+Neuro/Ninjadini.Neuro.csproj/obj/
+Neuro/Ninjadini.Neuro.csproj/bin/
+Neuro/Ninjadini.Neuro.SyncTests/bin/
+Neuro/Ninjadini.Neuro.SyncTests/obj/
+Neuro/Ninjadini.Neuro.IntegrationTests/bin/
+Neuro/Ninjadini.Neuro.IntegrationTests/obj/

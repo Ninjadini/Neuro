@@ -1,0 +1,22 @@
+{
+    "name": "Ninjadini.Neuro.Unity.Editor",
+    "rootNamespace": "",
+    "references": [
+        "Ninjadini.Neuro",
+        "Ninjadini.Neuro.Unity",
+        "Unity.Addressables",
+        "Unity.Addressables.Editor",
+        "Unity.ResourceManager"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

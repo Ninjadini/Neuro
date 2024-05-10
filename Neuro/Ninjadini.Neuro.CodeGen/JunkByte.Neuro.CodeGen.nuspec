@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
+  <metadata>
+    <id>Ninjadini.Neuro.CodeGen</id>
+    <version>0.0.1-1</version>
+    <title>Ninjadini.Neuro.CodeGen</title>
+    <authors>Lu Aye Oo</authors>
+    <description>Ninjadini.Neuro.CodeGen</description>
+  </metadata>
+  <files>
+    <file src="bin\$Configuration$\netstandard2.1\Ninjadini.Neuro.CodeGen.dll" target="analyzers\dotnet\cs\" />
+  </files>
+</package>
