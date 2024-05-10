@@ -7,26 +7,19 @@
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
-    
+
     <PropertyGroup>
         <DefaultItemExcludes>\**\*.meta;\**\*.json;\**\*.asmdef</DefaultItemExcludes>
     </PropertyGroup>
-    
-<!--    <ItemGroup>
-      <Compile Include="..\Ninjadini.Neuro\**\*.cs">
-        <Link>Ninjadini.Neuro\%(RecursiveDir)\%(Filename)%(Extension)</Link>
-      </Compile>
-    </ItemGroup>
--->
-    
+
     <ItemGroup>
-        <Compile Include="..\Ninjadini.Neuro\**\*.cs">
+        <Compile Include="..\..\Ninjadini.Neuro\**\*.cs">
             <Link>Ninjadini.Neuro\%(RecursiveDir)\%(Filename)%(Extension)</Link>
         </Compile>
     </ItemGroup>

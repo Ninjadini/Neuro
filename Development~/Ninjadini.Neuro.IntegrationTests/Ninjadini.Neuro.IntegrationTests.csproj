@@ -16,10 +16,10 @@
         <PackageReference Include="coverlet.collector" Version="3.1.2" />
     </ItemGroup>
     <ItemGroup>
-      <ProjectReference Include="..\Ninjadini.Neuro.csproj\Ninjadini.Neuro.csproj" />
+      <ProjectReference Include="..\Ninjadini.Neuro\Ninjadini.Neuro.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <Analyzer Include="..\Ninjadini.Neuro\CodeGen\netstandard2.0\Ninjadini.Neuro.CodeGen.dll" />
+        <Analyzer Include="..\..\Ninjadini.Neuro\CodeGen\netstandard2.0\Ninjadini.Neuro.CodeGen.dll" />
     </ItemGroup>
 </Project>

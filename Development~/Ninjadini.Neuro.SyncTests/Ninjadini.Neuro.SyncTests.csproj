@@ -22,7 +22,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Ninjadini.Neuro.csproj\Ninjadini.Neuro.csproj" />
+      <ProjectReference Include="..\Ninjadini.Neuro\Ninjadini.Neuro.csproj" />
     </ItemGroup>
 
 </Project>
