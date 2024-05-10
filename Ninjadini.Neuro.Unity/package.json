@@ -5,6 +5,6 @@
   "displayName": "Ninjadini Neuro Unity",
   "description": "",
   "dependencies" : {
-    "ninjadini.neuro" : "0.0.1"
+    "com.ninjadini.neuro" : "0.0.1"
   }
 }
