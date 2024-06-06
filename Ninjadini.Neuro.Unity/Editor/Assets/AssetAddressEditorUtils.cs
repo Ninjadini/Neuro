@@ -16,6 +16,10 @@ namespace Ninjadini.Neuro.Editor
         public static bool IsAddressablePath(string path)
         {
             var settings = AddressableAssetSettingsDefaultObject.Settings;
+            if (settings == null)
+            {
+                return false;
+            }
             var entry = settings.FindAssetEntry(AssetDatabase.AssetPathToGUID(path));
             return entry != null;
         }
