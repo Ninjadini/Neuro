@@ -5,7 +5,7 @@ namespace Ninjadini.Neuro.Editor
 {
     public class NeuroDataFile : INeuroReferencedItemLoader
     {
-        public const string InvalidFileNameRegExp = @"[^a-zA-Z0-9_\-+ ]";
+        public const string InvalidFileNameRegExp = @"[^\w\d._,+\-()_ ]";
         
         public readonly Type RootType;
         public uint RefId { get; private set; }
