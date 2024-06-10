@@ -1,5 +1,6 @@
 using Ninjadini.Neuro.Sync;
 using UnityEditor;
+using UnityEditor.Compilation;
 using UnityEngine;
 
 namespace Ninjadini.Neuro.Editor
@@ -47,6 +48,7 @@ namespace Ninjadini.Neuro.Editor
         void IHasCustomMenu.AddItemsToMenu(GenericMenu menu)
         {
             menu.AddItem(new GUIContent("Show Debugger Window"), false, NeuroDebuggerWindow.ShowWindow);
+            menu.AddItem(new GUIContent("Recompile scripts"), false, CompilationPipeline.RequestScriptCompilation);
         }
     }
 }
