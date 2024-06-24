@@ -31,11 +31,21 @@ namespace Ninjadini.Neuro
             return Resources.Load<TObject>(assetAddress.Address);
         }
         
-        public static void LoadAssetAsync<TObject>(this AssetAddress assetAddress, Action<TObject> callback)
+        public static void LoadAssetAsync<TObject>(this AssetAddress assetAddress, Action<TObject> callback) where TObject : Object
         {
             if (assetAddress.IsEmpty())
             {
                 callback?.Invoke(default);
+            }
+            else if (assetAddress.Address.Length < 32 || (assetAddress.Address.Length > 32 && !assetAddress.Address.EndsWith("]")))
+            {
+                // TODO this might not be needed as addressable should auto detect resources path...
+                // also it doesn't work if name is exactly 32 length anyway, 
+                var resReq = Resources.LoadAsync<TObject>(assetAddress.Address);
+                resReq.completed += operation =>
+                {
+                    callback?.Invoke(resReq.asset as TObject);
+                };
             }
             else if (typeof(Component).IsAssignableFrom(typeof(TObject)))
             {
