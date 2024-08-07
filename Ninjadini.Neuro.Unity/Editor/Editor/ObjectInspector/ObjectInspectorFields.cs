@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using UnityEditor.UIElements;
@@ -34,11 +35,31 @@ namespace Ninjadini.Toolkit
             return CreateUnsupportedDrawer(data.name, data.type, data.getter);
         }
 
-        public static void ApplyTooltip(VisualElement visualElement, MemberInfo memberInfo)
+        public static void ApplyTooltip(VisualElement visualElement, MemberInfo memberInfo, Type objType)
         {
-            if (visualElement != null && memberInfo != null && memberInfo.IsDefined(typeof(TooltipAttribute), true))
+            if (visualElement == null)
             {
-                visualElement.tooltip = memberInfo.GetCustomAttribute<TooltipAttribute>().tooltip;
+                return;
+            }
+            if (memberInfo != null && memberInfo.IsDefined(typeof(TooltipAttribute), true))
+            {
+                visualElement.tooltip = $"<b>{memberInfo.DeclaringType?.Name}.{memberInfo.Name}</b>\n{memberInfo.GetCustomAttribute<TooltipAttribute>().tooltip}";
+            }
+            else if (memberInfo != null && memberInfo.IsDefined(typeof(DescriptionAttribute), true))
+            {
+                visualElement.tooltip = $"<b>{memberInfo.DeclaringType?.Name}.{memberInfo.Name}</b>\n{memberInfo.GetCustomAttribute<DescriptionAttribute>().Description}";
+            }
+            else if (objType != null && objType.IsDefined(typeof(TooltipAttribute), true))
+            {
+                visualElement.tooltip = $"<b>{objType.Name}</b>\n{objType.GetCustomAttributes<TooltipAttribute>().Last().tooltip}";
+            }
+            else if (objType != null && objType.IsDefined(typeof(DescriptionAttribute), true))
+            {
+                visualElement.tooltip = $"<b>{objType.Name}</b>\n{objType.GetCustomAttributes<DescriptionAttribute>().Last().Description}";
+            }
+            else
+            {
+                visualElement.tooltip = null;
             }
         }
 

@@ -193,6 +193,8 @@ namespace Ninjadini.Toolkit
             }
 
             DrawPolymorphicSelect(obj);
+            
+            ObjectInspectorFields.ApplyTooltip(this, data.MemberInfo, obj?.GetType());
 
             var header = controller?.CreateCustomHeader(data, obj);
             if (header != null)
@@ -225,7 +227,7 @@ namespace Ninjadini.Toolkit
                 if (element != null)
                 {
                     element.userData = fieldInfo;
-                    ObjectInspectorFields.ApplyTooltip(element, fieldInfo);
+                    ObjectInspectorFields.ApplyTooltip(element, fieldInfo, fieldInfo.FieldType);
                     container.Add(element);
                 }
             }
@@ -267,7 +269,7 @@ namespace Ninjadini.Toolkit
                     if (element != null)
                     {
                         element.userData = propInfo;
-                        ObjectInspectorFields.ApplyTooltip(element, propInfo);
+                        ObjectInspectorFields.ApplyTooltip(element, propInfo, propInfo.PropertyType);
                         container.Add(element);
                     }
                 }
