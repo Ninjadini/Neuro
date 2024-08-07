@@ -82,8 +82,8 @@ namespace Ninjadini.Neuro.Editor
                     }
                     AddCurrentToHistory(true);
                     onSelect(item);
-                    break;
                 }
+                break;
             }
         }
     }
