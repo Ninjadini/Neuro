@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Ninjadini.Neuro.Sync;
 using UnityEditor;
 using UnityEditor.Compilation;
@@ -9,6 +10,7 @@ namespace Ninjadini.Neuro.Editor
     {
         [SerializeField] uint typeId;
         [SerializeField] uint refId;
+        [SerializeField] NeuroEditorHistory.HistoryData historyData;
 
         NeuroEditorNavElement editorElement;
         
@@ -24,6 +26,8 @@ namespace Ninjadini.Neuro.Editor
         public void CreateGUI()
         {
             editorElement = new NeuroEditorNavElement(NeuroEditorDataProvider.Shared);
+            historyData ??= new NeuroEditorHistory.HistoryData();
+            editorElement.SetHistoryData(historyData);
             editorElement.style.flexGrow = 1;
             rootVisualElement.Add(editorElement);
             

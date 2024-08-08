@@ -84,7 +84,7 @@ namespace Ninjadini.Neuro.Editor
             var thirdBar = NeuroUiUtils.AddHorizontal(this);
             thirdBar.style.flexShrink = 0f;
             
-            historyElement = new NeuroEditorHistory((item) =>
+            historyElement = new NeuroEditorHistory(dataProvider_, (item) =>
             {
                 selectedItem = item;
                 UpdateSelectedItem();
@@ -93,12 +93,18 @@ namespace Ninjadini.Neuro.Editor
             historyElement.style.flexGrow = 1f;
             historyElement.style.flexShrink = 0f;
             thirdBar.Add(historyElement);
-            
+            thirdBar.Add(new VisualElement()
+            {
+                style =
+                {
+                    flexGrow = 1f
+                }
+            });
             deleteBtn = NeuroUiUtils.AddButton(thirdBar, "✕ Delete", OnDeleteBtnClicked);
-            deleteBtn.style.flexGrow = 1;
+            deleteBtn.style.width = 73;
             
             cloneBtn = NeuroUiUtils.AddButton(thirdBar, "❏ Clone", OnCloneBtnClicked);
-            cloneBtn.style.flexGrow = 1;
+            cloneBtn.style.width = 73;
 
             reloadPanel = NeuroUiUtils.AddHorizontal(this);
             reloadPanel.style.alignItems = Align.Center;
@@ -135,6 +141,11 @@ namespace Ninjadini.Neuro.Editor
             
             schedule.Execute(OnUpdate).Every(ObjectInspectorFields.RefreshRate);
             schedule.Execute(DelayedInit);
+        }
+
+        internal void SetHistoryData(NeuroEditorHistory.HistoryData historyData)
+        {
+            historyElement.SetHistoryData(historyData);
         }
 
         void OnBeforeTypesPopupShown()
