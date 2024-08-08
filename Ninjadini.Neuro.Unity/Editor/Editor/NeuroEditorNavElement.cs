@@ -264,6 +264,8 @@ namespace Ninjadini.Neuro.Editor
                 itemEditor.Draw(dataProvider, selectedType, selectedItem);
                 debugDisplay.Refresh();
                 deleteBtn.SetEnabled(true);
+                
+                NeuroEditorHistory.AddToSharedRecentHistory(selectedItem);
             }
             else
             {

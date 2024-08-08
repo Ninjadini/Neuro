@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using Ninjadini.Neuro.Sync;
 using Ninjadini.Toolkit;
+using UnityEditor;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ninjadini.Neuro.Editor
@@ -29,7 +31,7 @@ namespace Ninjadini.Neuro.Editor
             forwardBtn = NeuroUiUtils.AddButton(this, "↳ Forward", ForwardBtnClicked);
             forwardBtn.style.width = 75;
             
-            recentBtn = NeuroUiUtils.AddButton(this, "⋮ Recent", ForwardBtnClicked);
+            recentBtn = NeuroUiUtils.AddButton(this, "⋮ Recent", HistoryBtnClicked);
             recentBtn.style.width = 70;
         }
 
@@ -37,7 +39,7 @@ namespace Ninjadini.Neuro.Editor
         {
             _historyData = historyData_;
         }
-        
+
         public void AddCurrentToHistory(bool keepForwards = false)
         {
             var selectedItem = getSelected();
@@ -46,6 +48,7 @@ namespace Ninjadini.Neuro.Editor
                 return;
             }
             var item = AsRecentItem(selectedItem);
+            AddToSharedRecentHistory(selectedItem);
             if (backs.Count == 0 || !backs[^1].Equals(item))
             {
                 backs.Add(item);
@@ -103,7 +106,38 @@ namespace Ninjadini.Neuro.Editor
             }
         }
 
-        RecentItem AsRecentItem(NeuroDataFile item)
+        void HistoryBtnClicked()
+        {
+            var menu = new GenericMenu();
+            var history = SharedHistory;
+
+            var current = getSelected();
+            
+            for (var i = history.Count - 1; i >= 0; i--)
+            {
+                var item = FindItem(history[i]);
+                if (item == current)
+                {
+                    continue;
+                }
+                var value = item?.Value;
+                if(value == null)
+                {
+                    continue;
+                }
+                menu.AddItem(new GUIContent(GetDropDownName(value)), false, () =>
+                {
+                    onSelect(item);
+                });
+            }
+            if (history.Count == 0)
+            {
+                menu.AddSeparator("No recent items");
+            }
+            menu.ShowAsContext();
+        }
+
+        static RecentItem AsRecentItem(NeuroDataFile item)
         {
             var typeId = NeuroGlobalTypes.GetTypeIdOrThrow(item.Value.GetType(), out _);
             var refId = item.RefId;
@@ -155,6 +189,61 @@ namespace Ninjadini.Neuro.Editor
             {
                 return typeId == other.typeId && refId == other.refId;
             }
+        }
+
+        const string PrefHistoryKey = "Neuro.Editor.History";
+        const int MaxHistoryItems = 15;
+        
+        static List<RecentItem> _sharedHistory;
+        static List<RecentItem> SharedHistory
+        {
+            get
+            {
+                if (_sharedHistory != null)
+                {
+                    return _sharedHistory;
+                }
+                _sharedHistory = new List<RecentItem>();
+                var str = EditorPrefs.GetString(PrefHistoryKey, "");
+                if (!string.IsNullOrEmpty(str))
+                {
+                    var items = str.Split(',');
+                    for(var i = 0; i < items.Length; i+=2)
+                    {
+                        if (uint.TryParse(items[i], out var typeId) && uint.TryParse(items[i + 1], out var refId))
+                        {
+                            _sharedHistory.Add(new RecentItem {typeId = typeId, refId = refId});
+                        }
+                    }
+                }
+                return _sharedHistory;
+            }
+        }
+        public static void AddToSharedRecentHistory(NeuroDataFile itemFile)
+        {
+            var item = AsRecentItem(itemFile);
+            if (SharedHistory.Exists(other => other.Equals(item)))
+            {
+                return;
+            }
+            SharedHistory.Add(item);
+            if (SharedHistory.Count > MaxHistoryItems)
+            {
+                SharedHistory.RemoveRange(0, SharedHistory.Count - MaxHistoryItems);
+            }
+            var str = string.Join(",", SharedHistory.ConvertAll(i => $"{i.typeId},{i.refId}").ToArray());
+            EditorPrefs.SetString(PrefHistoryKey, str);
+        }
+
+        public static string GetDropDownName(IReferencable value)
+        {
+            if (value is ISingletonReferencable)
+            {
+                return value.GetType().Name;
+            }
+            var str = value.RefName;
+            str = string.IsNullOrEmpty(str) ? value.RefId.ToString() : $"{value.RefId} : {str}";
+            return $"{value.GetType().Name} > {str}";
         }
     }
 }
