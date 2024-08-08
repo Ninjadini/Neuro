@@ -25,14 +25,18 @@ namespace Ninjadini.Neuro.Editor
             this.dataProvider = dataProvider;
             this.onSelect = onSelect;
             this.getSelected = getSelected;
+            
             backBtn = NeuroUiUtils.AddButton(this, "↰ Back", BackBtnClicked);
-            backBtn.style.width = 80;
+            backBtn.style.width = 65;
+            backBtn.style.flexShrink = 1f;
             
             forwardBtn = NeuroUiUtils.AddButton(this, "↳ Forward", ForwardBtnClicked);
-            forwardBtn.style.width = 75;
+            forwardBtn.style.width = 72;
+            forwardBtn.style.flexShrink = 1f;
             
             recentBtn = NeuroUiUtils.AddButton(this, "⋮ Recent", HistoryBtnClicked);
-            recentBtn.style.width = 70;
+            recentBtn.style.width = 65;
+            recentBtn.style.flexShrink = 1f;
         }
 
         public void SetHistoryData(HistoryData historyData_)

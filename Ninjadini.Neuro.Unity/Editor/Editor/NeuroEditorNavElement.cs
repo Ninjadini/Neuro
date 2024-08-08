@@ -91,20 +91,22 @@ namespace Ninjadini.Neuro.Editor
             }, () => selectedItem);
             historyElement.style.flexDirection = new StyleEnum<FlexDirection>(FlexDirection.Row);
             historyElement.style.flexGrow = 1f;
-            historyElement.style.flexShrink = 0f;
+            historyElement.style.flexShrink = 1f;
             thirdBar.Add(historyElement);
             thirdBar.Add(new VisualElement()
             {
                 style =
                 {
-                    flexGrow = 1f
+                    flexGrow = 1f,
                 }
             });
             deleteBtn = NeuroUiUtils.AddButton(thirdBar, "✕ Delete", OnDeleteBtnClicked);
             deleteBtn.style.width = 73;
+            deleteBtn.style.flexShrink = 1f;
             
             cloneBtn = NeuroUiUtils.AddButton(thirdBar, "❏ Clone", OnCloneBtnClicked);
             cloneBtn.style.width = 73;
+            cloneBtn.style.flexShrink = 1f;
 
             reloadPanel = NeuroUiUtils.AddHorizontal(this);
             reloadPanel.style.alignItems = Align.Center;
