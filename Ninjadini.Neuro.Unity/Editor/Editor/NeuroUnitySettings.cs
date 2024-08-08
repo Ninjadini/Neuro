@@ -88,7 +88,7 @@ namespace Ninjadini.Neuro.Editor
                 var settings = NeuroUnityEditorSettings.Get();
                 settings.hideFlags = HideFlags.None;
                 
-                var title = NeuroUiUtils.AddLabel(rootElement, "Neuro");
+                var title = NeuroUiUtils.AddLabel(rootElement, "❖ Neuro");
                 title.style.fontSize = 19;
                 title.style.unityFontStyleAndWeight = FontStyle.Bold;
                 title.style.paddingLeft = 10;
