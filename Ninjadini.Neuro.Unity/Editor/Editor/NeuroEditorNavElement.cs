@@ -60,9 +60,9 @@ namespace Ninjadini.Neuro.Editor
             
             NeuroUiUtils.AddButton(topBar, "↻ Reload", () =>
             {
-                EditorUtility.RequestScriptReload();
-                //dataProvider_.Reload();
-                //OnUpdate();
+                //EditorUtility.RequestScriptReload();
+                dataProvider_.Reload();
+                OnUpdate();
             });
 
             var secondBar = NeuroUiUtils.AddHorizontal(this);
@@ -114,9 +114,9 @@ namespace Ninjadini.Neuro.Editor
             NeuroUiUtils.AddLabel(reloadPanel, "File changes or problems detected");
             NeuroUiUtils.AddButton(reloadPanel, "Reload", () =>
             {
-                EditorUtility.RequestScriptReload();
-                //dataProvider_.Reload();
-                //OnUpdate();
+                //EditorUtility.RequestScriptReload();
+                dataProvider_.Reload();
+                OnUpdate();
             });
 
             var scrollView = new ScrollView();
