@@ -19,9 +19,9 @@ namespace Ninjadini.Neuro.Editor
         NeuroEditorItemElement itemEditor;
         NeuroItemDebugDisplay debugDisplay;
         NeuroEditorDataProvider dataProvider;
+        NeuroEditorHistory history;
 
         NeuroEditorClassSettingsElement classSettingsElement;
-        NeuroEditorHistory historyElement;
 
         VisualElement reloadPanel;
 
@@ -31,10 +31,15 @@ namespace Ninjadini.Neuro.Editor
         Button deleteBtn;
         Button addBtn;
         Button cloneBtn;
+        
+        Button backBtn;
+        Button recentBtn;
+        Button forwardBtn;
 
-        public NeuroEditorNavElement(NeuroEditorDataProvider dataProvider_)
+        public NeuroEditorNavElement(NeuroEditorDataProvider dataProvider_, NeuroEditorHistory historyData_)
         {
             dataProvider = dataProvider_ ?? throw new ArgumentNullException(nameof(dataProvider_));
+            history = historyData_ ?? new NeuroEditorHistory();
 
             style.flexGrow = 1;
             style.bottom = 0;
@@ -69,7 +74,7 @@ namespace Ninjadini.Neuro.Editor
             secondBar.style.flexShrink = 0f;
             itemDropdown = new NeuroReferencablesDropdownField(dataProvider.References);
             itemDropdown.style.flexGrow = 1f;
-            itemDropdown.style.overflow = Overflow.Hidden;
+            itemDropdown.style.flexShrink = 1f;
             itemDropdown.RegisterValueChangedCallback(OnItemDropDownChanged);
             secondBar.Add(itemDropdown);
 
@@ -84,15 +89,18 @@ namespace Ninjadini.Neuro.Editor
             var thirdBar = NeuroUiUtils.AddHorizontal(this);
             thirdBar.style.flexShrink = 0f;
             
-            historyElement = new NeuroEditorHistory(dataProvider_, (item) =>
-            {
-                selectedItem = item;
-                UpdateSelectedItem();
-            }, () => selectedItem);
-            historyElement.style.flexDirection = new StyleEnum<FlexDirection>(FlexDirection.Row);
-            historyElement.style.flexGrow = 1f;
-            historyElement.style.flexShrink = 1f;
-            thirdBar.Add(historyElement);
+            backBtn = NeuroUiUtils.AddButton(thirdBar, "↰", BackBtnClicked);
+            backBtn.tooltip = "Previous item from history";
+            backBtn.style.width = 50;
+            
+            forwardBtn = NeuroUiUtils.AddButton(thirdBar, "↳", ForwardBtnClicked);
+            forwardBtn.tooltip = "Next item from history";
+            forwardBtn.style.width = 50;
+            
+            recentBtn = NeuroUiUtils.AddButton(thirdBar, "⋮", HistoryBtnClicked);
+            recentBtn.tooltip = "Recent items\nThe list is shared across different windows";
+            recentBtn.style.width = 50;
+            
             thirdBar.Add(new VisualElement()
             {
                 style =
@@ -102,11 +110,9 @@ namespace Ninjadini.Neuro.Editor
             });
             deleteBtn = NeuroUiUtils.AddButton(thirdBar, "✕ Delete", OnDeleteBtnClicked);
             deleteBtn.style.width = 73;
-            deleteBtn.style.flexShrink = 1f;
             
             cloneBtn = NeuroUiUtils.AddButton(thirdBar, "❏ Clone", OnCloneBtnClicked);
             cloneBtn.style.width = 73;
-            cloneBtn.style.flexShrink = 1f;
 
             reloadPanel = NeuroUiUtils.AddHorizontal(this);
             reloadPanel.style.alignItems = Align.Center;
@@ -145,11 +151,6 @@ namespace Ninjadini.Neuro.Editor
             schedule.Execute(DelayedInit);
         }
 
-        internal void SetHistoryData(NeuroEditorHistory.HistoryData historyData)
-        {
-            historyElement.SetHistoryData(historyData);
-        }
-
         void OnBeforeTypesPopupShown()
         {
             typeDropdown.choices = allTypes.Select(NeuroUnityEditorSettings.GetTypeDropDownName).ToList();
@@ -178,7 +179,7 @@ namespace Ninjadini.Neuro.Editor
             {
                 return;
             }
-            historyElement.AddCurrentToHistory();
+            history.AddToHistory(selectedItem);
             if (refId != 0)
             {
                 selectedType = type;
@@ -239,14 +240,14 @@ namespace Ninjadini.Neuro.Editor
         {
             var id = evt.newValue;
             var item = id != 0 ? dataProvider.Find(selectedType, id) : null;
-            historyElement.AddCurrentToHistory();
+            history.AddToHistory(selectedItem);
             selectedItem = item;
             UpdateSelectedItem();
         }
 
         void SetSelectedItem(NeuroDataFile item)
         {
-            historyElement.AddCurrentToHistory();
+            history.AddToHistory(selectedItem);
             selectedItem = item;
             UpdateSelectedItem();
         }
@@ -277,7 +278,7 @@ namespace Ninjadini.Neuro.Editor
                 deleteBtn.SetEnabled(false);
             }
             itemDropdown.SetEnabled(!typeof(ISingletonReferencable).IsAssignableFrom(selectedType));
-            historyElement.UpdateBackForwardBtns();
+            UpdateBackForwardBtns();
             UpdateDirectionalBtns();
             UpdateAddBtn();
         }
@@ -315,6 +316,63 @@ namespace Ninjadini.Neuro.Editor
                 var item = dataProvider.Add(obj);
                 SetSelectedItem(item);
             }
+        }
+        
+        void BackBtnClicked()
+        {
+            var item = history.PopFromBackItems(dataProvider, selectedItem);
+            if (item != null)
+            {
+                selectedItem = item;
+                UpdateSelectedItem();
+            }
+        }
+
+        void ForwardBtnClicked()
+        {
+            var item = history.PopFromForwardItems(dataProvider, selectedItem);
+            if (item != null)
+            {
+                selectedItem = item;
+                UpdateSelectedItem();
+            }
+        }
+
+        void UpdateBackForwardBtns()
+        {
+            forwardBtn.SetEnabled(history.HasForwardItems);
+            backBtn.SetEnabled(history.HasBackItems);
+        }
+
+        void HistoryBtnClicked()
+        {
+            var menu = new GenericMenu();
+            var history = NeuroEditorHistory.SharedHistory;
+
+            var current = selectedItem;
+            
+            for (var i = history.Count - 1; i >= 0; i--)
+            {
+                var item = NeuroEditorHistory.FindItem(history[i], dataProvider);
+                if (item == current)
+                {
+                    continue;
+                }
+                var value = item?.Value;
+                if(value == null)
+                {
+                    continue;
+                }
+                menu.AddItem(new GUIContent(NeuroEditorHistory.GetDropDownName(value)), false, () =>
+                {
+                    SetSelectedItem(item);
+                });
+            }
+            if (menu.GetItemCount() == 0)
+            {
+                menu.AddSeparator("No recent items");
+            }
+            menu.ShowAsContext();
         }
 
         void OnUpdate()

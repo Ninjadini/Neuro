@@ -10,7 +10,7 @@ namespace Ninjadini.Neuro.Editor
     {
         [SerializeField] uint typeId;
         [SerializeField] uint refId;
-        [SerializeField] NeuroEditorHistory.HistoryData historyData;
+        [SerializeField] NeuroEditorHistory historyData;
 
         NeuroEditorNavElement editorElement;
         
@@ -25,9 +25,8 @@ namespace Ninjadini.Neuro.Editor
         
         public void CreateGUI()
         {
-            editorElement = new NeuroEditorNavElement(NeuroEditorDataProvider.Shared);
-            historyData ??= new NeuroEditorHistory.HistoryData();
-            editorElement.SetHistoryData(historyData);
+            historyData ??= new NeuroEditorHistory();
+            editorElement = new NeuroEditorNavElement(NeuroEditorDataProvider.Shared, historyData);
             editorElement.style.flexGrow = 1;
             rootVisualElement.Add(editorElement);
             

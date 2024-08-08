@@ -1,154 +1,122 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using Ninjadini.Neuro.Sync;
-using Ninjadini.Toolkit;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace Ninjadini.Neuro.Editor
 {
-    internal class NeuroEditorHistory : VisualElement
+    [Serializable]
+    public class NeuroEditorHistory
     {
-        NeuroEditorDataProvider dataProvider;
-        Action<NeuroDataFile> onSelect;
-        Func<NeuroDataFile> getSelected;
-        Button backBtn;
-        Button recentBtn;
-        Button forwardBtn;
-
-        HistoryData _historyData;
-
-        public NeuroEditorHistory(NeuroEditorDataProvider dataProvider, Action<NeuroDataFile> onSelect,
-            Func<NeuroDataFile> getSelected)
+        const int MaxHistoryItems = 15;
+        
+        [SerializeField] List<Item> BackItems = new List<Item>();
+        [SerializeField] List<Item> ForwardItems = new List<Item>();
+        
+        [Serializable]
+        public struct Item
         {
-            this.dataProvider = dataProvider;
-            this.onSelect = onSelect;
-            this.getSelected = getSelected;
+            public uint typeId;
+            public uint refId;
+
+            public bool Equals(Item other)
+            {
+                return typeId == other.typeId && refId == other.refId;
+            }
             
-            backBtn = NeuroUiUtils.AddButton(this, "↰ Back", BackBtnClicked);
-            backBtn.style.width = 65;
-            backBtn.style.flexShrink = 1f;
-            
-            forwardBtn = NeuroUiUtils.AddButton(this, "↳ Forward", ForwardBtnClicked);
-            forwardBtn.style.width = 72;
-            forwardBtn.style.flexShrink = 1f;
-            
-            recentBtn = NeuroUiUtils.AddButton(this, "⋮ Recent", HistoryBtnClicked);
-            recentBtn.style.width = 65;
-            recentBtn.style.flexShrink = 1f;
+            public NeuroDataFile FindDataFile(NeuroEditorDataProvider dataProvider)
+            {
+                var type = NeuroGlobalTypes.FindTypeById(typeId);
+                if (type == null)
+                {
+                    return null;
+                }
+                return dataProvider.Find(type, refId);
+            }
+        }
+        
+        public bool HasBackItems => BackItems.Count > 0;
+        public bool HasForwardItems => ForwardItems.Count > 0;
+
+        public NeuroDataFile PopFromBackItems(NeuroEditorDataProvider dataProvider, NeuroDataFile currentItem = null)
+        {
+            while (BackItems.Count > 0)
+            {
+                var index = BackItems.Count - 1;
+                var item = BackItems[index].FindDataFile(dataProvider);
+                BackItems.RemoveAt(index);
+                if (item?.Value == null)
+                {
+                    continue;
+                }
+                if (currentItem != null && currentItem != item)
+                { 
+                    ForwardItems.Add(AsRecentItem(currentItem));
+                    if (ForwardItems.Count > MaxHistoryItems)
+                    {
+                        ForwardItems.RemoveAt(0);
+                    }
+                }
+                return item;
+            }
+            return null;
         }
 
-        public void SetHistoryData(HistoryData historyData_)
+        public NeuroDataFile PopFromForwardItems(NeuroEditorDataProvider dataProvider, NeuroDataFile currentItem = null)
         {
-            _historyData = historyData_;
+            while (true)
+            {
+                var index = ForwardItems.Count - 1;
+                if (index >= 0)
+                {
+                    var item = ForwardItems[index].FindDataFile(dataProvider);
+                    ForwardItems.RemoveAt(index);
+                    if (item?.Value == null)
+                    {
+                        continue;
+                    }
+                    AddToHistory(currentItem, true);
+                    return item;
+                }
+                break;
+            }
+            return null;
         }
 
-        public void AddCurrentToHistory(bool keepForwards = false)
+        public void AddToHistory(NeuroDataFile selectedItem, bool keepForwards = false)
         {
-            var selectedItem = getSelected();
             if (selectedItem?.Value == null)
             {
                 return;
             }
             var item = AsRecentItem(selectedItem);
             AddToSharedRecentHistory(selectedItem);
-            if (backs.Count == 0 || !backs[^1].Equals(item))
+            if (BackItems.Count == 0 || !BackItems[^1].Equals(item))
             {
-                backs.Add(item);
+                BackItems.Add(item);
+                if (BackItems.Count > NeuroEditorHistory.MaxHistoryItems)
+                {
+                    BackItems.RemoveAt(0);
+                }
             }
             if (!keepForwards)
             {
-                forwards.Clear();
+                ForwardItems.Clear();
             }
         }
 
-        public void UpdateBackForwardBtns()
-        {
-            forwardBtn.SetEnabled(forwards.Count > 0);
-            backBtn.SetEnabled(backs.Count > 0);
-        }
-        
-        void BackBtnClicked()
-        {
-            while (backs.Count > 0)
-            {
-                var index = backs.Count - 1;
-                var item = FindItem(backs[index]);
-                backs.RemoveAt(index);
-                if (item?.Value == null)
-                {
-                    continue;
-                }
-                var selectedItem = getSelected();
-                if (selectedItem != null && selectedItem != item)
-                { 
-                    forwards.Add(AsRecentItem(selectedItem));
-                }
-                onSelect(item);
-                break;
-            }
-        }
-
-        void ForwardBtnClicked()
-        {
-            while (true)
-            {
-                var index = forwards.Count - 1;
-                if (index >= 0)
-                {
-                    var item = FindItem(forwards[index]);
-                    forwards.RemoveAt(index);
-                    if (item?.Value == null)
-                    {
-                        continue;
-                    }
-                    AddCurrentToHistory(true);
-                    onSelect(item);
-                }
-                break;
-            }
-        }
-
-        void HistoryBtnClicked()
-        {
-            var menu = new GenericMenu();
-            var history = SharedHistory;
-
-            var current = getSelected();
-            
-            for (var i = history.Count - 1; i >= 0; i--)
-            {
-                var item = FindItem(history[i]);
-                if (item == current)
-                {
-                    continue;
-                }
-                var value = item?.Value;
-                if(value == null)
-                {
-                    continue;
-                }
-                menu.AddItem(new GUIContent(GetDropDownName(value)), false, () =>
-                {
-                    onSelect(item);
-                });
-            }
-            if (history.Count == 0)
-            {
-                menu.AddSeparator("No recent items");
-            }
-            menu.ShowAsContext();
-        }
-
-        static RecentItem AsRecentItem(NeuroDataFile item)
+        public static Item AsRecentItem(NeuroDataFile item)
         {
             var typeId = NeuroGlobalTypes.GetTypeIdOrThrow(item.Value.GetType(), out _);
             var refId = item.RefId;
-            return new RecentItem {typeId = typeId, refId = refId};
+            return new Item {typeId = typeId, refId = refId};
         }
 
-        NeuroDataFile FindItem(RecentItem recentItem)
+        public static NeuroDataFile FindItem(Item recentItem, NeuroEditorDataProvider dataProvider)
         {
             var type = NeuroGlobalTypes.FindTypeById(recentItem.typeId);
             if (type == null)
@@ -158,48 +126,10 @@ namespace Ninjadini.Neuro.Editor
             return dataProvider.Find(type, recentItem.refId);
         }
         
-        List<RecentItem> backs
-        {
-            get
-            {
-                _historyData ??= new HistoryData();
-                return _historyData.BackItems;
-            }
-        }
-
-        List<RecentItem> forwards
-        {
-            get
-            {
-                _historyData ??= new HistoryData();
-                return _historyData.ForwardItems;
-            }
-        }
-
-        [Serializable]
-        internal class HistoryData
-        {
-            public List<RecentItem> BackItems = new List<RecentItem>();
-            public List<RecentItem> ForwardItems = new List<RecentItem>();
-        }
+        static readonly string PrefHistoryKey = "NeuroEditorHistory" + NeuroEditorUtils.UniqueProjectPathHash;
         
-        [Serializable]
-        internal struct RecentItem
-        {
-            public uint typeId;
-            public uint refId;
-
-            public bool Equals(RecentItem other)
-            {
-                return typeId == other.typeId && refId == other.refId;
-            }
-        }
-
-        const string PrefHistoryKey = "Neuro.Editor.History";
-        const int MaxHistoryItems = 15;
-        
-        static List<RecentItem> _sharedHistory;
-        static List<RecentItem> SharedHistory
+        static List<Item> _sharedHistory;
+        public static List<Item> SharedHistory
         {
             get
             {
@@ -207,27 +137,32 @@ namespace Ninjadini.Neuro.Editor
                 {
                     return _sharedHistory;
                 }
-                _sharedHistory = new List<RecentItem>();
+                _sharedHistory = new List<Item>();
                 var str = EditorPrefs.GetString(PrefHistoryKey, "");
                 if (!string.IsNullOrEmpty(str))
                 {
                     var items = str.Split(',');
-                    for(var i = 0; i < items.Length; i+=2)
+                    for(var i = 0; i < items.Length; i += 2)
                     {
                         if (uint.TryParse(items[i], out var typeId) && uint.TryParse(items[i + 1], out var refId))
                         {
-                            _sharedHistory.Add(new RecentItem {typeId = typeId, refId = refId});
+                            _sharedHistory.Add(new Item {typeId = typeId, refId = refId});
                         }
                     }
                 }
                 return _sharedHistory;
             }
         }
+        
         public static void AddToSharedRecentHistory(NeuroDataFile itemFile)
         {
             var item = AsRecentItem(itemFile);
-            if (SharedHistory.Exists(other => other.Equals(item)))
+            var index = SharedHistory.FindIndex(other => other.Equals(item));
+            if (index >= 0)
             {
+                SharedHistory.RemoveAt(index);
+                SharedHistory.Add(item);
+                // we won't bother writing to prefs for this one.
                 return;
             }
             SharedHistory.Add(item);

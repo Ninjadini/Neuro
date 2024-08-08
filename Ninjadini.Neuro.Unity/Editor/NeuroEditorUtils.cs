@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text;
 using Ninjadini.Neuro.Utils;
 using UnityEngine;
 
@@ -69,6 +70,15 @@ namespace Ninjadini.Neuro.Editor
         public static void ClearScannableTypesCache()
         {
             _allScannableTypes = null;
+        }
+        
+        static string _uniqueProjectPathHash;
+        public static string UniqueProjectPathHash
+        {
+            get
+            {
+                return _uniqueProjectPathHash ??= string.Join("", Encoding.UTF8.GetBytes(Application.dataPath).Select(b => b.ToString("x2")));
+            }
         }
     }
 }
