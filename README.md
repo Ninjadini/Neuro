@@ -327,6 +327,7 @@ public class MyGameNeuroEditorProvider : ICustomNeuroEditorProvider
 ```
 In the editor's 'Tests' section at the bottom, it'll turn red if the validation fails.
 
+Your validator will also show up as one of the tests in Unity's edit mode test runner under NeuroContentTestsRunner > TestRefTables
 
 ### Converting external objects to be neuro friendly
 Say you want to use an object in Neuro world, but you can not modify the code, e.g. 3rd party
