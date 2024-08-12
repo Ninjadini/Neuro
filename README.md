@@ -162,6 +162,44 @@ public class GameSettings : ISingletonReferencable
 var settings = NeuroDataProvider.Shared.References.Get<GameSettings>();
 ```
 
+### Load unity assets
+```
+public class SomeObject
+{
+    [AssetType(typeof(UnityEngine.Sprite))] // < Optional but it guides the editor to show the right types
+    [Neuro(1)] public AssetAddress Icon;
+}
+
+void LoadIcon(SomeObject obj)
+{
+    obj.Icon.LoadAssetAsync<Sprite>(delegate(Sprite result)
+    {
+        image.sprite = result;
+    });
+}
+```
+
+### Custom reference drop down display
+```
+// Text customisation
+public class MyOtherReferencableObject : Referencable, INeuroRefDropDownCustomizable
+{
+    [Neuro(1)] public string Name;
+    
+    string INeuroRefDropDownCustomizable.GetRefDropdownText(NeuroReferences references) => RefId + " : "+ RefName + " -- "+Name;
+}
+
+// icon display customisation
+public class MyOtherReferencableObject : Referencable, INeuroRefDropDownIconCustomizable
+{
+    [Neuro(1)] public AssetAddress Icon;
+
+    string INeuroRefDropDownCustomizable.GetRefDropdownText(NeuroReferences references) => null; // no custom text in this example.
+
+    AssetAddress INeuroRefDropDownIconCustomizable.RefDropdownIcon => Icon;
+}
+```
+
 ### Read write binary data
 ```
 // Write a neuro object to byte array
