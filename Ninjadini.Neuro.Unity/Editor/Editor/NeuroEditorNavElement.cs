@@ -162,7 +162,7 @@ namespace Ninjadini.Neuro.Editor
             Add(new HelpBox($"Looks like you have no referencable types yet.", HelpBoxMessageType.Error));
 
             var attributeName = nameof(NeuroGlobalTypeAttribute).Replace("Attribute", "");
-            var helpBox = new HelpBox($"Make a class extending from “{nameof(Referencable)}” with attribute “[{attributeName}(1)]”", HelpBoxMessageType.Info);
+            var helpBox = new HelpBox($"Make a class extending from “{nameof(Referencable)}” with class attribute “{attributeName}”", HelpBoxMessageType.Info);
             Add(helpBox);
 
             Add(new Label("\n Example:"));
