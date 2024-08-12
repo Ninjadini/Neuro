@@ -12,7 +12,7 @@ namespace Ninjadini.Neuro.Editor
 {
     public class NeuroDebuggerWindow : EditorWindow
     {
-        [MenuItem("Tools/Neuro/Debugger", priority = 100)]
+        [MenuItem("Tools/Neuro/Debugger", priority = 105)]
         public static void ShowWindow()
         {
             GetWindow<NeuroDebuggerWindow>("Neuro Debugger").Show();

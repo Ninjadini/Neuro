@@ -7,6 +7,13 @@ namespace Ninjadini.Neuro.Editor
 {
     public static class NeuroUnityEditorMenus
     {
+        [MenuItem("Tools/Neuro/ReadMe @ github url", priority = 102)]
+        public static void ReadMe()
+        {
+            Application.OpenURL("https://github.com/Ninjadini/Neuro/");
+        }
+        
+        
         [MenuItem("Tools/Neuro/Save To Resources")]
         public static void SaveToResources()
         {
