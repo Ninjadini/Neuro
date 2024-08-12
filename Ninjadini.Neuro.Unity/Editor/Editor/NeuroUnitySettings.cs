@@ -14,7 +14,7 @@ namespace Ninjadini.Neuro.Editor
     public class NeuroUnityEditorSettings : ScriptableSingleton<NeuroUnityEditorSettings>
     {
         public const string SETTINGS_MENU_PATH = "Project/Neuro";
-        const string DEFAULT_DATA_PATH = "NeuroData";
+        public const string DEFAULT_DATA_PATH = "NeuroData";
 
         public bool ShowDialogOnDataFileChange = true;
         public bool BakeAutoTypeRegistryForBuild = true;

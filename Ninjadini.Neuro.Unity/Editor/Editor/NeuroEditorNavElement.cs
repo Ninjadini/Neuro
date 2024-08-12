@@ -43,7 +43,18 @@ namespace Ninjadini.Neuro.Editor
 
             style.flexGrow = 1;
             style.bottom = 0;
-
+            
+            NeuroSyncTypes.TryRegisterAllAssemblies();
+            allTypes = NeuroGlobalTypes.GetAllRootTypes()
+                .Where(t => typeof(IReferencable).IsAssignableFrom(t))
+                .OrderBy(NeuroUnityEditorSettings.GetTypeDropDownName)
+                .ToArray();
+            if (allTypes.Length == 0)
+            {
+                PrintNoTypesHelpBox();
+                return;
+            }
+            
             var topBar = NeuroUiUtils.AddHorizontal(this);
             topBar.style.flexShrink = 0f;
             typeDropdown = new SearchablePopupField<string>();
@@ -140,15 +151,32 @@ namespace Ninjadini.Neuro.Editor
             debugDisplay.style.flexShrink = 0.01f;
             Add(debugDisplay);
 
-            NeuroSyncTypes.TryRegisterAllAssemblies();
-            allTypes = NeuroGlobalTypes.GetAllRootTypes()
-                .Where(t => typeof(IReferencable).IsAssignableFrom(t))
-                .OrderBy(NeuroUnityEditorSettings.GetTypeDropDownName)
-                .ToArray();
             typeDropdown.choices = allTypes.Select(NeuroUnityEditorSettings.GetTypeDropDownName).ToList();
             
             schedule.Execute(OnUpdate).Every(ObjectInspectorFields.RefreshRate);
             schedule.Execute(DelayedInit);
+        }
+
+        void PrintNoTypesHelpBox()
+        {
+            Add(new HelpBox($"Looks like you have no referencable types yet.", HelpBoxMessageType.Error));
+
+            var attributeName = nameof(NeuroGlobalTypeAttribute).Replace("Attribute", "");
+            var helpBox = new HelpBox($"Make a class extending from “{nameof(Referencable)}” with attribute “[{attributeName}(1)]”", HelpBoxMessageType.Info);
+            Add(helpBox);
+
+            Add(new Label("\n Example:"));
+            var txt = new TextField();
+            txt.value =
+                "using Ninjadini.Neuro;\n" +
+                "using System.Collections.Generic;\n\n" +
+                $"[{attributeName}(1)]\n" +
+               $"public class MyAwesomeNeuroObject : {nameof(Referencable)}\n" +
+                "{\n" +
+                "    [Neuro(1)] public List<string> Reasons;\n" +
+                "}";
+            txt.isReadOnly = true;
+            Add(txt);
         }
 
         void OnBeforeTypesPopupShown()

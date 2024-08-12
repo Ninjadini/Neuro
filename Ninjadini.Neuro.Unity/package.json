@@ -5,6 +5,7 @@
   "displayName": "Ninjadini Neuro Unity",
   "description": "",
   "dependencies" : {
-    "com.ninjadini.neuro" : "0.0.1"
+    "com.ninjadini.neuro" : "0.0.1",
+    "com.unity.addressables": "2.0.0"
   }
 }

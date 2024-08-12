@@ -8,5 +8,8 @@
   {
     "name": "Ninjadini",
     "url": "https://ninjadini.com/"
+  },
+  "dependencies" : {
+    "com.unity.addressables": "2.2.2"
   }
 }

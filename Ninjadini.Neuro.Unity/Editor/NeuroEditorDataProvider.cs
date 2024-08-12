@@ -109,8 +109,15 @@ namespace Ninjadini.Neuro.Editor
             {
                 if (!Directory.Exists(dirPath))
                 {
-                    Debug.LogError("Neuro data path does not exist: " + Path.GetFullPath(dirPath));
-                    continue;
+                    if (dirPath == NeuroUnityEditorSettings.DEFAULT_DATA_PATH)
+                    {
+                        Directory.CreateDirectory(NeuroUnityEditorSettings.DEFAULT_DATA_PATH);
+                    }
+                    else
+                    {
+                        Debug.LogError("Neuro data path does not exist: " + Path.GetFullPath(dirPath));
+                        continue;
+                    }
                 }
                 AddFileWatchers(dirPath);
                 foreach (var subDir in Directory.GetDirectories(dirPath))

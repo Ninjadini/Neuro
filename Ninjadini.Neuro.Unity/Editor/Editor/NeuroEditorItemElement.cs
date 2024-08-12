@@ -43,8 +43,11 @@ namespace Ninjadini.Neuro.Editor
                     Regex.IsMatch(evt.character.ToString(), NeuroDataFile.InvalidFileNameRegExp))
                 {
                     evt.StopPropagation();
-                    //evt.PreventDefault();
+#if UNITY_2023_2_OR_NEWER
                     focusController?.IgnoreEvent(evt);
+#else
+                    evt.PreventDefault();
+#endif
                 }
             });
             refNameTxt.RegisterValueChangedCallback(OnRefNameChanged);
