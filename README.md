@@ -67,7 +67,7 @@ public class MyFirstNeuroObject : Referencable
 
 ### See it in editor for editing the data
 - `Tools` > `Neuro` > `❖ Editor`
-- It should already have select your first type
+- It should already have selected your first type
 - Press `＋ Add` to add your first item.
 - Note that all items has a unique uint `RefId` and string `RefName`
 - This is reflected in the JSON file name
@@ -221,7 +221,12 @@ var myData = NeuroJsonReader.Shared.Read<MyData>(jsonString);
 ### Custom editor drawer
 Say you want to show the 3 values in one line without the name labels.
 And it will say an error message if any of the values have lower than 1 value
-(Please note, if you want to do validation its actually better to use INeuroContentValidator)
+
+> [!TIP]
+> If you want to do validation it's actually better to use INeuroContentValidator
+
+> [!CAUTION]
+> API MAY CHANGE FOR THIS
 ```
 public struct FloatABC
 {
@@ -309,7 +314,7 @@ public class MyGameNeuroEditorProvider : ICustomNeuroEditorProvider
         [Neuro(3)] public float c;
     }
     
-    // This class should live in Editor folder
+    // This class should live in Editor folder (it will still work if you don't)
     public class FloatABCValidator : INeuroContentValidator<FloatABC>
     {
         public void Test(FloatABC valueToTest, NeuroContentValidatorContext context)
