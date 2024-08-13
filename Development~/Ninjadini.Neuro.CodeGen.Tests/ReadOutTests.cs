@@ -343,6 +343,29 @@ if(_NeuroSyncNS.NeuroSyncEnumTypes<MyEnum>.IsEmpty())
 "
         );
     }
+        
+    [Test]
+    public void TestEnumWithDefaultValue()
+    {
+        var src = @"
+using Ninjadini.Neuro;
+        partial class TestClass
+        {
+            [Neuro(1)] public MyEnum e = MyEnum.B;
+        }
+        enum MyEnum
+        {
+            A,
+            B,
+            C
+        }
+";
+        TestUtils.TestSourceGenerates(src, 
+            @"
+neuro.SyncEnum(1, nameof(value.e), ref value.e, (int) MyEnum.B);
+"
+        );
+    }
     
 
 

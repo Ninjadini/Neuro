@@ -272,6 +272,10 @@ public static class NeuroTypesRegister
                 if (field.DefaultValue != null)
                 {
                     strBuilder.Append(", ");
+                    if (field.IsEnum)
+                    {
+                        strBuilder.Append("(int) ");
+                    }
                     strBuilder.Append(field.DefaultValue);
                 }
                 strBuilder.AppendLine(");");
