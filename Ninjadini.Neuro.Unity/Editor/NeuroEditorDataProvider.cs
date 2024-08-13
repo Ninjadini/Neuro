@@ -35,6 +35,8 @@ namespace Ninjadini.Neuro.Editor
                 return _shared;
             }
         }
+        
+        public static NeuroReferences SharedReferences => Shared.References;
 
         public bool HadProblemsLoading;
         List<NeuroDataFile> dataFiles;
