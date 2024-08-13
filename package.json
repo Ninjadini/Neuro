@@ -1,9 +1,11 @@
 {
   "name": "com.ninjadini.neuro-unity",
-  "version": "0.0.1",
-  "unity": "2022.1",
+  "version": "0.1.0",
   "displayName": "Ninjadini Neuro",
   "description": "",
+  "documentationUrl": "https://github.com/Ninjadini/Neuro",
+  "licensesUrl": "https://github.com/Ninjadini/Neuro?path=LICENSE",
+  "unity": "2022.1",
   "author":
   {
     "name": "Ninjadini",

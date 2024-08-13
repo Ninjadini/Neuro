@@ -49,6 +49,12 @@ namespace Ninjadini.Neuro
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T Get<T>(string refName) where T : class, IReferencable
+        {
+            return string.IsNullOrEmpty(refName) ? default :  GetTable<T>().Get(refName);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReferencable Get(Type type, uint refId)
         {
             return GetTable(type).Get(refId);

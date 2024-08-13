@@ -76,10 +76,10 @@ public class MyFirstNeuroObject : Referencable
 ### How to read from referencable/config at runtime
 ```
 // Get the neuro data provider, static shared version read data from neuro editor automatically.
-var sharedDataProvider = NeuroDataProvider.Shared;
+var references = NeuroDataProvider.SharedReferences;
 
 // Get the table of certain type
-var table = sharedDataProvider.References.GetTable<MyFirstNeuroObject>();
+var table = references.GetTable<MyFirstNeuroObject>();
 
 // loop through all items (this will cause all data to be loaded if not already)
 foreach (var theItem in table.SelectAll())
@@ -100,7 +100,7 @@ public class SomeObject
 
 public static void PrintValues(SomeObject obj)
 {
-    var firstObj = NeuroDataProvider.Shared.Get(obj.RefObj);
+    var firstObj = NeuroDataProvider.SharedReferences.Get(obj.RefObj);
     Debug.Log("MyFirstString: " + firstObj.MyFirstString);
     Debug.Log("MyFirstInt: " + firstObj.MyFirstInt);
 }
@@ -122,13 +122,13 @@ public class BaseEntity
 }
 
 [Neuro(1)] // This # needs to be unique in all subclasses of BaseEntity
-public class VehicleEntity
+public class VehicleEntity : BaseEntity
 {
     [Neuro(1)] float Speed; // This # only needs to be unique locally in this class
 }
 
 [Neuro(2)] // This # needs to be unique in all subclasses of BaseEntity
-public class CharacterEntity
+public class CharacterEntity : BaseEntity
 {
     [Neuro(1)] string Name;
 }
@@ -158,7 +158,7 @@ public class GameSettings : ISingletonReferencable
 }
 
 // Get the object
-var settings = NeuroDataProvider.Shared.References.Get<GameSettings>();
+var settings = NeuroDataProvider.SharedReferences.Get<GameSettings>();
 ```
 
 ### Load unity assets
@@ -364,6 +364,72 @@ Short example using FloatABC:
     }
 ```
 
+### Preprocessing / stripping data for build
+Say you have some data you don't want to expose onto public facing builds.
+Perhaps you have dev notes stored in the data.
+
+Example:
+```
+    public class MyFirstNeuroObjectProcessor : INeuroBundledDataResourcesForBuildProcessor
+    {
+        public void PrepBeforeBuildProcessing(NeuroReferences neuroReferences, BuildReport buildReport)
+        {
+        }
+
+        public bool ProcessForInclusion(IReferencable referencable)
+        {
+            if(referencable is MyFirstNeuroObject obj)
+            {
+                obj.MyFirstString = null;
+            }
+            return true;
+        }
+    }
+```
+
+### Saving neuro reference changes in editor scripts 
+```
+// grab the item we want to modify... really same as using NeuroDataProvider here.
+var itemToModify = NeuroEditorDataProvider.Shared.References.Get<MyFirstNeuroObject>("myItem");
+
+// do the modification
+itemToModify.MyFirstString = "My modified string";
+
+// save it back out to neuro json file.
+NeuroEditorDataProvider.Shared.SaveData(itemToModify);
+```
+
+### Visit every values of a neuro object
+
+Example:
+```
+var vistor = new NeuroVisitor();
+var refs = NeuroDataProvider.SharedReferences;
+vistor.Visit(myObjToVist, new MyCustomVisitor(refs));
+
+    public class MyCustomVisitor : NeuroVisitor.IInterface
+    {
+        NeuroReferences _refs;
+        public MyCustomVisitor(NeuroReferences refs)
+        {
+            _refs = refs;
+        }
+        
+        public void BeginVisit<T>(ref T obj, string name, int? listIndex)
+        {
+            Debug.Log("BeginVisit: " + name +": "+ obj);
+        }
+
+        public void EndVisit()
+        {
+        }
+
+        public void VisitRef<T>(ref Reference<T> reference) where T : class, IReferencable
+        {
+            Debug.Log("VisitRef: " + reference.TryGetIdAndName(_refs));
+        }
+    }
+```
 ---
 
 ## Goals
