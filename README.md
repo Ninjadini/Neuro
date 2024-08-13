@@ -54,7 +54,7 @@ public class MyFirstNeuroObject : Referencable
     }
     public class MyChildObject
     {
-        [Neuro(1)] public string Value;
+        [Neuro(1)] public string Value = "abcd"; // default values are supported
     }
     public struct MyChildStruct
     {
@@ -63,6 +63,20 @@ public class MyFirstNeuroObject : Referencable
     public enum MyEnum
     {
         A, B, C
+    }
+    
+    public partial class MyClassWithPrivateFields 
+    {
+        // ^ If you want to use private fields, you must make the class partial
+        // This is so the code gen can access your private fields
+        
+        [Neuro(1)] private string _privateValue;
+        [Neuro(2)] private List<string> _privateValues;
+        // ^ these fields will still be exposed in Neuro Editor so you can set the values.
+        
+        public string PrivateValue => _privateValue;
+        public IReadOnlyList<string> PrivateValues => _privateValues;
+        // exposing the readonly values for outside world
     }
 ```
 
@@ -128,7 +142,7 @@ public class BaseEntity
     [Neuro(1)] string Name; // < This # only needs to be unique locally in this class
 }
 
-[Neuro(1)] // This # needs to be unique in all subclasses of BaseEntity
+[Neuro(1)] // < This # needs to be unique in all subclasses of BaseEntity
 public class VehicleEntity : BaseEntity
 {
     [Neuro(1)] float Speed; // < This # only needs to be unique locally in this class
@@ -137,7 +151,12 @@ public class VehicleEntity : BaseEntity
 [Neuro(2)] // < This # needs to be unique in all subclasses of BaseEntity
 public class CharacterEntity : BaseEntity
 {
-    [Neuro(1)] string Name;
+    [Neuro(1)] string SomeSting;
+}
+[Neuro(3)] // < This # also need to be unique for subclasses of BaseEntity - Note, this one extends from CharacterEntity
+public class PlayerCharacterEntity : CharacterEntity
+{
+    [Neuro(1)] int SomeInt;
 }
 ```
 
@@ -467,7 +486,9 @@ vistor.Visit(myObjToVist, new MyCustomVisitor(refs));
 ## Supported Types
 - Primitives: bool, byte, int, uint, long, ulong, float, double
 - Enums
-- List<>
+- List<> ✅
+- Array[] ❌
+- Dictionary<,> ❌
 - System structs: DateTime, TimeSpan
 - Classes and subclasses
 - Structs
