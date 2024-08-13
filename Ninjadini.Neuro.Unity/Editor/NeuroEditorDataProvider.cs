@@ -11,7 +11,7 @@ using UnityEngine;
 namespace Ninjadini.Neuro.Editor
 {
     [InitializeOnLoad]
-    public class NeuroEditorDataProvider
+    public class NeuroEditorDataProvider : IReferencesProvider
     {
         static NeuroEditorDataProvider()
         {
@@ -57,6 +57,8 @@ namespace Ninjadini.Neuro.Editor
             jsonReader = new NeuroJsonReader();
             jsonWriter = new NeuroJsonWriter();
         }
+
+        NeuroReferences IReferencesProvider.References => References;
 
         public virtual void Reload()
         {

@@ -315,6 +315,7 @@ namespace Ninjadini.Neuro
                 var del = NeuroJsonSyncTypes<T>.GetOrThrow();
 
                 var arr = nodes.Array;
+                var targetIndex = 0;
                 for(var i = 0; i < nodes.Count; i++)
                 {
                     // TODO this can be optimised via skipping some nodes + nextNode
@@ -342,14 +343,15 @@ namespace Ninjadini.Neuro
                         {
                             del(this, ref value);
                         }
-                        if (i < values.Count)
+                        if (targetIndex < values.Count)
                         {
-                            values[i] = value;
+                            values[targetIndex] = value;
                         }
                         else
                         {
                             values.Add(value);
                         }
+                        targetIndex++;
                     }
                 }
                 currentParent = parentBefore;

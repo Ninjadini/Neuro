@@ -35,6 +35,7 @@ namespace Ninjadini.Neuro.Editor
             refNameTxt.style.flexGrow = 1f;
             refNameTxt.isDelayed = true;
             refNameTxt.tooltip = "RefName";
+            NeuroUiUtils.SetPlaceholderText(refNameTxt, "RefName");
             refNameTxt.selectAllOnFocus = false;
             refNameTxt.selectAllOnMouseUp = false;
             refNameTxt.RegisterCallback<KeyDownEvent>((evt) =>

@@ -16,7 +16,7 @@ namespace Ninjadini.Neuro.Editor
         public const string SETTINGS_MENU_PATH = "Project/Neuro";
         public const string DEFAULT_DATA_PATH = "NeuroData";
 
-        public bool ShowDialogOnDataFileChange = true;
+        public bool ShowDialogOnDataFileChange;
         public bool BakeAutoTypeRegistryForBuild = true;
         public bool BakeDataResourcesForBuild = true;
         public string ResourcesDir = "Assets/Resources/";

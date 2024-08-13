@@ -1,11 +1,14 @@
 using System;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ninjadini.Toolkit
 {
     public static class NeuroUiUtils
     {
+        // Intentionally not using extension methods here to avoid conflicts with other libs
+        
         public static void SetDisplay(VisualElement element, bool visible)
         {
             if (element != null)
@@ -81,6 +84,37 @@ namespace Ninjadini.Toolkit
             }
             EditorUtility.DisplayDialog("", "Couldn't find MonoScript file for " + typeToSearch.Name+ "\nThis can happen if the name of the file does not match the name or there are multiple classes in the cs file.", "OK");
             return false;
+        }
+        
+        public static void SetPlaceholderText(TextField textField, string placeholder)
+        {
+            var lbl = new Label(placeholder);
+            lbl.style.position = Position.Absolute;
+            lbl.style.top = lbl.style.bottom = lbl.style.left = 2f;
+            lbl.style.unityTextAlign = TextAnchor.MiddleLeft;
+            lbl.style.color = new Color(0.35f, 0.35f, 0.35f);
+            textField.hierarchy.Add(lbl);
+
+            OnFocusOut();
+            textField.RegisterCallback<FocusInEvent>(evt => OnFocusIn());
+            textField.RegisterCallback<FocusOutEvent>(evt => OnFocusOut());
+            textField.RegisterValueChangedCallback(OnValueChange);
+            return;
+
+            void OnValueChange(ChangeEvent<string> evt)
+            {
+                OnFocusOut();
+            }
+
+            void OnFocusIn()
+            {
+                lbl.style.display = DisplayStyle.None;
+            }
+
+            void OnFocusOut()
+            {
+                lbl.style.display = string.IsNullOrEmpty(textField.text) ? DisplayStyle.Flex : DisplayStyle.None;
+            }
         }
     }
 }

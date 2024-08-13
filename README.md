@@ -76,7 +76,7 @@ public class MyFirstNeuroObject : Referencable
         
         public string PrivateValue => _privateValue;
         public IReadOnlyList<string> PrivateValues => _privateValues;
-        // exposing the readonly values for outside world
+        // ^ exposing the readonly values for outside world
     }
 ```
 
@@ -433,7 +433,7 @@ Example:
 ```
 var vistor = new NeuroVisitor();
 var refs = NeuroDataProvider.SharedReferences;
-vistor.Visit(myObjToVist, new MyCustomVisitor(refs));
+vistor.Visit(myObjToVisit, new MyCustomVisitor(refs));
 
     public class MyCustomVisitor : NeuroVisitor.IInterface
     {
@@ -486,7 +486,7 @@ vistor.Visit(myObjToVist, new MyCustomVisitor(refs));
 ## Supported Types
 - Primitives: bool, byte, int, uint, long, ulong, float, double
 - Enums
-- List<> ✅
+- List<>
 - Array[] ❌
 - Dictionary<,> ❌
 - System structs: DateTime, TimeSpan
@@ -500,5 +500,5 @@ vistor.Visit(myObjToVist, new MyCustomVisitor(refs));
 
 ## What (could be) bad about it?
 - Only supports fields, properties are supported via a workaround
-- Codegen might get slow on a larger projects? Perhaps you need to keep all the model files in one project and ignore other projcets
+- Codegen might get slow on a larger projects? Perhaps you need to keep all the model files in one project and ignore other projects
 - Maybe hard to be able to tell which types are supported - but fixable with Roslyn validation
