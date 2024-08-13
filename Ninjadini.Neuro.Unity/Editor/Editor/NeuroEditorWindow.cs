@@ -20,7 +20,14 @@ namespace Ninjadini.Neuro.Editor
         [MenuItem("Window/❖ Neuro Editor")]
         static void NewWindow()
         {
-            CreateWindow<NeuroEditorWindow>("❖ NeuroEditor").Show();
+            GetNewWindow();
+        }
+        
+        public static NeuroEditorWindow GetNewWindow()
+        {
+            var window = CreateWindow<NeuroEditorWindow>("❖ NeuroEditor");
+            window.Show();
+            return window;
         }
         
         public void CreateGUI()

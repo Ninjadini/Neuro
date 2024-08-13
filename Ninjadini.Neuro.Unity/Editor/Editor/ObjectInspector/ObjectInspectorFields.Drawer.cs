@@ -540,12 +540,30 @@ namespace Ninjadini.Toolkit
             };
             
             var existsToggle = NeuroUiUtils.AddToggle(null, "", value != null);
-            existsToggle.style.marginLeft = 139;
+            existsToggle.style.marginLeft = NameFieldWidth - 5;
             existsToggle.style.marginTop = 3;
             existsToggle.style.position = Position.Absolute;
             existsToggle.SetEnabled(data.setter != null && canEdit);
             listView.hierarchy.Add(existsToggle);
-            
+
+            Button addBtn = null;
+            if (data.setter != null && canEdit)
+            {
+                addBtn = NeuroUiUtils.AddButton(null, "+", delegate()
+                {
+                    if (data.getter() is not IList list || list.Count == 0)
+                    {
+                        var vv = CreateListType(data, 1);
+                        data.setter(vv);
+                        data.Controller.OnValueChanged(vv);
+                        UpdateCall(true);
+                    }
+                });
+                addBtn.style.marginLeft = NameFieldWidth + 15;
+                addBtn.style.position = Position.Absolute;
+                listView.hierarchy.Add(addBtn);
+            }
+
             void UpdateCall(bool forcedUpdate)
             {
                 var v = data.getter() as IList;
@@ -558,6 +576,10 @@ namespace Ninjadini.Toolkit
                     listView.showAddRemoveFooter = hasValue;
                     listView.showBoundCollectionSize = hasValue;
                     listView.Rebuild();
+                }
+                if (addBtn != null)
+                {
+                    addBtn.style.display = v == null || v.Count == 0 ? DisplayStyle.Flex : DisplayStyle.None;
                 }
             }
             existsToggle.RegisterValueChangedCallback((evt) =>
@@ -658,7 +680,22 @@ namespace Ninjadini.Toolkit
             {
                 obj = Array.CreateInstance(data.type.GetElementType(), count);
             }
-            obj ??= Activator.CreateInstance(data.type);
+            else if (data.type.IsGenericType)
+            {
+                obj = Activator.CreateInstance(data.type);
+                if (obj is IList list && list.Count < count)
+                {
+                    var elementType = data.type.GetGenericArguments().First();
+                    for (var i = list.Count; i < count; i++)
+                    {
+                        list.Add(elementType.IsValueType ? Activator.CreateInstance(elementType) : null);
+                    }
+                }
+            }
+            else
+            {
+                obj ??= Activator.CreateInstance(data.type);
+            }
             return obj;
         }
 

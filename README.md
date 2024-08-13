@@ -111,7 +111,6 @@ public static void PrintValues(SomeObject obj)
 public class MyMonoBehaviour : MonoBehaviour
 {
     public Reference<MyFirstNeuroObject> RefObj;
-    [SerializeField] private Reference<MyFirstNeuroObject> RefObj_private;
 }
 ```
 
@@ -218,7 +217,22 @@ var jsonString = NeuroJsonWriter.Shared.Write(data);
 var myData = NeuroJsonReader.Shared.Read<MyData>(jsonString);
 ```
 
-### Custom editor drawer
+### Basic editor customisation
+```
+[DisplayName("Test > AnotherReferencableObject")] // < The type name used in editor dropdown list
+[ToolTip("Tooltip for this class... Shows up when you mouse over any of the elements of this clas (but not if you are in play mode)")] // You can also use [Description()] 
+public class AnotherReferencableObject : Referencable
+{
+    [ToolTip("Tooltip for this particular field")]
+    [Neuro(1)] public string Name;
+    
+    [Header("A foldout header")]
+    [Neuro(2)] public string Value1;
+    [Neuro(3)] public string Value2;
+}
+```
+
+### Full editor customisation
 Say you want to show the 3 values in one line without the name labels.
 And it will say an error message if any of the values have lower than 1 value
 

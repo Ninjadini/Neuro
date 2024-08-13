@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Ninjadini.Toolkit;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -16,7 +17,7 @@ namespace Ninjadini.Neuro.Editor
         readonly NeuroReferences references;
         Type type;
         IReadOnlyDictionary<uint, IReferencable> dictionary;
-        Button gotoRefBtn;
+        Action<Type, uint> gotoRefBtnCallback;
         VisualElement selectedItemCustomOverlay;
         ICustomNeuroEditorProvider.BindRefItemDelegate  selectedItemOverlayBind;
         
@@ -26,21 +27,34 @@ namespace Ninjadini.Neuro.Editor
             BeforePopupShown += RefreshChoices;
         }
 
-        public bool HasGoToRefBtn() => gotoRefBtn != null;
+        public bool HasGoToRefBtn() => gotoRefBtnCallback != null;
 
         public void AddGoToReferenceBtn(Action<Type, uint> callback)
         {
-            if (gotoRefBtn != null)
+            if (callback == null)
             {
-                gotoRefBtn.clickable = new Clickable(() => callback(type, value));
+                return;
+            }
+            gotoRefBtnCallback = callback;
+            var gotoRefBtn = new Button()
+            {
+                text = ">"
+            };
+            gotoRefBtn.tooltip = "Shift click to open in new window";
+            gotoRefBtn.RegisterCallback<ClickEvent>(OnGotoBtnCallback);
+            Add(gotoRefBtn);
+        }
+
+        void OnGotoBtnCallback(ClickEvent evt)
+        {
+            if (evt.modifiers == EventModifiers.Shift)
+            {
+                var window = NeuroEditorWindow.GetNewWindow();
+                window.EditorElement.SetSelectedItem(type, value);
             }
             else
             {
-                gotoRefBtn = new Button(() => callback(type, value))
-                {
-                    text = ">"
-                };
-                Add(gotoRefBtn);
+                gotoRefBtnCallback(type, value);
             }
         }
 
