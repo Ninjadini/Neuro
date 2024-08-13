@@ -1,6 +1,6 @@
 # Neuro
 
-Your friendly data orientated content management toolset for Unity.
+Your friendly data management toolset for Unity.
 
 ## Getting started
 
@@ -9,7 +9,8 @@ Your friendly data orientated content management toolset for Unity.
 - `Window` > `Package Manager` > `Add` > `Install package from git URL...`
 - Enter `https://github.com/Ninjadini/Neuro.git` for latest.
 > [!TIP]
-> No versioning yet. If you prefer a specific commit to be safe, you can use this format `https://github.com/Ninjadini/Neuro/commit/<COMMIT HASH HERE>`
+> No versioning yet. If you prefer a specific commit, to be safe from surprise API changes, you can use this format:
+`https://github.com/Ninjadini/Neuro/commit/<COMMIT HASH HERE>`
 
 
 ### Your first Neuro reference type
@@ -111,6 +112,12 @@ public static void PrintValues(SomeObject obj)
 public class MyMonoBehaviour : MonoBehaviour
 {
     public Reference<MyFirstNeuroObject> RefObj;
+
+    void Start()
+    {
+        var obj = NeuroDataProvider.SharedReferences.Get(RefObj);
+        Debug.Log("My first string says: " + obj?.MyFirstString);
+    }
 }
 ```
 
@@ -118,16 +125,16 @@ public class MyMonoBehaviour : MonoBehaviour
 ```
 public class BaseEntity
 {
-    [Neuro(1)] string Name; // This # only needs to be unique locally in this class
+    [Neuro(1)] string Name; // < This # only needs to be unique locally in this class
 }
 
 [Neuro(1)] // This # needs to be unique in all subclasses of BaseEntity
 public class VehicleEntity : BaseEntity
 {
-    [Neuro(1)] float Speed; // This # only needs to be unique locally in this class
+    [Neuro(1)] float Speed; // < This # only needs to be unique locally in this class
 }
 
-[Neuro(2)] // This # needs to be unique in all subclasses of BaseEntity
+[Neuro(2)] // < This # needs to be unique in all subclasses of BaseEntity
 public class CharacterEntity : BaseEntity
 {
     [Neuro(1)] string Name;
@@ -178,7 +185,26 @@ void LoadIcon(SomeObject obj)
 }
 ```
 
+### Read write binary data
+```
+// Write a neuro object to byte array
+var bytes = NeuroBytesWriter.Shared.Write(myData).ToArray();
+
+// Read byte array to neuro object
+var myReadData = NeuroBytesReader.Shared.Read<MyData>(bytes);
+```
+
+### Read write JSON data
+```
+// Write a neuro object to JSON 
+var jsonString = NeuroJsonWriter.Shared.Write(data);
+
+// Read JSON string to neuro object
+var myData = NeuroJsonReader.Shared.Read<MyData>(jsonString);
+```
+
 ### Custom reference drop down display
+This lets you customise what the item looks in the references drop down list - to give more info than just default ref id and ref name.
 ```
 // Text customisation
 public class MyOtherReferencableObject : Referencable, INeuroRefDropDownCustomizable
@@ -197,24 +223,6 @@ public class MyOtherReferencableObject : Referencable, INeuroRefDropDownIconCust
 
     AssetAddress INeuroRefDropDownIconCustomizable.RefDropdownIcon => Icon;
 }
-```
-
-### Read write binary data
-```
-// Write a neuro object to byte array
-var bytes = NeuroBytesWriter.Shared.Write(myData).ToArray();
-
-// Read byte array to neuro object
-var myReadData = NeuroBytesReader.Shared.Read<MyData>(bytes);
-```
-
-### Read write JSON data
-```
-// Write a neuro object to JSON 
-var jsonString = NeuroJsonWriter.Shared.Write(data);
-
-// Read JSON string to neuro object
-var myData = NeuroJsonReader.Shared.Read<MyData>(jsonString);
 ```
 
 ### Basic editor customisation
@@ -341,12 +349,13 @@ public class MyGameNeuroEditorProvider : ICustomNeuroEditorProvider
 ```
 In the editor's 'Tests' section at the bottom, it'll turn red if the validation fails.
 
-Your validator will also show up as one of the tests in Unity's edit mode test runner under NeuroContentTestsRunner > TestRefTables
+Your validator will also be automatically included in Unity's edit mode test runner under NeuroContentTestsRunner > TestRefTables
 
 ### Converting external objects to be neuro friendly
-Say you want to use an object in Neuro world, but you can not modify the code, e.g. 3rd party
+Say you want to use an object in Neuro world, but you can not modify the code, e.g. 3rd party.
+
 You can write the 'sync' code manually. This is how Unity's build in data types such as Vector3 are registered.
-See full example of Unity ones in this class: NeuroDefaultUnityTypesHook
+See full example of Unity ones in this class: [NeuroDefaultUnityTypesHook.cs](Ninjadini.Neuro.Unity/RunTime/NeuroDefaultUnityTypesHook.cs)
 
 Short example using FloatABC:
 ```
@@ -380,17 +389,17 @@ Example:
         {
             if(referencable is MyFirstNeuroObject obj)
             {
-                obj.MyFirstString = null;
+                obj.MyFirstString = null; // strip the string data...
             }
-            return true;
+            return true; // < If you return false here, the object will not be included in the build.
         }
     }
 ```
 
 ### Saving neuro reference changes in editor scripts 
 ```
-// grab the item we want to modify... really same as using NeuroDataProvider here.
-var itemToModify = NeuroEditorDataProvider.Shared.References.Get<MyFirstNeuroObject>("myItem");
+// grab the item we want to modify... really same as using NeuroDataProvider.SharedReferences here.
+var itemToModify = NeuroEditorDataProvider.SharedReferences.Get<MyFirstNeuroObject>("myItem");
 
 // do the modification
 itemToModify.MyFirstString = "My modified string";
