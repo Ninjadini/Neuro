@@ -288,7 +288,7 @@ namespace Ninjadini.Neuro
             }
             else
             {
-                value = default;
+                value = NeuroSyncEnumTypes<T>.GetEnum(defaultValue);
             }
         }
 
