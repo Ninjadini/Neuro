@@ -17,7 +17,8 @@ namespace Ninjadini.Neuro.Editor
         {
             ToggleButton = new Button();
             ToggleButton.text = "▼";
-            ToggleButton.style.width = 35;
+            ToggleButton.style.width = 30;
+            ToggleButton.tooltip = "Type settings";
             style.flexShrink = 0f;
         }
         

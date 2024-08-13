@@ -68,18 +68,22 @@ namespace Ninjadini.Neuro.Editor
             Add(classSettingsElement);
             topBar.Add(classSettingsElement.ToggleButton);
             classSettingsElement.ToggleButton.clicked += () => classSettingsElement.Toggle(selectedType);
-            
-            NeuroUiUtils.AddButton(topBar, "⎇ Settings", () =>
+
+            var settingsBtn = NeuroUiUtils.AddButton(topBar, "⎇ <size=95%>Settings</size>", () =>
             {
                 SettingsService.OpenProjectSettings(NeuroUnityEditorSettings.SETTINGS_MENU_PATH);
-            }).tooltip = "Open Project Settings > Neuro";
+            });
+            settingsBtn.tooltip = "Open Project Settings > Neuro";
+            settingsBtn.style.width = 70;
             
-            NeuroUiUtils.AddButton(topBar, "↻ Reload", () =>
+            var reloadBtn = NeuroUiUtils.AddButton(topBar, "↻", () =>
             {
                 //EditorUtility.RequestScriptReload();
                 dataProvider_.Reload();
                 OnUpdate();
             });
+            reloadBtn.tooltip = "Reload";
+            reloadBtn.style.width = 30;
 
             var secondBar = NeuroUiUtils.AddHorizontal(this);
             secondBar.style.flexShrink = 0f;
@@ -90,12 +94,12 @@ namespace Ninjadini.Neuro.Editor
             secondBar.Add(itemDropdown);
 
             leftBtn = NeuroUiUtils.AddButton(secondBar, "←", () => OnDirectionalBtnClicked(-1));
-            leftBtn.style.minWidth = 40;
+            leftBtn.style.width = 30;
             rightBtn = NeuroUiUtils.AddButton(secondBar, "→", () => OnDirectionalBtnClicked(1));
-            rightBtn.style.minWidth = 40;
+            rightBtn.style.width = 30;
             
             addBtn = NeuroUiUtils.AddButton(secondBar, "＋ Add", OnAddBtnClicked);
-            addBtn.style.minWidth = 60;
+            addBtn.style.width = 70;
 
             var thirdBar = NeuroUiUtils.AddHorizontal(this);
             thirdBar.style.flexShrink = 0f;
@@ -120,10 +124,10 @@ namespace Ninjadini.Neuro.Editor
                 }
             });
             deleteBtn = NeuroUiUtils.AddButton(thirdBar, "✕ Delete", OnDeleteBtnClicked);
-            deleteBtn.style.width = 73;
+            deleteBtn.style.width = 66;
             
             cloneBtn = NeuroUiUtils.AddButton(thirdBar, "❏ Clone", OnCloneBtnClicked);
-            cloneBtn.style.width = 73;
+            cloneBtn.style.width = 70;
 
             reloadPanel = NeuroUiUtils.AddHorizontal(this);
             reloadPanel.style.alignItems = Align.Center;
