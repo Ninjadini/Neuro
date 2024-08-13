@@ -81,6 +81,17 @@ namespace Ninjadini.Neuro
                 return (int)RefId;
             }
         }
+        
+        #if NEURO_STATIC_REFERENCES
+        public T GetValue()
+        {
+            return NeuroReferences.Default?.Get(this);
+        }
+        public static implicit operator T(Reference<T> refId)
+        {
+            return NeuroReferences.Default?.Get(refId);
+        }
+        #endif
 
         public override string ToString()
         {

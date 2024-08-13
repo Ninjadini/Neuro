@@ -8,7 +8,11 @@ namespace Ninjadini.Neuro
 {
     public class NeuroReferences : IReferenceResolver
     {
+#if NEURO_STATIC_REFERENCES
+        public static NeuroReferences Default = new NeuroReferences();
+#else
         public static NeuroReferences Default;
+#endif
         
         Dictionary<Type, INeuroReferenceTable> tables = new Dictionary<Type, INeuroReferenceTable>();
 
