@@ -458,6 +458,19 @@ vistor.Visit(myObjToVisit, new MyCustomVisitor(refs));
         }
     }
 ```
+
+
+### Reserve / Deprecate tags
+```
+public class MyObjectWithOldFields
+{
+    [ReservedNeuroTag(1)]
+    [ReservedNeuroTag(2)]
+    
+    [Neuro(3)] public int MyValue;
+}
+```
+
 ---
 
 ## Goals
