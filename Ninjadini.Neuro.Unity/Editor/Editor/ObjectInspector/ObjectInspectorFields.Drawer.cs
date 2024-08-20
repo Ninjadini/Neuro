@@ -566,7 +566,7 @@ namespace Ninjadini.Toolkit
                         UpdateCall(true);
                     }
                 });
-                addBtn.style.marginLeft = NameFieldWidth + 15;
+                addBtn.style.marginLeft = NameFieldWidth + 28;
                 addBtn.style.position = Position.Absolute;
                 listView.hierarchy.Add(addBtn);
             }
