@@ -17,7 +17,7 @@ namespace Ninjadini.Neuro.Editor
 
         public Action AnyValueChanged;
 
-        IController subController;
+        ICustomNeuroObjectInspectorController neuroController;
         NeuroBytesWriter writer;
         NeuroBytesReader reader;
 
@@ -35,7 +35,7 @@ namespace Ninjadini.Neuro.Editor
 
         public override void Draw(Data drawData)
         {
-            subController = drawData.Controller;
+            neuroController = SharedNeuroController;
             drawData.Controller = this;
             if (reader == null)
             {
@@ -61,18 +61,26 @@ namespace Ninjadini.Neuro.Editor
         bool IController.ShouldDrawField(FieldInfo fieldInfo, object holderObject)
         {
             var isNeuroField = fieldInfo.IsDefined(NeuroAttribute) || NeuroCustomEditorFieldRegistry.IsNameCustomField(holderObject.GetType(), fieldInfo.Name);
-            return isNeuroField &&
-                   (subController?.ShouldDrawField(fieldInfo, holderObject) ?? true);
+            if (isNeuroField)
+            {
+                return neuroController.ShouldDrawField(fieldInfo, holderObject);
+            }
+            return neuroController.ShouldDrawNonNeuroField(fieldInfo, holderObject);
         }
 
         bool IController.ShouldDrawProperty(PropertyInfo propertyInfo, object holderObject)
         {
-            return NeuroCustomEditorFieldRegistry.IsNameCustomField(holderObject.GetType(), propertyInfo.Name) && (subController?.ShouldDrawProperty(propertyInfo, holderObject) ?? true);
+            var isNeuroField = NeuroCustomEditorFieldRegistry.IsNameCustomField(holderObject.GetType(), propertyInfo.Name);
+            if (isNeuroField)
+            {
+                return neuroController.ShouldDrawProperty(propertyInfo, holderObject);
+            }
+            return neuroController.ShouldDrawNonNeuroProperty(propertyInfo, holderObject);
         }
 
         VisualElement IController.CreateCustomHeader(Data data, object value)
         {
-            var custom = subController?.CreateCustomHeader(data, value);
+            var custom = neuroController?.CreateCustomHeader(data, value);
             if (custom != null)
             {
                 return custom;
@@ -87,10 +95,12 @@ namespace Ninjadini.Neuro.Editor
             }
             return null;
         }
+        
+        VisualElement IController.CreateCustomFieldHeader(Data data) => neuroController.CreateCustomFieldHeader(data);
 
         VisualElement IController.CreateCustomDrawer(Data data)
         {
-            var custom = subController?.CreateCustomDrawer(data);
+            var custom = neuroController?.CreateCustomDrawer(data);
             if (custom != null)
             {
                 return custom;
@@ -105,42 +115,40 @@ namespace Ninjadini.Neuro.Editor
             }
             return null;
         }
-        bool IController.CanEdit(Type type, object value) => subController?.CanEdit(type, value) ?? true;
-        bool IController.CanSetToNull(Type type, object value) => subController?.CanSetToNull(type, value) ?? true;
-        bool IController.CanCreateObject(Type type) => subController?.CanCreateObject(type) ?? true;
+        bool IController.CanEdit(Type type, object value) => neuroController?.CanEdit(type, value) ?? true;
+        bool IController.CanSetToNull(Type type, object value)
+        {
+            if (value == drawnObj)
+            {
+                return false;
+            }
+            return neuroController?.CanSetToNull(type, value) ?? true;
+        }
+
+        bool IController.CanCreateObject(Type type) => neuroController?.CanCreateObject(type) ?? true;
 
         Type[] IController.GetPossibleCreationTypesOf(Type type)
         {
-            if (type == typeof(object))
-            {
-                return NeuroGlobalTypes.GetAllRootTypes().ToArray();
-            }
-            var typeIsClass = type.IsClass;
-            // https://stackoverflow.com/questions/857705/get-all-derived-types-of-a-type
-            return (from domainAssembly in AppDomain.CurrentDomain.GetAssemblies()
-                where !domainAssembly.IsDynamic && domainAssembly.IsDefined(typeof(NeuroAssemblyAttribute))
-                from assemblyType in domainAssembly.GetExportedTypes()
-                where assemblyType.IsClass 
-                      && (assemblyType == type || (typeIsClass ? assemblyType.IsSubclassOf(type) : type.IsAssignableFrom(assemblyType)))
-                      && NeuroSyncTypes.CheckIfTypeRegisteredUsingReflection(assemblyType)
-                      && !assemblyType.IsDefined(typeof(HideInInspector))
-                select assemblyType).ToArray();
+            return neuroController.GetPossibleCreationTypesOf(type) ?? GetPossibleCreationTypesOf(type);
         }
 
-        object IController.SwitchObjectType(object originalObject, Type newType)
+        void IController.SwitchObjectType(object originalObject, Type newType, ref object newObject)
         {
             if (originalObject != null)
             {
                 try
                 {
-                    return SwitchObjectTypeWhileKeepingValues(originalObject, newType, References);
+                    neuroController.SwitchObjectType(originalObject, newType, ref newObject);
+                    if (newObject == null)
+                    {
+                        newObject = SwitchObjectTypeWhileKeepingValues(originalObject, newType, References);
+                    }
                 }
                 catch (Exception e)
                 {
                     Debug.LogException(e);
                 }
             }
-            return null;
         }
 
         void IController.OnValueChanged(object holderObject)
@@ -160,13 +168,36 @@ namespace Ninjadini.Neuro.Editor
             }
 
             AnyValueChanged?.Invoke();
-            subController?.OnValueChanged(holderObject);
+            neuroController.OnValueChanged(holderObject);
+        }
+        
+        bool IController.ShouldAutoExpand(Type type) => neuroController.ShouldAutoExpand(type);
+        
+        void IController.CreateObject(Type type, VisualElement fromElement, Action<object> resultCallback)
+        {
+            neuroController.CreateObject(type, fromElement, resultCallback);
         }
 
         public static void ShowRefIdChangedError(uint idBefore, uint idAfter)
         {
-            EditorUtility.DisplayDialog("",
-                $"RefId was changed from {idBefore} to {idAfter} but this is not allowed (yet).", "OK");
+            EditorUtility.DisplayDialog("", $"RefId was changed from {idBefore} to {idAfter} but this is not allowed (yet).", "OK");
+        }
+
+        public static Type[] GetPossibleCreationTypesOf(Type type)
+        {
+            if (type == typeof(object))
+            {
+                return NeuroGlobalTypes.GetAllRootTypes().ToArray();
+            }
+            var typeIsClass = type.IsClass;
+            return (from domainAssembly in AppDomain.CurrentDomain.GetAssemblies()
+                where !domainAssembly.IsDynamic && domainAssembly.IsDefined(typeof(NeuroAssemblyAttribute))
+                from assemblyType in domainAssembly.GetExportedTypes()
+                where assemblyType.IsClass 
+                      && (assemblyType == type || (typeIsClass ? assemblyType.IsSubclassOf(type) : type.IsAssignableFrom(assemblyType)))
+                      && NeuroSyncTypes.CheckIfTypeRegisteredUsingReflection(assemblyType)
+                      && !assemblyType.IsDefined(typeof(HideInInspector))
+                select assemblyType).ToArray();
         }
 
         public static object SwitchObjectTypeWhileKeepingValues(object originalObject, Type newType, NeuroReferences references = null)
@@ -208,6 +239,29 @@ namespace Ninjadini.Neuro.Editor
                 }
                 return _customProviders;
             }
+        }
+
+        static ICustomNeuroObjectInspectorController _sharedNeuroController;
+        public static ICustomNeuroObjectInspectorController SharedNeuroController
+        {
+            get
+            {
+                if(_sharedNeuroController == null)
+                {
+                    var allControllers = NeuroEditorUtils.CreateFromScannableTypes<ICustomNeuroObjectInspectorController>();
+                    _sharedNeuroController = allControllers.OrderByDescending(c => c.Priority).FirstOrDefault();
+                    if (_sharedNeuroController == null)
+                    {
+                        _sharedNeuroController = new BasicNeuroController();
+                    }
+                }
+                return _sharedNeuroController;
+            }
+        }
+        
+        class BasicNeuroController : ICustomNeuroObjectInspectorController
+        {
+            
         }
     }
 }

@@ -17,18 +17,22 @@ namespace Ninjadini.Toolkit
             bool CanSetToNull(Type type, object value) => true;
             bool CanCreateObject(Type type) => true;
             
-            VisualElement Root => null;
+            /// Custom header of class types
             VisualElement CreateCustomHeader(Data data, object value) => null;
+            
+            /// Custom header of given fields
             VisualElement CreateCustomFieldHeader(Data data) => null;
+            
             VisualElement CreateCustomDrawer(Data data) => null;
 
             Type[] GetPossibleCreationTypesOf(Type type) => null;
+            
             void CreateObject(Type type, VisualElement fromElement, Action<object> resultCallback)
             {
                 resultCallback(null);
             }
 
-            object SwitchObjectType(object originalObject, Type newType) => null;
+            void SwitchObjectType(object originalObject, Type newType, ref object newObject){ }
 
             void OnValueChanged(object holderObject) {}
         }

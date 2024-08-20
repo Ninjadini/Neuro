@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using Ninjadini.Toolkit;
 using UnityEditor;
@@ -8,7 +10,7 @@ using UnityEngine.UIElements;
 
 namespace Ninjadini.Neuro.Editor
 {
-    public class NeuroEditorItemElement : VisualElement, ObjectInspector.IController
+    public class NeuroEditorItemElement : VisualElement
     {
         UnsignedIntegerField refIdTxt;
         TextField refNameTxt;
@@ -87,13 +89,8 @@ namespace Ninjadini.Neuro.Editor
             }
 
             refLinksElement.Draw(dataProvider, type, value);
-            objectInspector.Draw(type, value, OnValueSet, this);
+            objectInspector.Draw(type, value, OnValueSet);
             UpdateFilePath();
-        }
-
-        bool ObjectInspector.IController.CanSetToNull(Type type, object value)
-        {
-            return value != dataFile.Value;
         }
 
         void OnValueSet(object newValue)

@@ -540,11 +540,14 @@ namespace Ninjadini.Toolkit
             };
             
             var existsToggle = NeuroUiUtils.AddToggle(null, "", value != null);
-            existsToggle.style.marginLeft = NameFieldWidth - 5;
-            existsToggle.style.marginTop = 3;
-            existsToggle.style.position = Position.Absolute;
-            existsToggle.SetEnabled(data.setter != null && canEdit);
-            listView.hierarchy.Add(existsToggle);
+            if (data.setter == null || !canEdit || data.Controller.CanSetToNull(data.type, value))
+            {
+                existsToggle.style.marginLeft = NameFieldWidth - 5;
+                existsToggle.style.marginTop = 3;
+                existsToggle.style.position = Position.Absolute;
+                existsToggle.SetEnabled(data.setter != null && canEdit);
+                listView.hierarchy.Add(existsToggle);
+            }
 
             Button addBtn = null;
             if (data.setter != null && canEdit)

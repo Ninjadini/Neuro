@@ -400,7 +400,8 @@ namespace Ninjadini.Toolkit
         {
             var allClasses = data.Controller?.GetPossibleCreationTypesOf(data.type) ?? FindAllTypesAssignableTo(data.type);
             var newType = allClasses.FirstOrDefault(t => t.Name == evt.newValue);
-            var newObj = data.Controller?.SwitchObjectType(data.getter(), newType);
+            object newObj = null;
+            data.Controller?.SwitchObjectType(data.getter(), newType, ref newObj);
             if (newObj != null)
             {
                 data.setter(newObj);
