@@ -3,7 +3,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine.UIElements;
 
-namespace Ninjadini.Toolkit
+namespace Ninjadini.Neuro.Editor
 {
     public partial class ObjectInspector
     {

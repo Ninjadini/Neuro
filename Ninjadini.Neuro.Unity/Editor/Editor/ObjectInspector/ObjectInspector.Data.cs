@@ -1,7 +1,7 @@
 using System;
 using System.Reflection;
 
-namespace Ninjadini.Toolkit
+namespace Ninjadini.Neuro.Editor
 {
     public partial class ObjectInspector
     {

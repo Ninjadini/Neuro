@@ -6,7 +6,7 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Ninjadini.Toolkit
+namespace Ninjadini.Neuro.Editor
 {
     public class SearchablePopupField<TValueChoice> : PopupField<TValueChoice>
     {

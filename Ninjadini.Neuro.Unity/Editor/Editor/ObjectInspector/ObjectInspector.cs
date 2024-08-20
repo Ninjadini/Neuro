@@ -2,11 +2,12 @@ using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using Ninjadini.Toolkit;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Ninjadini.Toolkit
+namespace Ninjadini.Neuro.Editor
 {
     public partial class ObjectInspector : VisualElement
     {

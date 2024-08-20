@@ -2,12 +2,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Ninjadini.Toolkit;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Ninjadini.Toolkit
+namespace Ninjadini.Neuro.Editor
 {
     public partial class ObjectInspectorFields
     {
