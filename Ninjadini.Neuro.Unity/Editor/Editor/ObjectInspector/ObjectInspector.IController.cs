@@ -29,6 +29,8 @@ namespace Ninjadini.Neuro.Editor
             VisualElement CreateCustomFieldHeader(Data data) => null;
             
             VisualElement CreateCustomDrawer(Data data) => null;
+            
+            void ApplyStyle(Data data, VisualElement element) { }
 
             Type[] GetPossibleCreationTypesOf(Type type) => null;
             

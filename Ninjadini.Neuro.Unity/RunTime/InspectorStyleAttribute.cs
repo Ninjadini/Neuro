@@ -1,18 +1,17 @@
 using System;
-using UnityEngine;
 
 namespace Ninjadini.Neuro
 {
     public class InspectorStyleAttribute : Attribute
     {
-        public int? Space;
-        public Color? BackgroundColor;
-        public bool? Horizontal;
+        public uint SpaceBefore;
+        public uint SpaceAfter;
+        public uint Horizontal;
         
-        public InspectorStyleAttribute(int? space = null, Color? backgroundColor = default, bool? horizontal = default)
+        public InspectorStyleAttribute(uint spaceBefore = 0,uint spaceAfter = 0, uint horizontal = 0)
         {
-            Space = space;
-            BackgroundColor = backgroundColor;
+            SpaceBefore = spaceBefore;
+            SpaceAfter = spaceAfter;
             Horizontal = horizontal;
         }
     }

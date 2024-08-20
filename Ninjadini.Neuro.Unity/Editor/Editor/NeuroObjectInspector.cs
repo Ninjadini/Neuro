@@ -153,6 +153,11 @@ namespace Ninjadini.Neuro.Editor
             }
         }
 
+        void IController.ApplyStyle(Data data, VisualElement element)
+        {
+            neuroController.ApplyStyle(data, element);
+        }
+
         void IController.OnValueChanged(object holderObject)
         {
             if (drawnObj is IReferencable referencable)

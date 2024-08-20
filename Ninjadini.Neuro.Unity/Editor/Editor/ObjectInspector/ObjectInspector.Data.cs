@@ -15,6 +15,11 @@ namespace Ninjadini.Neuro.Editor
             public MemberInfo MemberInfo;
             public string path;
 
+            public object GetValue()
+            {
+                return getter?.Invoke();
+            }
+
             public void SetValue(object value)
             {
                 setter?.Invoke(value);

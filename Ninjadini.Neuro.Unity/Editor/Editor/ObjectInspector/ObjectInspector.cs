@@ -201,6 +201,7 @@ namespace Ninjadini.Neuro.Editor
             DrawPolymorphicSelect(obj);
             
             ObjectInspectorFields.ApplyTooltip(this, data.MemberInfo, obj?.GetType());
+            ApplyStyles(data, this);
 
             var header = controller?.CreateCustomHeader(data, obj);
             if (header != null)
@@ -234,6 +235,7 @@ namespace Ninjadini.Neuro.Editor
                 {
                     element.userData = fieldInfo;
                     ObjectInspectorFields.ApplyTooltip(element, fieldInfo, fieldInfo.FieldType);
+                    ApplyStyles(fieldData, element);
                     container.Add(element);
                 }
             }
@@ -276,10 +278,25 @@ namespace Ninjadini.Neuro.Editor
                     {
                         element.userData = propInfo;
                         ObjectInspectorFields.ApplyTooltip(element, propInfo, propInfo.PropertyType);
+                        ApplyStyles(fieldData, element);
                         container.Add(element);
                     }
                 }
             }
+        }
+
+        static void ApplyStyles(Data data, VisualElement element)
+        {
+            var inspectorStyle = ObjectInspectorFields.GetVisualStyle(data.MemberInfo);
+            if (inspectorStyle?.SpaceBefore > 0)
+            {
+                element.style.marginTop = inspectorStyle.SpaceBefore;
+            }
+            if (inspectorStyle?.SpaceAfter > 0)
+            {
+                element.style.marginTop = inspectorStyle.SpaceAfter;
+            }
+            data.Controller?.ApplyStyle(data, element);
         }
 
         public static Data CreateDataForField(Data data, object obj, FieldInfo fieldInfo)

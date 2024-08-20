@@ -63,6 +63,15 @@ namespace Ninjadini.Neuro.Editor
             }
         }
 
+        public static InspectorStyleAttribute GetVisualStyle(MemberInfo memberInfo)
+        {
+            if (memberInfo != null && memberInfo.IsDefined(typeof(InspectorStyleAttribute), true))
+            {
+                return memberInfo.GetCustomAttribute<InspectorStyleAttribute>();
+            }
+            return null;
+        }
+        
         static VisualElement TryPrimitiveTypes(in ObjectInspector.Data data)
         {
             var type = data.type;
