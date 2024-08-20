@@ -164,6 +164,10 @@ namespace Ninjadini.Toolkit
             });
             existsToggle.style.marginTop = 3;
             existsToggle.SetEnabled(data.setter != null && canEdit);
+            if (data.setter != null && canEdit && (!data.Controller?.CanSetToNull(data.type, value) ?? false))
+            {
+                existsToggle.RemoveFromHierarchy();
+            }
 
             var field = new TextField();
             field.style.marginRight = 0;
@@ -542,7 +546,7 @@ namespace Ninjadini.Toolkit
             var existsToggle = NeuroUiUtils.AddToggle(null, "", value != null);
             if (data.setter == null || !canEdit || data.Controller.CanSetToNull(data.type, value))
             {
-                existsToggle.style.marginLeft = NameFieldWidth - 5;
+                existsToggle.style.marginLeft = NameFieldWidth + 8;
                 existsToggle.style.marginTop = 3;
                 existsToggle.style.position = Position.Absolute;
                 existsToggle.SetEnabled(data.setter != null && canEdit);

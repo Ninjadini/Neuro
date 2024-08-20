@@ -9,7 +9,9 @@ namespace Ninjadini.Toolkit
     {
         public interface IController
         {
-            bool ShouldAutoExpand(Type type) => type.IsValueType;
+            bool ShouldAddFoldOut(Data data, object value) => true;
+            
+            bool ShouldAutoExpandFoldout(Type type) => type.IsValueType;
 
             string GetDisplayName(Data data) => data.name;
             

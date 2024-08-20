@@ -173,7 +173,9 @@ namespace Ninjadini.Neuro.Editor
             neuroController.OnValueChanged(holderObject);
         }
         
-        bool IController.ShouldAutoExpand(Type type) => neuroController.ShouldAutoExpand(type);
+        bool IController.ShouldAddFoldOut(Data data, object value) => value != drawnObj && neuroController.ShouldAddFoldOut(data, value);
+        
+        bool IController.ShouldAutoExpandFoldout(Type type) => neuroController.ShouldAutoExpandFoldout(type);
         
         void IController.CreateObject(Type type, VisualElement fromElement, Action<object> resultCallback)
         {

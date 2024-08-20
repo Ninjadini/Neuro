@@ -79,16 +79,17 @@ namespace Ninjadini.Toolkit
             existsToggle = null;
             foldout = null;
             var obj = data.getter();
-            if (data.setter != null && (data.Controller?.CanSetToNull(data.type, obj) ?? true))
+            if (data.setter != null && (data.Controller?.ShouldAddFoldOut(data, obj) ?? true))
             {
                 foldout = new Foldout();
                 if (!string.IsNullOrEmpty(data.path))
                 {
                     foldout.viewDataKey = data.path;
                 }
+                foldout.hierarchy[0].style.marginLeft = 0f;
                 foldout.style.flexGrow = 1f;
                 foldout.text = data.GetDisplayName();
-                openFoldout ??= data.Controller?.ShouldAutoExpand(data.type) ?? false;
+                openFoldout ??= data.Controller?.ShouldAutoExpandFoldout(data.type) ?? false;
                 foldout.SetValueWithoutNotify(openFoldout.Value);
                 foldout.RegisterValueChangedCallback(delegate(ChangeEvent<bool> evt)
                 {
@@ -184,10 +185,14 @@ namespace Ninjadini.Toolkit
                 existsToggle.SetValueWithoutNotify(obj != null);
                 if (obj != null)
                 {
-                    existsToggle.SetEnabled(canEdit && data.Controller.CanSetToNull(data.type, obj));
+                    existsToggle.style.display = canEdit && data.Controller.CanSetToNull(data.type, obj)
+                        ? DisplayStyle.Flex
+                        : DisplayStyle.None;
+                    existsToggle.SetEnabled(true);
                 }
                 else
                 {
+                    existsToggle.style.display = DisplayStyle.Flex;
                     existsToggle.SetEnabled(canEdit && data.Controller.CanCreateObject(data.type));
                 }
             }
