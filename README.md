@@ -163,12 +163,14 @@ public class PlayerCharacterEntity : CharacterEntity
 ### Polymorphic types with interface as root
 ```
 [Neuro(0)] // Because you will not have any fields, this is how you tell neuro that this is the root
+  // for interfaces, the number can be zero, but if you change it to class later, it will break back-compact
 public interface IBaseEntity
 {
 }
 
-[Neuro(0)] // Because you will not have any fields, this is how you tell neuro that this is the root
-public interface BaseEntity
+[Neuro(1)] // Because you will not have any fields, this is how you tell neuro that this is the root
+  // for classes it needs to be a non-zero number.
+public class BaseEntity
 {
 // A class with no neuro fields
 }
@@ -221,6 +223,15 @@ var jsonString = NeuroJsonWriter.Shared.Write(data);
 // Read JSON string to neuro object
 var myData = NeuroJsonReader.Shared.Read<MyData>(jsonString);
 ```
+> [!TIP]
+> JSON output will print references and enum in this format `"myItem": "2:mySecondItemName"`
+> 
+> This looks like you can't change the ref name of items or it will unlick the values, but that is not the case
+> 
+> The only thing that matters is the number. You can just have `"myItem": 2` and it'll work
+> 
+> The ref name there is just so that it is easy for you to figue out what the item is.
+
 
 ### Custom reference drop down display
 This lets you customise what the item looks in the references drop down list - to give more info than just default ref id and ref name.
