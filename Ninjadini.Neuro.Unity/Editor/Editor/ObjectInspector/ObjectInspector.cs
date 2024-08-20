@@ -87,7 +87,7 @@ namespace Ninjadini.Toolkit
                     foldout.viewDataKey = data.path;
                 }
                 foldout.style.flexGrow = 1f;
-                foldout.text = data.name;
+                foldout.text = data.GetDisplayName();
                 openFoldout ??= data.Controller?.ShouldAutoExpand(data.type) ?? false;
                 foldout.SetValueWithoutNotify(openFoldout.Value);
                 foldout.RegisterValueChangedCallback(delegate(ChangeEvent<bool> evt)

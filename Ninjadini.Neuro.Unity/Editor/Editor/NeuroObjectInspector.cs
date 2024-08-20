@@ -58,6 +58,8 @@ namespace Ninjadini.Neuro.Editor
             }
         }
 
+        string IController.GetDisplayName(Data data) => neuroController.GetDisplayName(data);
+
         bool IController.ShouldDrawField(FieldInfo fieldInfo, object holderObject)
         {
             var isNeuroField = fieldInfo.IsDefined(NeuroAttribute) || NeuroCustomEditorFieldRegistry.IsNameCustomField(holderObject.GetType(), fieldInfo.Name);

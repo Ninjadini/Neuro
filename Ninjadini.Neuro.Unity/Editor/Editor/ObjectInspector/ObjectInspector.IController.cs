@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using UnityEditor;
 using UnityEngine.UIElements;
 
 namespace Ninjadini.Toolkit
@@ -9,6 +10,8 @@ namespace Ninjadini.Toolkit
         public interface IController
         {
             bool ShouldAutoExpand(Type type) => type.IsValueType;
+
+            string GetDisplayName(Data data) => data.name;
             
             bool ShouldDrawField(FieldInfo fieldInfo, object holderObject) => true;
             bool ShouldDrawProperty(PropertyInfo propertyInfo, object holderObject) => false;

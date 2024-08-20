@@ -20,6 +20,8 @@ namespace Ninjadini.Toolkit
                 setter?.Invoke(value);
                 Controller?.OnValueChanged(value);
             }
+
+            public string GetDisplayName() => Controller?.GetDisplayName(this) ?? name;
         }
     }
 }

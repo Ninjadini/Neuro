@@ -31,7 +31,7 @@ namespace Ninjadini.Toolkit
             horizontal.style.flexDirection = new StyleEnum<FlexDirection>(FlexDirection.Row);
             horizontal.AddToClassList(BaseField<TextField>.ussClassName);
 
-            AddFieldNameLabel(horizontal, data.name);
+            AddFieldNameLabel(horizontal, data.GetDisplayName());
 
             var existsToggle = NeuroUiUtils.AddToggle(horizontal, "", value != null);
             existsToggle.style.marginTop = 3;
@@ -128,7 +128,7 @@ namespace Ninjadini.Toolkit
             horizontal.style.flexDirection = new StyleEnum<FlexDirection>(FlexDirection.Row);
             horizontal.AddToClassList(BaseField<TextField>.ussClassName);
 
-            AddFieldNameLabel(horizontal, data.name);
+            AddFieldNameLabel(horizontal, data.GetDisplayName());
 
             var existsToggle = NeuroUiUtils.AddToggle(horizontal, "", value != null);
             existsToggle.RegisterValueChangedCallback((evt) =>
@@ -203,7 +203,7 @@ namespace Ninjadini.Toolkit
 
             var canEdit = data.Controller.CanEdit(data.type, value);
             
-            field.label = data.name;
+            field.label = data.GetDisplayName();
             field.style.flexGrow = 1;
             if (field is TextInputBaseField<T> textInputBaseField)
             {
@@ -242,7 +242,7 @@ namespace Ninjadini.Toolkit
             var horizontal = new VisualElement();
             horizontal.style.flexDirection = new StyleEnum<FlexDirection>(FlexDirection.Row);
 
-            AddFieldNameLabel(horizontal, data.name);
+            AddFieldNameLabel(horizontal, data.GetDisplayName());
             
             var fields = new List<IntegerField>();
             
@@ -344,7 +344,7 @@ namespace Ninjadini.Toolkit
             var horizontal = new VisualElement();
             horizontal.style.flexDirection = new StyleEnum<FlexDirection>(FlexDirection.Row);
 
-            AddFieldNameLabel(horizontal, data.name);
+            AddFieldNameLabel(horizontal, data.GetDisplayName());
             
             var fields = new List<IntegerField>();
             
@@ -421,7 +421,7 @@ namespace Ninjadini.Toolkit
             horizontal.style.flexDirection = new StyleEnum<FlexDirection>(FlexDirection.Row);
             horizontal.AddToClassList(BaseField<TextField>.ussClassName);
 
-            AddFieldNameLabel(horizontal, data.name);
+            AddFieldNameLabel(horizontal, data.GetDisplayName());
             
             var field = new TextField();
             field.style.marginRight = 0;
@@ -466,7 +466,7 @@ namespace Ninjadini.Toolkit
 
             var foldout = new Foldout();
             foldout.style.flexGrow = 1f;
-            foldout.text = data.name;
+            foldout.text = data.GetDisplayName();
             foldout.value = false;
             if (!string.IsNullOrEmpty(data.path))
             {
@@ -530,7 +530,7 @@ namespace Ninjadini.Toolkit
             listView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
             listView.showAddRemoveFooter = canEdit;
             listView.showFoldoutHeader = true;
-            listView.headerTitle = string.IsNullOrEmpty(data.name) ? data.type.Name : data.name;
+            listView.headerTitle = string.IsNullOrEmpty(data.name) ? data.type.Name : data.GetDisplayName();
             listView.reorderMode = ListViewReorderMode.Animated;
             listView.selectionType = SelectionType.Single;
             listView.itemIndexChanged += delegate(int i, int i1)
