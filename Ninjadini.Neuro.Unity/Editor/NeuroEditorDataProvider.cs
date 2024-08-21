@@ -43,8 +43,7 @@ namespace Ninjadini.Neuro.Editor
         NeuroJsonReader jsonReader;
         NeuroJsonWriter jsonWriter;
         readonly List<FileSystemWatcher> fileSystemWatchers = new ();
-        List<string> ignoreFileChanges = new List<string>();
-        DateTime ignoreFileChangesExpireAt;
+        Dictionary<string, DateTime> ignoreFileChangesExpiry = new Dictionary<string, DateTime>();
 
         bool loadedFromProject;
         public readonly NeuroReferences References;
@@ -76,10 +75,6 @@ namespace Ninjadini.Neuro.Editor
 
         void LoadFromProject()
         {
-            if (!loadedFromProject)
-            {
-                EditorApplication.update += OnEditorUpdate;
-            }
             HadProblemsLoading = false;
             loadedFromProject = true;
             NeuroSyncTypes.TryRegisterAllAssemblies();
@@ -95,14 +90,6 @@ namespace Ninjadini.Neuro.Editor
                 }
             }
             LoadDirectories(dataPaths);
-        }
-
-        void OnEditorUpdate()
-        {
-            if (ignoreFileChanges.Count > 0 && DateTime.UtcNow >= ignoreFileChangesExpireAt)
-            {
-                ignoreFileChanges.Clear();
-            }
         }
 
         void LoadDirectories(List<string> dataPaths)
@@ -195,9 +182,10 @@ namespace Ninjadini.Neuro.Editor
             fileSystemWatchers.Add(watcher);
         }
         
-        void OnFileChanged(object sender, FileSystemEventArgs fileArgs) 
+        void OnFileChanged(object sender, FileSystemEventArgs fileArgs)
         {
-            if (ignoreFileChanges.Contains(fileArgs.FullPath))
+            var fullPath = fileArgs.FullPath;
+            if(ignoreFileChangesExpiry.TryGetValue(fullPath, out var ignoreUntil) && ignoreUntil > DateTime.UtcNow)
             {
                 return;
             }
@@ -400,11 +388,15 @@ namespace Ninjadini.Neuro.Editor
 
         void AddTempIgnoreFile(string filePath)
         {
+            var timeNow = DateTime.UtcNow;
             var fullPath = Path.GetFullPath(filePath);
-            if (!ignoreFileChanges.Contains(fullPath))
+            ignoreFileChangesExpiry[fullPath] = timeNow.AddMilliseconds(1000);
+
+            if (ignoreFileChangesExpiry.Count > 100)
             {
-                ignoreFileChanges.Add(fullPath);
-                ignoreFileChangesExpireAt = DateTime.UtcNow.AddMilliseconds(1000);
+                ignoreFileChangesExpiry = ignoreFileChangesExpiry
+                    .Where(kv => kv.Value > timeNow)
+                    .ToDictionary(kv => kv.Key, kv => kv.Value);
             }
         }
         

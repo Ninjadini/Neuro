@@ -111,8 +111,8 @@ namespace Ninjadini.Neuro.Editor
 
         void UpdateFilePath()
         {
-            refIdTxt.value = dataFile.RefId;
-            refNameTxt.value = dataFile.RefName;
+            refIdTxt.SetValueWithoutNotify(dataFile.RefId);
+            refNameTxt.SetValueWithoutNotify(dataFile.RefName);
             var enable = !typeof(ISingletonReferencable).IsAssignableFrom(dataFile.RootType);
             refIdTxt.SetEnabled(enable);
             refNameTxt.SetEnabled(enable);
