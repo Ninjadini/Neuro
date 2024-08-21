@@ -65,8 +65,7 @@ namespace Ninjadini.Neuro.Editor
                     Action performChange = () =>
                     {
                         var newValue = evt.newValue ? Activator.CreateInstance(elementType) : null;
-                        data.setter(newValue);
-                        data.Controller.OnValueChanged(newValue);
+                        data.SetValue(newValue);
                         UpdateCall(newValue != null);
                         if (subElement is ObjectInspector objectInspector)
                         {
@@ -141,8 +140,7 @@ namespace Ninjadini.Neuro.Editor
                 Action performChange = () =>
                 {
                     var vv = evt.newValue ? "" : null;
-                    data.setter?.Invoke(vv);
-                    data.Controller.OnValueChanged(vv);
+                    data.SetValue(vv);
                 };
                 if (!evt.newValue && evt.previousValue)
                 {
@@ -183,8 +181,7 @@ namespace Ninjadini.Neuro.Editor
                 {
                     value = evt.newValue;
                     existsToggle.SetValueWithoutNotify(value != null);
-                    data.setter?.Invoke(evt.newValue);
-                    data.Controller.OnValueChanged(evt.newValue);
+                    data.SetValue(evt.newValue);
                 }
             });
             field.SetEnabled(data.setter != null && canEdit);
@@ -221,8 +218,7 @@ namespace Ninjadini.Neuro.Editor
                 if (evt.currentTarget == evt.target)
                 {
                     value = fromFieldEditor != null ? fromFieldEditor(evt.newValue) : evt.newValue;
-                    data.setter?.Invoke(value);
-                    data.Controller.OnValueChanged(value);
+                    data.SetValue(value);
                 }
             });
             field.SetEnabled(data.setter != null && canEdit);
@@ -313,7 +309,7 @@ namespace Ninjadini.Neuro.Editor
                     Math.Clamp(minuteField.value, 0, 59),
                     Math.Clamp(secondField.value, 0, 59),
                     0, (DateTimeKind)kindField.value);
-                data.setter(value);
+                data.SetValue(value);
                 UpdateFields();
             }
             void UpdateFields()
@@ -439,8 +435,7 @@ namespace Ninjadini.Neuro.Editor
                 {
                     if (Guid.TryParse(evt.newValue, out var newValue))
                     {
-                        data.setter?.Invoke(newValue);
-                        data.Controller.OnValueChanged(newValue);
+                        data.SetValue(newValue);
                     }
                     else
                     {
@@ -504,8 +499,7 @@ namespace Ninjadini.Neuro.Editor
                 if (evt.currentTarget == evt.target)
                 {
                     value = evt.newValue;
-                    data.setter(value);
-                    data.Controller.OnValueChanged(value);
+                    data.SetValue(value);
                 }
             });
             field.SetEnabled(data.setter != null && canEdit);
@@ -540,8 +534,7 @@ namespace Ninjadini.Neuro.Editor
             listView.selectionType = SelectionType.Single;
             listView.itemIndexChanged += delegate(int i, int i1)
             {
-                data.setter(value);
-                data.Controller.OnValueChanged(value);
+                data.SetValue(value);
             };
             
             var existsToggle = NeuroUiUtils.AddToggle(null, "", value != null);
@@ -562,8 +555,7 @@ namespace Ninjadini.Neuro.Editor
                     if (data.getter() is not IList list || list.Count == 0)
                     {
                         var vv = CreateListType(data, 1);
-                        data.setter(vv);
-                        data.Controller.OnValueChanged(vv);
+                        data.SetValue(vv);
                         UpdateCall(true);
                     }
                 });
@@ -597,8 +589,7 @@ namespace Ninjadini.Neuro.Editor
                     Action performChange = () =>
                     {
                         var vv = evt.newValue ? CreateListType(data, 0) : null;
-                        data.setter(vv);
-                        data.Controller.OnValueChanged(vv);
+                        data.SetValue(vv);
                         UpdateCall(true);
                     };
                     if (!evt.newValue && evt.previousValue)
@@ -633,7 +624,7 @@ namespace Ninjadini.Neuro.Editor
                 dataCopy.setter = (v) =>
                 {
                     value[index] = v;
-                    data.Controller.OnValueChanged(value);
+                    //data.Controller.OnValueChanged(value);
                 };
                 dataCopy.path = data.path + " > " + index; 
                 element.Clear();

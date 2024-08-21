@@ -42,7 +42,7 @@ namespace Ninjadini.Neuro.Editor
                 {
                     obj = v;
                     setter?.Invoke(v);
-                    controller.OnValueChanged(obj);
+                    //controller.OnValueChanged(obj);
                 } : null,
                 Controller = controller,
                 path = foldOutKey
@@ -135,8 +135,7 @@ namespace Ninjadini.Neuro.Editor
                 {
                     if (obj != null)
                     {
-                        data.setter(obj);
-                        data.Controller.OnValueChanged(obj);
+                        data.SetValue(obj);
                         foldout.value = true;
                     }
                     else
@@ -151,8 +150,7 @@ namespace Ninjadini.Neuro.Editor
                 {
                     if (confirmed)
                     {
-                        data.setter(null);
-                        data.Controller.OnValueChanged(null);
+                        data.SetValue(null);
                         foldout.value = false;
                     }
                     else
@@ -264,8 +262,7 @@ namespace Ninjadini.Neuro.Editor
                             ? (v) =>
                             {
                                 propInfo.SetValue(obj, v);
-                                data.setter?.Invoke(obj);
-                                data.Controller.OnValueChanged(obj);
+                                data.SetValue(obj);
                             }
                             : null,
                         Controller = data.Controller,
@@ -314,7 +311,7 @@ namespace Ninjadini.Neuro.Editor
                     {
                         data.setter?.Invoke(obj);
                     }
-                    data.Controller.OnValueChanged(obj);
+                    //data.Controller.OnValueChanged(obj);
                 },
                 Controller = data.Controller,
                 MemberInfo = fieldInfo,
