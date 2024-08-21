@@ -30,6 +30,17 @@ public class UberTestObject
     [Neuro(301)] public TestEnum1? NullableEnum;
     [Neuro(302)] public DateTime? NullableDate;
     [Neuro(303)] public TestStruct? NullableStr;
+
+    public void PopulateValues(Random random = null)
+    {
+        random ??= new Random();
+        
+        Id = random.Next();
+        Float = random.NextSingle();
+        Name = "String:" + random.Next();
+        Date = new DateTime(Math.Max(DateTime.MinValue.Ticks, Math.Min(random.NextInt64(), DateTime.MaxValue.Ticks)));
+        // ok I should fill in more values after this.
+    }
 }
 
 public partial class UberTestClassWithJustLastItem

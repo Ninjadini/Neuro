@@ -19,14 +19,14 @@ namespace Ninjadini.Neuro
 
         public ReaderOptions Options => options;
 
-        public T Read<T>( in BytesChunk bytesChunk,  in ReaderOptions opts = default)
+        public T Read<T>(in BytesChunk bytesChunk, in ReaderOptions opts = default)
         {
             var result = default(T);
             Read(bytesChunk, ref result, opts);
             return result;
         }
 
-        public void Read<T>( in BytesChunk bytesChunk, ref T result,  in ReaderOptions opts = default)
+        public void Read<T>(in BytesChunk bytesChunk, ref T result,  in ReaderOptions opts = default)
         {
             if (typeof(T) == typeof(object))
             {

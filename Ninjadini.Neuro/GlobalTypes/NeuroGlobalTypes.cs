@@ -114,6 +114,19 @@ namespace Ninjadini.Neuro.Sync
             throw new Exception($"{type.FullName} is not registered to {nameof(NeuroGlobalTypes)}");
         }
 
+        public static bool IsPossiblyGlobalType<T>()
+        {
+            return typeof(T) == typeof(object) || NeuroSyncTypes.IsEmpty<T>();
+        }
+
+        public static void Sync(INeuroSync neuro, ref object obj)
+        {
+            var type = obj.GetType();
+            var globalId = GetTypeIdOrThrow(type, out _);
+            var subTag = GetSubTypeTag(type);
+            Sync(globalId, neuro, subTag, ref obj);
+        }
+
         public static void Sync(uint typeID, INeuroSync neuro, uint tag, ref object value)
         {
             if (syncsById.TryGetValue(typeID, out var del))

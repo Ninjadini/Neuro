@@ -379,5 +379,15 @@ namespace Ninjadini.Neuro
             lastKey = key;
             proto.Write(newKey << NeuroConstants.HeaderShift | type);
         }
+
+        /// Clone the object by serializing to bytes and back out to a new object.
+        /// If writer and read params are null, the static shared instances are used (thread static).
+        public static T Clone<T>(T value, NeuroBytesWriter writer = null, NeuroBytesReader reader = null)
+        {
+            writer ??= Shared;
+            reader ??= NeuroBytesReader.Shared;
+            writer.Write(value);
+            return reader.Read<T>(writer.GetCurrentBytesChunk(), reader.Options);
+        }
     }
 }

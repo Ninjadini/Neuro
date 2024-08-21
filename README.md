@@ -215,6 +215,11 @@ var bytes = NeuroBytesWriter.Shared.Write(myData).ToArray();
 var myReadData = NeuroBytesReader.Shared.Read<MyData>(bytes);
 ```
 
+### Clone neuro data via binary serialization
+```
+var copiedObject = NeuroBytesWriter.Clone(originalObject);
+```
+
 ### Read write JSON data
 ```
 // Write a neuro object to JSON 
@@ -264,7 +269,12 @@ public class AnotherReferencableObject : Referencable
     [ToolTip("Tooltip for this particular field")]
     [Neuro(1)] public string Name;
     
-    [Header("A foldout header")]
+    
+    [Header("A header")] // just like in unity
+    [Neuro(2)] public string Value1;
+    [Neuro(3)] public string Value2;
+    
+    [Header("> A header with fold out")] // < if you start the header text with "> ", it'll do a fold out
     [Neuro(2)] public string Value1;
     [Neuro(3)] public string Value2;
 }

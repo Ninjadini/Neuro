@@ -28,13 +28,10 @@ namespace Ninjadini.Neuro
             try
             {
                 visitor.BeginVisit(ref obj, "", null);
-                if (typeof(T) == typeof(object) || NeuroSyncTypes<T>.Delegate == null)
+                if (NeuroGlobalTypes.IsPossiblyGlobalType<T>())
                 {
-                    var type = obj.GetType();
-                    var globalId = NeuroGlobalTypes.GetTypeIdOrThrow(type, out _);
-                    var subTag = NeuroGlobalTypes.GetSubTypeTag(type);
                     var looseObj = (object)obj;
-                    NeuroGlobalTypes.Sync(globalId, this, subTag, ref looseObj);
+                    NeuroGlobalTypes.Sync(this, ref looseObj);
                 }
                 else
                 {
