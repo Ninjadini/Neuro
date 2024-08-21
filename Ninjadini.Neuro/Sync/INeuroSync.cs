@@ -5,7 +5,10 @@ namespace Ninjadini.Neuro.Sync
 {
     public interface INeuroSync
     {
+        /// Most of the time you only need it false, unless you are writing serialisation code. You could case some data to reset if used wrongly.
         bool IsReading { get; }
+        
+        /// Most of the time you only need it false, unless you are writing serialisation code. You could case some data to reset if used wrongly.
         bool IsWriting { get; }
         
         void Sync(ref bool value);

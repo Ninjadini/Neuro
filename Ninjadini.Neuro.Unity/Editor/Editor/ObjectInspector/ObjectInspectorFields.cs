@@ -188,6 +188,26 @@ namespace Ninjadini.Neuro.Editor
                 {
                     return CreateGuidDrawer(data);
                 }
+                if (type == typeof(Color) )
+                {
+                    return CreateDrawer(data, new ColorField(),  (c) => (Color)c, (v) => v);
+                }
+                if (type == typeof(Color32))
+                {
+                    return CreateDrawer(data, new ColorField(),  (o) => (Color32)o, (v) => (Color32)v);
+                }
+                if (type == typeof(System.Drawing.Color))
+                {
+                    return CreateDrawer<Color>(data, new ColorField(),  
+                        (o) =>
+                        {
+                            var v = (System.Drawing.Color)o;
+                            return new Color(v.R, v.G, v.B, v.A);
+                        }, 
+                        c => System.Drawing.Color.FromArgb((byte)(c.a * 255), (byte)(c.r * 255),
+                            (byte)(c.g * 255), (byte)(c.b * 255))
+                    );
+                }
                 var child = new ObjectInspector();
                 child.Draw(data);
                 return child;

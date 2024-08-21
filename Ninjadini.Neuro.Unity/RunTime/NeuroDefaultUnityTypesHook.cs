@@ -17,6 +17,42 @@ namespace Ninjadini.Neuro.Sync
             
             AssetAddress.RegisterType();
             
+            if(NeuroSyncTypes.IsEmpty<Color32>())
+                NeuroSyncTypes.Register(FieldSizeType.VarInt, (INeuroSync neuro, ref Color32 value) => {
+                    // RGBA
+                    uint num = neuro.IsWriting ? value.r + (uint)(value.g << 8) + (uint)(value.b << 16) + (uint)(value.a << 24) : 0;
+                    neuro.Sync(ref num);
+                    if (neuro.IsReading)
+                    {
+                        value.r = (byte)num;
+                        value.g = (byte)(num >> 8);
+                        value.b = (byte)(num >> 16);
+                        value.a = (byte)(num >> 24);
+                    }
+                });
+            
+            if(NeuroSyncTypes.IsEmpty<Color>())
+                NeuroSyncTypes.Register(FieldSizeType.VarInt, (INeuroSync neuro, ref Color value) =>
+                {
+                    const int Bits = 12;
+                    const int Bits2 = Bits * 2;
+                    const int Bits3 = Bits * 3;
+                    const float Base = 2L << Bits;
+                    const long BaseL = 2L << Bits;
+                    const long BaseL2 = 2L << Bits2;
+                    const long BaseL3 = 2L << Bits3;
+                    // RGBA
+                    ulong num = neuro.IsWriting ? (ulong)(value.r * Base) + ((ulong)(value.g * Base)) * BaseL + ((ulong)(value.b * Base) * BaseL2) + ((ulong)(value.a * Base) * BaseL3) : 0;
+                    neuro.Sync(ref num);
+                    if (neuro.IsReading)
+                    {
+                        value.r = (num & BaseL) / Base;
+                        value.g = ((num >> Bits) & BaseL) / Base;
+                        value.b = ((num >> Bits2) & BaseL) / Base;
+                        value.a = ((num >> Bits3) & BaseL) / Base;
+                    }
+                });
+            
             if(NeuroSyncTypes.IsEmpty<Vector3>())
                 NeuroSyncTypes.Register((INeuroSync neuro, ref Vector3 value) => {
                     neuro.Sync(1, nameof(value.x), ref value.x);

@@ -23,7 +23,7 @@ namespace Ninjadini.Neuro
             return hash;
         }
         
-        bool INeuroSync.IsReading => true;
+        bool INeuroSync.IsReading => false;
         bool INeuroSync.IsWriting => false;
         
         T INeuroSync.GetPooled<T>()

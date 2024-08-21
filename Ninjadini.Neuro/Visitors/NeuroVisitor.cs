@@ -45,7 +45,7 @@ namespace Ninjadini.Neuro
             }
         }
         
-        bool INeuroSync.IsReading => true;
+        bool INeuroSync.IsReading => false;
         bool INeuroSync.IsWriting => false;
         
         T INeuroSync.GetPooled<T>()

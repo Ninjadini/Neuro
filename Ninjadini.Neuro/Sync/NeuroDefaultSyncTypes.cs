@@ -78,6 +78,18 @@ namespace Ninjadini.Neuro.Sync
                     value = new Guid(buffer);
                 }
             });
+            
+            if(NeuroSyncTypes.IsEmpty<System.Drawing.Color>())
+                NeuroSyncTypes.Register(FieldSizeType.Fixed32, (INeuroSync neuro, ref System.Drawing.Color value) => {
+                    // ARGB
+                    var num = value.ToArgb();
+                    neuro.Sync(ref num);
+                    if (neuro.IsReading)
+                    {
+                        value = System.Drawing.Color.FromArgb(num);
+                    }
+                });
+            
         }
     }
 }
