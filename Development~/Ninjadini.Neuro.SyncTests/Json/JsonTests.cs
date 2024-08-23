@@ -100,17 +100,31 @@ namespace Ninjadini.Neuro.SyncTests
         }
         
         [Test]
+        public void TestGlobalTypeEmpty()
+        {
+            var obj = new ReferencableClass()
+            {
+            };
+            object globalTyped = obj;
+            var json = NeuroJsonWriter.Shared.Write(globalTyped, options:NeuroJsonWriter.Options.IncludeGlobalType);
+            Console.WriteLine(json);
+
+            Assert.AreEqual("{\n    \"-globalType\": \"11:ReferencableClass\",\n}", json);
+        }
+        
+        [Test]
         public void TestGlobalTypeBasic()
         {
             var obj = new ReferencableClass()
             {
-                RefId = 123,
                 Name = "HELLO"
             };
             object globalTyped = obj;
             var json = NeuroJsonWriter.Shared.Write(globalTyped, options:NeuroJsonWriter.Options.IncludeGlobalType);
             Console.WriteLine(json);
 
+            Assert.AreEqual("{\n    \"-globalType\": \"11:ReferencableClass\",\n    \"Name\": \"HELLO\"\n}", json);
+            
             var copy = NeuroJsonReader.Shared.Read<object>(json, new ReaderOptions()) as ReferencableClass;
             Assert.AreEqual(obj.Name, copy.Name);
         }
