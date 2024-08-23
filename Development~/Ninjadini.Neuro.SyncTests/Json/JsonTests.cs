@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using Newtonsoft.Json;
 using Ninjadini.Neuro;
 using Ninjadini.Neuro.Sync;
 using NUnit.Framework;
@@ -8,10 +11,15 @@ namespace Ninjadini.Neuro.SyncTests
 {
     public class JsonTests
     {
+        [SetUp]
+        public void SetUp()
+        {
+            UberTestClass.RegisterAll();
+        }
+        
         [Test]
         public void TestJsonWrite()
         {
-            UberTestClass.RegisterAll();
             var refs = new NeuroReferences();
             var testObj = UberTestClass.CreateTestClass(refs);
 
@@ -21,7 +29,6 @@ namespace Ninjadini.Neuro.SyncTests
         [Test]
         public void ReadWrite_UberTestClass()
         {
-            UberTestClass.RegisterAll();
             var refs = new NeuroReferences();
 
             var testRef = new ReferencableClass()
@@ -81,7 +88,6 @@ namespace Ninjadini.Neuro.SyncTests
         [Test]
         public void TestSubCLass()
         {
-            UberTestClass.RegisterAll();
             var testObj = new UberTestClass()
             {
                 BaseClassObj = new SubTestClass1()
@@ -96,8 +102,6 @@ namespace Ninjadini.Neuro.SyncTests
         [Test]
         public void TestGlobalTypeBasic()
         {
-            UberTestClass.RegisterAll();
-
             var obj = new ReferencableClass()
             {
                 RefId = 123,
@@ -114,8 +118,6 @@ namespace Ninjadini.Neuro.SyncTests
         [Test]
         public void TestGlobalTypePolymorphic()
         {
-            UberTestClass.RegisterAll();
-
             var obj = new SubTestClass1()
             {
                 Id = 123,
@@ -135,7 +137,6 @@ namespace Ninjadini.Neuro.SyncTests
         [Test]
         public void CustomJson()
         {
-            UberTestClass.RegisterAll();
             var refs = new NeuroReferences();
             var testObj = new UberTestClass()
             {
@@ -156,39 +157,52 @@ namespace Ninjadini.Neuro.SyncTests
         }
 
         [Test]
+        public void TestStringLineBreaks()
+        {
+            var obj = new StringTest()
+            {
+                String = "Hello,\nLine 2 here\nLine 3"
+            };
+            TestStringOutput(obj);
+            obj = new StringTest()
+            {
+                String = "Hello,\n"
+            };
+            TestStringOutput(obj);
+        }
+
+        [Test]
         public void TestSafeString1()
         {
             UberTestClass.RegisterAll();
-            var obj = new ReferencableClass()
+            var obj = new StringTest()
             {
-                RefId = 123,
-                Name = "§±';\\|/.,`~?><}{][\"!@£$%^&*()_+-="
+                String = "§±';\\|/.,`~?><}{][\"!@£$%^&*(\n)_+-="
             };
-            object globalTyped = obj;
-            var json = NeuroJsonWriter.Shared.Write(globalTyped, options:NeuroJsonWriter.Options.IncludeGlobalType);
-            Console.WriteLine(json);
-
-            var copy = NeuroJsonReader.Shared.Read<object>(json, new ReaderOptions()) as ReferencableClass;
-            Console.WriteLine(copy.Name);
-            Assert.AreEqual(obj.Name, copy.Name);
+            TestStringOutput(obj);
         }
 
         [Test]
         public void TestSafeString2()
         {
             UberTestClass.RegisterAll();
-            var obj = new ReferencableClass()
+            var obj = new StringTest()
             {
-                RefId = 123,
-                Name = "\"§±';\\|/.\"\",`~?><}{][\"!@£$%^\"&*()_+-=\""
+                String = "\"§±\n';\\|/.\"\",`~?><}{][\"!@£$%^\"&*()_+\n-=\""
             };
-            object globalTyped = obj;
-            var json = NeuroJsonWriter.Shared.Write(globalTyped, options:NeuroJsonWriter.Options.IncludeGlobalType);
-            Console.WriteLine(json);
+            TestStringOutput(obj);
+        }
 
-            var copy = NeuroJsonReader.Shared.Read<object>(json, new ReaderOptions()) as ReferencableClass;
-            Console.WriteLine(copy.Name);
-            Assert.AreEqual(obj.Name, copy.Name);
+        void TestStringOutput(StringTest obj)
+        {
+            var neuroJson = NeuroJsonWriter.Shared.Write(obj);
+            var copy = NeuroJsonReader.Shared.Read<StringTest>(neuroJson);
+            Console.WriteLine(copy.String);
+            Assert.AreEqual(obj.String, copy.String);
+            
+            var referenceJson = JsonConvert.SerializeObject(obj, Formatting.Indented);
+            neuroJson = neuroJson.Replace(NeuroJsonWriter.SingleIndent, "  ");
+            Assert.AreEqual(referenceJson, neuroJson);
         }
 
         void Test(UberTestClass testObj, NeuroReferences references = null)

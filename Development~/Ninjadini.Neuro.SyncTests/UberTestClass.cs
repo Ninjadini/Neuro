@@ -99,7 +99,11 @@ namespace Ninjadini.Neuro.SyncTests
                 neuro.Sync(ref n);
                 value.Number = n / 1000f;
             });
-            
+            _NeuroSync.NeuroSyncTypes.Register(delegate(_NeuroSync.INeuroSync neuro, ref StringTest value)
+            {
+                value ??= new StringTest();
+                neuro.Sync(1, nameof(value.String), ref value.String);
+            });
             _NeuroSync.NeuroSyncTypes.Register(delegate(_NeuroSync.INeuroSync neuro, ref ReferencableClass value)
             {
                 value ??= new ReferencableClass();
@@ -302,6 +306,12 @@ namespace Ninjadini.Neuro.SyncTests
         B = 1<<1,
         C = 1<<2,
     }
+    
+    public class StringTest
+    {
+        public string String;
+    }
+    
     public partial class UberTestClass
     {
         static void Sync(_NeuroSync.INeuroSync neuro, ref UberTestClass value)

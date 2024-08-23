@@ -145,7 +145,14 @@ namespace Ninjadini.Neuro
                 while (slashIndex >= 0)
                 {
                     stringBuilder.Append(strSpan.Slice(0, slashIndex));
-                    stringBuilder.Append(strSpan[slashIndex + 1]);
+                    if (strSpan.Length > slashIndex + 1 && strSpan[slashIndex + 1] == 'n')
+                    {
+                        stringBuilder.Append("\n");
+                    }
+                    else
+                    {
+                        stringBuilder.Append(strSpan[slashIndex + 1]);
+                    }
                     strSpan = strSpan.Slice(slashIndex + 2);
                     slashIndex = strSpan.IndexOf("\\", StringComparison.Ordinal);
                 }
