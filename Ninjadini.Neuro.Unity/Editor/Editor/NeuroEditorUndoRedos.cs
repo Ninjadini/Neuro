@@ -90,7 +90,7 @@ namespace Ninjadini.Neuro.Editor
 
         void SelectWindowAfterUndo(Type type)
         {
-            if(CurrentUndoData.window is NeuroEditorWindow editorWindow)
+            if(CurrentUndoData.window is NeuroEditorWindow editorWindow && editorWindow && editorWindow.EditorElement != null)
             {
                 editorWindow.EditorElement.SetSelectedItem(type, CurrentUndoData.refId);
                 editorWindow.Focus();
