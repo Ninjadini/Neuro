@@ -1,8 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using Ninjadini.Neuro.Sync;
 using UnityEditor;
 using UnityEngine;
@@ -184,5 +181,6 @@ namespace Ninjadini.Neuro.Editor
             str = string.IsNullOrEmpty(str) ? value.RefId.ToString() : $"{value.RefId} : {str}";
             return $"{value.GetType().Name} > {str}";
         }
+
     }
 }

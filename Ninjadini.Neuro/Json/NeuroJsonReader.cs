@@ -46,6 +46,19 @@ namespace Ninjadini.Neuro
             NeuroGlobalTypes.Sync(typeId, this, tag, ref globalResult);
             return globalResult;
         }
+        
+        public void Read(string json, Type type, ref object resultTarget, ReaderOptions opts = default)
+        {
+            options = opts;
+            jsonStr = json;
+            nodes = _jsonVisitor.Visit(json);
+            currentParent = nodes.Array[0].Parent;
+            NeuroSyncTypes.TryRegisterAssembly(type.Assembly);
+            var typeId = NeuroGlobalTypes.GetIdByType(type);
+            var subTypeNode = FindNode(NeuroJsonWriter.FieldName_ClassTag);
+            var tag = GetFirstUintPart(subTypeNode.Value);
+            NeuroGlobalTypes.Sync(typeId, this, tag, ref resultTarget);
+        }
 
         public void Read<T>(string json, ref T result, ReaderOptions opts = default)
         {

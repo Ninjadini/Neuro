@@ -20,6 +20,7 @@ namespace Ninjadini.Neuro.Editor
         NeuroItemDebugDisplay debugDisplay;
         NeuroEditorDataProvider dataProvider;
         NeuroEditorHistory history;
+        public readonly EditorWindow EditorWindow;
 
         NeuroEditorClassSettingsElement classSettingsElement;
 
@@ -36,8 +37,9 @@ namespace Ninjadini.Neuro.Editor
         Button recentBtn;
         Button forwardBtn;
 
-        public NeuroEditorNavElement(NeuroEditorDataProvider dataProvider_, NeuroEditorHistory historyData_)
+        public NeuroEditorNavElement(NeuroEditorDataProvider dataProvider_, NeuroEditorHistory historyData_, EditorWindow editorWindow_ = null)
         {
+            EditorWindow = editorWindow_;
             dataProvider = dataProvider_ ?? throw new ArgumentNullException(nameof(dataProvider_));
             history = historyData_ ?? new NeuroEditorHistory();
 
@@ -438,6 +440,7 @@ namespace Ninjadini.Neuro.Editor
             if (EditorUtility.DisplayDialog("", message, "Delete", "Cancel"))
             {
                 var index = itemDropdown.index;
+                NeuroEditorUndoRedos.Record(selectedItem, NeuroEditorUndoRedos.UndoType.Delete, EditorWindow);
                 dataProvider.Delete(selectedItem);
                 if (index > 0)
                 {

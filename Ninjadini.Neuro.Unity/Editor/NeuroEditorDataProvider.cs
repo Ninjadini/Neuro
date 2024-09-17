@@ -40,8 +40,8 @@ namespace Ninjadini.Neuro.Editor
 
         public bool HadProblemsLoading;
         List<NeuroDataFile> dataFiles;
-        NeuroJsonReader jsonReader;
-        NeuroJsonWriter jsonWriter;
+        internal NeuroJsonReader jsonReader;
+        internal NeuroJsonWriter jsonWriter;
         readonly List<FileSystemWatcher> fileSystemWatchers = new ();
         Dictionary<string, DateTime> ignoreFileChangesExpiry = new Dictionary<string, DateTime>();
 
@@ -264,6 +264,19 @@ namespace Ninjadini.Neuro.Editor
                 if (References.Get(newObj.GetType(), customRefId) != null)
                 {
                     throw new Exception($"Custom RefId `{customRefId}` is already in use for type `{newObj.GetType()}`");
+                }
+            }
+            else if(newObj.RefId > 0)
+            {
+                nextId = newObj.RefId;
+                var other = Find(type, nextId);
+                if(other != null)
+                {
+                    if(other.Value == newObj)
+                    {
+                        return other;
+                    }
+                    throw new Exception($"Object with RefId `{nextId} already exists, set the ref of the new object to 0 to generate a new next number");
                 }
             }
             else

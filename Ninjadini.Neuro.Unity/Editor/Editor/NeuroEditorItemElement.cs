@@ -1,11 +1,7 @@
 using System;
-using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using Ninjadini.Toolkit;
 using UnityEditor;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ninjadini.Neuro.Editor
@@ -91,6 +87,7 @@ namespace Ninjadini.Neuro.Editor
             refLinksElement.Draw(dataProvider, type, value);
             objectInspector.Draw(type, value, OnValueSet);
             UpdateFilePath();
+            RecordUndo(NeuroEditorUndoRedos.UndoType.View);
         }
 
         void OnValueSet(object newValue)
@@ -104,15 +101,33 @@ namespace Ninjadini.Neuro.Editor
 
         void OnAnyValueChanged()
         {
+            RecordUndo(NeuroEditorUndoRedos.UndoType.Update);
             UpdateFilePath();
             AnyValueChanged?.Invoke();
             _dataProvider.SaveData(dataFile);
+        }
+
+        void RecordUndo(NeuroEditorUndoRedos.UndoType undoType)
+        {
+            EditorWindow window = null;
+            var p = parent;
+            while (p != null)
+            {
+                if (p is NeuroEditorNavElement w)
+                {
+                    window = w.EditorWindow;
+                    break;
+                }
+                p = p.parent;
+            }
+            NeuroEditorUndoRedos.Record(dataFile, undoType, window);
         }
 
         void UpdateFilePath()
         {
             refIdTxt.SetValueWithoutNotify(dataFile.RefId);
             refNameTxt.SetValueWithoutNotify(dataFile.RefName);
+            NeuroUiUtils.UpdatePlaceholderTextVisibility(refNameTxt);
             var enable = !typeof(ISingletonReferencable).IsAssignableFrom(dataFile.RootType);
             refIdTxt.SetEnabled(enable);
             refNameTxt.SetEnabled(enable);

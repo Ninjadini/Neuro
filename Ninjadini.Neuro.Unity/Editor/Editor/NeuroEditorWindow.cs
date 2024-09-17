@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Ninjadini.Neuro.Sync;
 using UnityEditor;
 using UnityEditor.Compilation;
@@ -33,7 +32,7 @@ namespace Ninjadini.Neuro.Editor
         public void CreateGUI()
         {
             historyData ??= new NeuroEditorHistory();
-            editorElement = new NeuroEditorNavElement(NeuroEditorDataProvider.Shared, historyData);
+            editorElement = new NeuroEditorNavElement(NeuroEditorDataProvider.Shared, historyData, this);
             editorElement.style.flexGrow = 1;
             rootVisualElement.Add(editorElement);
             
@@ -53,7 +52,6 @@ namespace Ninjadini.Neuro.Editor
                 refId = editorElement.SelectedItemId;
             }
         }
-
         
         void IHasCustomMenu.AddItemsToMenu(GenericMenu menu)
         {

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -95,10 +96,10 @@ namespace Ninjadini.Toolkit
             lbl.style.color = new Color(0.35f, 0.35f, 0.35f);
             textField.hierarchy.Add(lbl);
 
-            OnFocusOut();
             textField.RegisterCallback<FocusInEvent>(evt => OnFocusIn());
             textField.RegisterCallback<FocusOutEvent>(evt => OnFocusOut());
             textField.RegisterValueChangedCallback(OnValueChange);
+            OnFocusOut();
             return;
 
             void OnValueChange(ChangeEvent<string> evt)
@@ -112,6 +113,15 @@ namespace Ninjadini.Toolkit
             }
 
             void OnFocusOut()
+            {
+                lbl.style.display = string.IsNullOrEmpty(textField.text) ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+        }
+        
+        public static void UpdatePlaceholderTextVisibility(TextField textField)
+        {
+            var lbl = textField.hierarchy.Children().FirstOrDefault(c => c is Label);
+            if (lbl != null)
             {
                 lbl.style.display = string.IsNullOrEmpty(textField.text) ? DisplayStyle.Flex : DisplayStyle.None;
             }
