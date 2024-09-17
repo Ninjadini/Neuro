@@ -20,7 +20,7 @@ namespace Ninjadini.Neuro
         private StringBuilder stringBuilder;
         private Options opts;
 
-        string SingleIndent = "    ";
+        public const string SingleIndent = "    ";
 
         private int numIndents;
         
@@ -180,12 +180,21 @@ namespace Ninjadini.Neuro
             {
                 stringBuilder.Append("\"");
                 var strSpan = value.AsSpan();
+                var lineBreakIndex = strSpan.IndexOf("\n", StringComparison.Ordinal);
                 var quoteIndex = strSpan.IndexOf("\"", StringComparison.Ordinal);
                 var slashIndex = strSpan.IndexOf("\\", StringComparison.Ordinal);
-                // TODO, also replace line breaks with \n
-                while (quoteIndex >= 0 || slashIndex >= 0)
+                // TODO, this is just way too complicated for what it is
+                while (quoteIndex >= 0 || slashIndex >= 0 || lineBreakIndex >= 0)
                 {
-                    if ((quoteIndex < slashIndex && quoteIndex != -1) || slashIndex == -1)
+                    if (lineBreakIndex >= 0 
+                        && (quoteIndex == -1 || lineBreakIndex < quoteIndex)
+                        && (slashIndex == -1 || lineBreakIndex < slashIndex))
+                    {
+                        stringBuilder.Append(strSpan.Slice(0, lineBreakIndex));
+                        strSpan = strSpan.Slice(lineBreakIndex + 1);
+                        stringBuilder.Append("\\n");
+                    }
+                    else if ((quoteIndex < slashIndex && quoteIndex != -1) || slashIndex == -1)
                     {
                         stringBuilder.Append(strSpan.Slice(0, quoteIndex));
                         strSpan = strSpan.Slice(quoteIndex + 1);
@@ -197,8 +206,9 @@ namespace Ninjadini.Neuro
                         strSpan = strSpan.Slice(slashIndex + 1);
                         stringBuilder.Append(@"\\");
                     }
-                    quoteIndex = strSpan.IndexOf("\"", StringComparison.Ordinal);
+                    lineBreakIndex = strSpan.IndexOf("\n", StringComparison.Ordinal);
                     slashIndex = strSpan.IndexOf("\\", StringComparison.Ordinal);
+                    quoteIndex = strSpan.IndexOf("\"", StringComparison.Ordinal);
                 }
                 stringBuilder.Append(strSpan);
                 stringBuilder.Append("\"");
