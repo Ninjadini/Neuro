@@ -12,3 +12,12 @@ Development~/Ninjadini.Neuro.SyncTests/bin/
 Development~/Ninjadini.Neuro.SyncTests/obj/
 Development~/Ninjadini.Neuro.IntegrationTests/bin/
 Development~/Ninjadini.Neuro.IntegrationTests/obj/
+NeuroExample~/Library/
+NeuroExample~/Temp/
+NeuroExample~/Logs/
+
+NeuroExample~/UserSettings/
+NeuroExample~/*.csproj
+NeuroExample~/obj/
+NeuroExample~/*.sln
+NeuroExample~/NeuroData/30-MassiveTableRow/

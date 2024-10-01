@@ -231,7 +231,7 @@ var myData = NeuroJsonReader.Shared.Read<MyData>(jsonString);
 > [!TIP]
 > JSON output will print references and enum in this format `"myItem": "2:mySecondItemName"`
 > 
-> This looks like you can't change the ref name of items or it will unlick the values, but that is not the case
+> This looks like you can't change the ref name of items or it will unlink the values, but that is not the case
 > 
 > The only thing that matters is the number. You can just have `"myItem": 2` and it'll work
 > 
