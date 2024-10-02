@@ -93,6 +93,21 @@ namespace Ninjadini.Neuro.Sync
             return 0;
         }
 
+        public static uint GetSubTypeTagOrThrow(Type type)
+        {
+            var typeId = GetTypeIdOrThrow(type, out var rootType);
+            if(tags.TryGetValue(typeId, out var func))
+            {
+                var result = func(type);
+                if (result == 0 && type != rootType)
+                {
+                    throw new Exception($"{type.FullName} is not registered as a subtype of {rootType}, is it missing the [Neuro()] class tag?");
+                }
+                return result;
+            }
+            return 0;
+        }
+
         public static bool HasSubTypeTags(Type type)
         {
             var typeId = GetTypeIdOrThrow(type, out _);

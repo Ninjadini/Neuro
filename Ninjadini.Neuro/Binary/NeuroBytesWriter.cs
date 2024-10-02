@@ -104,7 +104,7 @@ namespace Ninjadini.Neuro
                 {
                     lastKey = 0;
                     var subValue = values[index];
-                    var subTag = NeuroGlobalTypes.GetSubTypeTag(subValue.GetType());
+                    var subTag = NeuroGlobalTypes.GetSubTypeTagOrThrow(subValue.GetType());
                     proto.Write(subTag);
                     NeuroGlobalTypes.Sync(globalId, this, subTag, ref subValue);
                     proto.Write(NeuroConstants.Child);
@@ -147,7 +147,7 @@ namespace Ninjadini.Neuro
                     var subValue = values[index];
                     proto.Write(subValue.RefName);
                     var start = proto.Position;
-                    var subTag = NeuroGlobalTypes.GetSubTypeTag(subValue.GetType());
+                    var subTag = NeuroGlobalTypes.GetSubTypeTagOrThrow(subValue.GetType());
                     if (subTag == 0)
                     {
                         proto.Write(subValue.RefId << NeuroConstants.HeaderShift | NeuroConstants.Child);

@@ -86,7 +86,7 @@ namespace Ninjadini.Neuro.Editor
 
         public void AddToHistory(NeuroDataFile selectedItem, bool keepForwards = false)
         {
-            if (selectedItem?.Value == null)
+            if (selectedItem == null || !selectedItem.IsLoaded || selectedItem.Value == null)
             {
                 return;
             }
