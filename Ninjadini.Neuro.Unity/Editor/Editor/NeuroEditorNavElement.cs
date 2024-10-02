@@ -531,7 +531,7 @@ namespace Ninjadini.Neuro.Editor
         {
             var canCreate = !(selectedItem?.Value is ISingletonReferencable);
             addBtn.SetEnabled(canCreate);
-            cloneBtn.SetEnabled(canCreate);
+            cloneBtn.SetEnabled(canCreate && selectedItem != null);
         }
     }
 }
