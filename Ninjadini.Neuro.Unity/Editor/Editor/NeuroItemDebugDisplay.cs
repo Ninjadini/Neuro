@@ -39,6 +39,7 @@ namespace Ninjadini.Neuro.Editor
         NeuroBytesDebugWalker _bytesWalker;
         NeuroBytesDebugWalker BytesWalker => _bytesWalker ??= new NeuroBytesDebugWalker();
 
+        VisualElement validityStyleTarget;
         
         public NeuroItemDebugDisplay(NeuroReferences references, Func<object> getObj, Action<object> setObj)
         {
@@ -323,7 +324,7 @@ namespace Ninjadini.Neuro.Editor
             tester.Test(obj);
             if (testResults.Count > 0)
             {
-                testsToggle.label = $"Tests <color=red>[{testResults.Count} <size=80%>\u274c</size>]</color>";
+                testsToggle.label = $"Tests <color=red>[{testResults.Count} fail]</color>";
             }
             else if (tester.ValidatorsVisited.Count > 0)
             {
@@ -333,6 +334,25 @@ namespace Ninjadini.Neuro.Editor
             {
                 testsToggle.label = "Tests [NA]";
             }
+            if (validityStyleTarget != null)
+            {
+                if (testResults.Count > 0)
+                {
+                    var c = new Color(1f, 0f, 0f, 0.1f);
+                    validityStyleTarget.style.backgroundColor = c;
+                    testsToggle.style.backgroundColor = c;
+                }
+                else
+                {
+                    validityStyleTarget.style.backgroundColor = default;
+                    testsToggle.style.backgroundColor = default;
+                }
+            }
+        }
+
+        public void SetValidityStylingTarget(VisualElement target)
+        {
+            validityStyleTarget = target;
         }
 
         void GotoRef(IReferencable referencable)

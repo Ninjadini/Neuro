@@ -156,6 +156,7 @@ namespace Ninjadini.Neuro.Editor
             debugDisplay.style.bottom = 0;
             debugDisplay.style.flexShrink = 0.01f;
             Add(debugDisplay);
+            debugDisplay.SetValidityStylingTarget(scrollView);
 
             typeDropdown.choices = allTypes.Select(NeuroUnityEditorSettings.GetTypeDropDownName).ToList();
             
