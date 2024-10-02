@@ -43,6 +43,11 @@ namespace Ninjadini.Neuro.Editor
         
         public static void Record(NeuroDataFile dataFile, UndoType undoType, EditorWindow changedWindow)
         {
+            if (!NeuroUnityEditorSettings.instance.UndoRedosEnabled)
+            {
+                return;
+            }
+            
             var type = dataFile.Value.GetType();
             var json = NeuroEditorDataProvider.Shared.jsonWriter.Write((object)dataFile.Value, refs:NeuroEditorDataProvider.SharedReferences, options:NeuroJsonWriter.Options.ExcludeTopLevelGlobalType);
 
@@ -62,6 +67,10 @@ namespace Ninjadini.Neuro.Editor
             
         void OnValidate()
         {
+            if (!NeuroUnityEditorSettings.instance.UndoRedosEnabled)
+            {
+                return;
+            }
             var undoData = CurrentUndoData;
             if(undoData.typeId != 0 && undoData.refId != 0)
             {
