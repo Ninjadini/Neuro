@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using Ninjadini.Toolkit;
@@ -13,7 +14,7 @@ namespace Ninjadini.Neuro.Editor
     [FilePath("ProjectSettings/NeuroSettings.asset", FilePathAttribute.Location.ProjectFolder)]
     public class NeuroUnityEditorSettings : ScriptableSingleton<NeuroUnityEditorSettings>
     {
-        public const string SETTINGS_MENU_PATH = "Project/Neuro";
+        public const string SETTINGS_MENU_PATH = "Project/Ninjadini: ❖ Neuro";
         public const string DEFAULT_DATA_PATH = "NeuroData";
 
         public bool ShowDialogOnDataFileChange;
@@ -21,6 +22,9 @@ namespace Ninjadini.Neuro.Editor
         public bool BakeDataResourcesForBuild = true;
         public string ResourcesDir = "Assets/Resources/";
         public string PrimaryDataPath;
+        
+        [Tooltip("Experimental")]
+        public bool UndoRedosEnabled;
 
         public List<NeuroEditorTypeItemSetting> ClassSettings = new List<NeuroEditorTypeItemSetting>();
         
