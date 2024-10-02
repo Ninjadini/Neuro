@@ -1,7 +1,7 @@
 using Ninjadini.Neuro;
 using UnityEngine;
 
-[NeuroGlobalType(14)]
+[NeuroGlobalType(301)]
 [LinkedReference(typeof(MyTestRef))]
 public class MyLinkedRef : Referencable
 {

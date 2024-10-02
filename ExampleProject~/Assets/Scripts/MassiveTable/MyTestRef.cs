@@ -2,7 +2,7 @@ using System.ComponentModel;
 using Ninjadini.Neuro;
 using UnityEngine;
 
-[NeuroGlobalType(12)]
+[NeuroGlobalType(302)]
 [DisplayName("MyTestRef (custom name via attribute)")]
 public class MyTestRef : Referencable
 {

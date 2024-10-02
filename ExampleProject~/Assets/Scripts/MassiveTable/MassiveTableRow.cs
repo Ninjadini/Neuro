@@ -4,7 +4,8 @@ using System.ComponentModel;
 using Ninjadini.Neuro;
 using UnityEngine;
 
-[NeuroGlobalType(30)]
+
+[NeuroGlobalType(300)]
 [DisplayName("MassiveTableRow[] Generate via Tools/Populate Massive Table")]
 public partial class MassiveTableRow : IReferencable
 {

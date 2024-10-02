@@ -1,6 +1,6 @@
 using Ninjadini.Neuro;
 
-[Neuro(3)]
+[Neuro(303)]
 public class MyTestSub2Ref : MyTestRef
 {
     [Neuro(1)] public string someStr;
