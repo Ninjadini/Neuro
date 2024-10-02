@@ -89,7 +89,7 @@ namespace Ninjadini.Neuro
                     globalId = NeuroGlobalTypes.GetTypeIdOrThrow(type, out _);
                 }
                 var typedValue = (object)value;
-                var subTag = NeuroGlobalTypes.GetSubTypeTag(type);
+                var subTag = NeuroGlobalTypes.GetSubTypeTagOrThrow(type);
                 if (subTag > 0)
                 {
                     AppendSubTagAndOrName(FieldName_ClassTag, subTag, type.Name);

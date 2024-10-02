@@ -48,7 +48,7 @@ namespace Ninjadini.Neuro.Editor
                     }
                     catch (Exception e)
                     {
-                        throw new Exception($"Failed to read neuro data file {FilePath}... {e.Message}");
+                        throw new Exception($"Failed to read neuro data file {FilePath}", e);
                     }
                     _value.RefId = RefId;
                     _value.RefName = RefName;
@@ -57,9 +57,12 @@ namespace Ninjadini.Neuro.Editor
             }
             set
             {
+                if (value != null)
+                {
+                    value.RefId = RefId;
+                    value.RefName = RefName;
+                }
                 _value = value;
-                _value.RefId = RefId;
-                _value.RefName = RefName;
             }
         }
         

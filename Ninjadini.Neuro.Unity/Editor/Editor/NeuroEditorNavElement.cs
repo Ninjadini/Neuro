@@ -141,7 +141,7 @@ namespace Ninjadini.Neuro.Editor
             {
                 //EditorUtility.RequestScriptReload();
                 dataProvider_.Reload();
-                OnUpdate();
+                UpdateSelectedItem();
             });
 
             var scrollView = new ScrollView();
@@ -288,7 +288,17 @@ namespace Ninjadini.Neuro.Editor
 
         void UpdateSelectedItem()
         {
-            if (selectedItem?.Value != null)
+            IReferencable value = null;
+            try
+            {
+                value = selectedItem?.Value;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                return;
+            }
+            if (value != null)
             {
                 var type = NeuroReferences.GetRootReferencable(selectedItem.Value.GetType());
                 if (selectedType != type)
@@ -333,10 +343,35 @@ namespace Ninjadini.Neuro.Editor
                     return;
                 }
             }
-            
-            var obj = Activator.CreateInstance(selectedType) as IReferencable;
-            var item = dataProvider.Add(obj);
-            SetSelectedItem(item);
+
+            if (selectedType.IsAbstract || selectedType.IsInterface)
+            {
+                ObjectInspector.ShowCreateInstanceWindow(selectedType, this, obj =>
+                {
+                    AddNewlyCreatedObj(obj);
+                });
+            }
+            else
+            {
+                AddNewlyCreatedObj(Activator.CreateInstance(selectedType));
+            }
+        }
+
+        void AddNewlyCreatedObj(object obj)
+        {
+            if (obj is IReferencable referencable)
+            {
+                try
+                {
+                    var item = dataProvider.Add(referencable);
+                    SetSelectedItem(item);
+                }
+                catch (Exception exception)
+                {
+                    EditorUtility.DisplayDialog("", "There was a problem creating the object, please see error log for details.", "OK");
+                    throw exception;
+                }
+            }
         }
 
         void OnCloneBtnClicked()
@@ -411,7 +446,17 @@ namespace Ninjadini.Neuro.Editor
 
         void OnUpdate()
         {
-            var value = selectedItem?.Value;
+            IReferencable value = null;
+            try
+            {
+                value = selectedItem?.Value;
+            }
+            catch (Exception exception)
+            {
+                reloadPanel.style.display = DisplayStyle.Flex;
+                itemEditor.SetEnabled(false);
+                return;
+            }
             if (value != null)
             {
                 var item = dataProvider.Find(value.GetType(), selectedItem.Value.RefId);

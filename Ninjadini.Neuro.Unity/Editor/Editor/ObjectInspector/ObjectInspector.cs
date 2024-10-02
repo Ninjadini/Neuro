@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
@@ -381,7 +382,7 @@ namespace Ninjadini.Neuro.Editor
                 }
                 return;
             }
-            var allClasses = data.Controller?.GetPossibleCreationTypesOf(data.type) ?? FindAllTypesAssignableTo(data.type);
+            var allClasses = data.Controller?.GetPossibleCreationTypesOf(data.type) ?? FindAllPossibleCreationTypesOf(data.type);
             if (allClasses.Length == 0 || (allClasses.Length == 1 && allClasses[0] == obj?.GetType()))
             {
                 NeuroUiUtils.SetDisplay(subtypesDropDown, false);
@@ -418,7 +419,7 @@ namespace Ninjadini.Neuro.Editor
 
         void OnSubtypeDropDownChanged(ChangeEvent<string> evt)
         {
-            var allClasses = data.Controller?.GetPossibleCreationTypesOf(data.type) ?? FindAllTypesAssignableTo(data.type);
+            var allClasses = data.Controller?.GetPossibleCreationTypesOf(data.type) ?? FindAllPossibleCreationTypesOf(data.type);
             var newType = allClasses.FirstOrDefault(t => t.Name == evt.newValue);
             object newObj = null;
             data.Controller?.SwitchObjectType(data.getter(), newType, ref newObj);
@@ -490,18 +491,17 @@ namespace Ninjadini.Neuro.Editor
                     }
                     else
                     {
-                        ShowCreateInstanceWindow(type, fromElement, createdCallback);
+                        ShowCreateInstanceWindow(data, type, fromElement, createdCallback);
                     }
                 });
             }
             else
             {
-                ShowCreateInstanceWindow(type, fromElement, createdCallback);
+                ShowCreateInstanceWindow(data, type, fromElement, createdCallback);
             }
         }
         
-        
-        static Type[] FindAllTypesAssignableTo(Type type)
+        public static Type[] FindAllPossibleCreationTypesOf(Type type)
         {
             var typeIsClass = type.IsClass;
             // https://stackoverflow.com/questions/857705/get-all-derived-types-of-a-type
@@ -509,13 +509,25 @@ namespace Ninjadini.Neuro.Editor
                 where !domainAssembly.IsDynamic
                 from assemblyType in domainAssembly.GetExportedTypes()
                 where assemblyType.IsClass 
+                      && !assemblyType.IsAbstract
+                      && !assemblyType.IsInterface
                       && (assemblyType == type || (typeIsClass ? assemblyType.IsSubclassOf(type) : type.IsAssignableFrom(assemblyType)))
                 select assemblyType).ToArray();
         }
 
-        void ShowCreateInstanceWindow(Type type, VisualElement fromElement, Action<object> createdCallback)
+        public static void ShowCreateInstanceWindow(Type type, VisualElement fromElement, Action<object> createdCallback)
         {
-            var allClasses = data.Controller?.GetPossibleCreationTypesOf(type) ?? FindAllTypesAssignableTo(type);
+            ShowCreateInstanceWindow(new Data(), type, fromElement, createdCallback);
+        }
+        
+        public static void ShowCreateInstanceWindow(Data dataInstance, Type type, VisualElement fromElement, Action<object> createdCallback)
+        {
+            var allClasses = dataInstance.Controller?.GetPossibleCreationTypesOf(type) ?? FindAllPossibleCreationTypesOf(type);
+            if (allClasses.Length == 0)
+            {
+                EditorUtility.DisplayDialog("", $"Could not find any valid sub types of {type}", "OK");
+                return;
+            }
             if (allClasses.Length == 1)
             {
                 CreateInstance(allClasses[0], createdCallback);
@@ -541,12 +553,12 @@ namespace Ninjadini.Neuro.Editor
                         }
                     },
                     () => createdCallback(null)
-                    );
+                );
                 UnityEditor.PopupWindow.Show(rect, window);
             }
         }
 
-        void CreateInstance(Type type, Action<object> createdCallback)
+        static void CreateInstance(Type type, Action<object> createdCallback)
         {
             object result = null;
             try
