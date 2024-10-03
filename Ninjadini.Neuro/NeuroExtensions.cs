@@ -26,9 +26,33 @@ namespace Ninjadini.Neuro
             return string.IsNullOrEmpty(name) ? $"#{referencable.RefId.ToString()}" : $"#{referencable.RefId}:{name}";
         }
         
+        public static string TryGetIdAndName<T>(this Reference<T> reference, NeuroReferences refs) where T : class, IReferencable
+        {
+            var value = reference.GetValue(refs);
+            return value != null ? TryGetIdAndName(value) : $"#{reference.RefId.ToString()}";
+        }
+        
         public static string TryGetIdAndName<T>(this Reference<T> reference, NeuroReferenceTable<T> table) where T : class, IReferencable
         {
-            return TryGetIdAndName(table?.Get(reference.RefId));
+            var value = reference.GetValue(table);
+            return value != null ? TryGetIdAndName(value) : $"#{reference.RefId.ToString()}";
         }
+        
+        
+#if !NEURO_DISABLE_STATIC_REFERENCES
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T GetValue<T>(this Reference<T> reference) where T : class, IReferencable
+        {
+            return NeuroReferences.Default?.Get(reference);
+        }
+        
+        public static string TryGetIdAndName<T>(this Reference<T> reference) where T : class, IReferencable
+        {
+            var value = reference.GetValue();
+            return value != null ? TryGetIdAndName(value) : $"#{reference.RefId.ToString()}";
+        }
+#endif
+        
+        
     }
 }

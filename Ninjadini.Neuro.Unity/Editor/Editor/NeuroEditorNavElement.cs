@@ -452,7 +452,7 @@ namespace Ninjadini.Neuro.Editor
             {
                 value = selectedItem?.Value;
             }
-            catch (Exception exception)
+            catch (Exception)
             {
                 reloadPanel.style.display = DisplayStyle.Flex;
                 itemEditor.SetEnabled(false);

@@ -1,7 +1,7 @@
 {
     "Name": "Basics",
     "CraftItems": [
-        "1:woodlogs",
-        "3:stones"
+        1,
+        3
     ]
 }

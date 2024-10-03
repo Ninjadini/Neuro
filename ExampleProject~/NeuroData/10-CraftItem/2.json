@@ -1,0 +1,9 @@
+{
+    "Name": "Firewood",
+    "RequiredItems": [
+        {
+            "Item": 1,
+            "Amount": 1
+        }
+    ]
+}
