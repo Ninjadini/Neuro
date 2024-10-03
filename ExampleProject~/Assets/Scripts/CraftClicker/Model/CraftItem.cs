@@ -22,7 +22,7 @@ public class CraftItem : Referencable, INeuroRefDropDownCustomizable
     public TimeSpan CraftDuration;
     
     [Neuro(4)] [Tooltip("Required items to produce this item")]
-    public List<CraftRecipeRequiredItem> RequiredItems;
+    public readonly List<CraftRecipeRequiredItem> RequiredItems = new List<CraftRecipeRequiredItem>();
     
     [Neuro(5)] [Tooltip("After crafting this item, any post craft status effects?")] [InspectorStyle(spaceBefore:10)]
     public PostCraftStatusEffectApplication PostCraftEffect;

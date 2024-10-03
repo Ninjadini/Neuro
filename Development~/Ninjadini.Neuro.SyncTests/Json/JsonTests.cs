@@ -71,7 +71,6 @@ namespace Ninjadini.Neuro.SyncTests
                 {
                     5, 4, 3, 2
                 },
-                ListTexts = new List<string>(){ "Hi" },
                 ListClass = new List<TestChildClass>()
                 {
                     new TestChildClass(){ Id = 1 }
@@ -82,6 +81,7 @@ namespace Ninjadini.Neuro.SyncTests
                     new SubTestClass1() { Value = "ab", Id = 4}
                 },
             };
+            testObj.ListTexts.Add("Hi");
             Test(testObj, refs);
         }
         

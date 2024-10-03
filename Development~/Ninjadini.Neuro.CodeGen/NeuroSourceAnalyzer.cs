@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -14,7 +15,8 @@ namespace Ninjadini.Neuro.CodeGen
         public const string InvalidTagDiagnosticID = "Neuro301";
         public const string FieldTagConflictDiagnosticID = "Neuro300";
         
-        static readonly DiagnosticDescriptor ReadOnlyFieldRule = new DiagnosticDescriptor("Neuro022", "Readonly Neuro field", "Neuro attributed field with readonly keyword found @ {0}", "Syntax", DiagnosticSeverity.Error, true);
+        static readonly DiagnosticDescriptor ReadOnlyFieldRule = new DiagnosticDescriptor("Neuro022", "Readonly Neuro field on primitive types", "Neuro attributed field with readonly keyword found @ {0}, which is not a class type", "Syntax", DiagnosticSeverity.Error, true);
+        static readonly DiagnosticDescriptor ReadOnlyWithoutInitializerFieldRule = new DiagnosticDescriptor("Neuro023", "Readonly Neuro fields without an initializer", "Neuro attribute field that is readonly must have a 'new' initializer assignment @ {0}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor UnsupportedTypeRule = new DiagnosticDescriptor("Neuro101", "Unsupported type", "Unsupported type `{0}` found @ {1}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor InvalidTagRangeRule = new DiagnosticDescriptor(InvalidTagDiagnosticID, "Invalid field neuro tag", "Neuro field attribute tag must be between 0 and "+int.MaxValue+" @ {1}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor FieldTagConflictRule = new DiagnosticDescriptor(FieldTagConflictDiagnosticID, "Field attribute tag already used", "Neuro field attribute tag {0} of `{1}` is already used by another field `{2}`", "Syntax", DiagnosticSeverity.Error, true);
@@ -34,6 +36,7 @@ namespace Ninjadini.Neuro.CodeGen
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(
             UnsupportedTypeRule,
             ReadOnlyFieldRule, 
+            ReadOnlyWithoutInitializerFieldRule,
             InvalidTagRangeRule, 
             FieldTagConflictRule, 
             MissingClassAttributeRule, 
@@ -93,10 +96,19 @@ namespace Ninjadini.Neuro.CodeGen
                 var fieldAttribute = NeuroCodeGenUtils.FindNeuroAttribute(fieldSymbol);
                 if (fieldAttribute != null)
                 {
-                    if(fieldSymbol.IsReadOnly)// && fieldSymbol.Type.TypeKind != TypeKind.Class
+                    if(fieldSymbol.IsReadOnly)
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(ReadOnlyFieldRule, fieldSymbol.Locations.FirstOrDefault(), fieldSymbol.ToString()));
-                        continue;
+                        if (fieldSymbol.Type.TypeKind != TypeKind.Class)
+                        {
+                            context.ReportDiagnostic(Diagnostic.Create(ReadOnlyFieldRule, fieldSymbol.Locations.FirstOrDefault(), fieldSymbol.ToString()));
+                            continue;
+                        }
+                        if (!HasFieldInitializer(fieldSymbol))
+                        {
+                            context.ReportDiagnostic(Diagnostic.Create(ReadOnlyWithoutInitializerFieldRule, fieldSymbol.Locations.FirstOrDefault(), fieldSymbol.ToString()));
+                            continue;
+                        }
+                        
                     }
                     if(!IsTypeSupported(fieldSymbol.Type))
                     {
@@ -127,6 +139,24 @@ namespace Ninjadini.Neuro.CodeGen
                 }
             }
             return result;
+        }
+        
+        public static bool HasFieldInitializer(IFieldSymbol fieldSymbol)
+        {
+            var declaringSyntaxReference = fieldSymbol.DeclaringSyntaxReferences.FirstOrDefault();
+            if (declaringSyntaxReference != null)
+            {
+                var fieldDeclarationSyntax = declaringSyntaxReference.GetSyntax() as VariableDeclaratorSyntax;
+                if (fieldDeclarationSyntax?.Initializer != null)
+                {
+                    var initializerExpression = fieldDeclarationSyntax.Initializer.Value;
+                    if (initializerExpression is BaseObjectCreationExpressionSyntax)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         enum ClassFieldsInfo

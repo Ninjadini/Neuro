@@ -256,6 +256,13 @@ public static class NeuroTypesRegister
                 // neuro.Sync({tag}, nameof(value.{fieldName}), ref value.{fieldName}, {defaultValue});
                 // OR
                 // neuro.Sync({tag}, nameof(value.{fieldName}), ref value.{fieldName});
+
+                if (field.IsReadonly)
+                {
+                    strBuilder.Append("var ").Append(field.Name).Append(" = value.").Append(field.Name).AppendLine(";");
+                    strBuilder.Append("           ");
+                }
+                
                 if (field.IsEnum)
                 {
                     strBuilder.Append("neuro.SyncEnum(");
@@ -267,7 +274,7 @@ public static class NeuroTypesRegister
                 strBuilder.Append(field.Tag);
                 strBuilder.Append(", nameof(value.");
                 strBuilder.Append(field.Name);
-                strBuilder.Append("), ref value.");
+                strBuilder.Append(field.IsReadonly ? "), ref " : "), ref value.");
                 strBuilder.Append(field.Name);
                 if (field.DefaultValue != null)
                 {

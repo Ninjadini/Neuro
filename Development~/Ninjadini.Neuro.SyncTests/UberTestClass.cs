@@ -29,7 +29,7 @@ namespace Ninjadini.Neuro.SyncTests
         [Neuro(201)] public List<TestEnum1> ListEnum;
         [Neuro(202)] public List<TestChildClass> ListClass;
         [Neuro(203)] public List<TestStruct> ListStruct;
-        [Neuro(204)] public List<string> ListTexts;
+        [Neuro(204)] public readonly List<string> ListTexts = new List<string>();
         [Neuro(205)] public List<BaseTestClass1> ListBaseClasses;
         
         public Dictionary<int, string> DictionaryIntStr;
@@ -338,7 +338,8 @@ namespace Ninjadini.Neuro.SyncTests
             neuro.Sync(201, nameof(ListEnum), ref value.ListEnum);
             neuro.Sync(202, nameof(ListClass), ref value.ListClass);
             neuro.Sync(203, nameof(ListStruct), ref value.ListStruct);
-            neuro.Sync(204, nameof(ListTexts), ref value.ListTexts);
+            var ListTexts = value.ListTexts;
+            neuro.Sync(204, nameof(ListTexts), ref ListTexts);
             neuro.Sync(205, nameof(ListBaseClasses), ref value.ListBaseClasses);
             
             //neuro.Sync(210, nameof(DictionaryIntStr), ref value.DictionaryIntStr);

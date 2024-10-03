@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Ninjadini.Toolkit;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -536,9 +537,11 @@ namespace Ninjadini.Neuro.Editor
             {
                 data.SetValue(value);
             };
+
+            var isReadOnly = value != null && data.MemberInfo is FieldInfo { IsInitOnly: true };
             
             var existsToggle = NeuroUiUtils.AddToggle(null, "", value != null);
-            if (data.setter == null || !canEdit || data.Controller.CanSetToNull(data.type, value))
+            if (!isReadOnly && (data.setter == null || !canEdit || data.Controller.CanSetToNull(data.type, value)))
             {
                 existsToggle.style.marginLeft = NameFieldWidth + 8;
                 existsToggle.style.marginTop = 3;

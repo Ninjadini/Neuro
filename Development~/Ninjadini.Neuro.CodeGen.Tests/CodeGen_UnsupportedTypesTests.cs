@@ -83,4 +83,30 @@ using Ninjadini.Neuro;
 ";
         TestUtils.GenerateSourceExpectingError(src, "(int, int)");
     }
+
+    [Test]
+    public void ListWithReadonlyDoesntWorkIfNoInitializer()
+    {
+        var src = @"
+using Ninjadini.Neuro;
+        partial class TestClass
+        {
+            [Neuro(1)] public readonly System.Collections.Generic.List<string> obj = null;
+        }
+";
+        TestUtils.GenerateSourceExpectingError(src, "readonly");
+    }
+
+    [Test]
+    public void ListWithReadonlyDefaultWorks()
+    {
+        var src = @"
+using Ninjadini.Neuro;
+        partial class TestClass
+        {
+            [Neuro(1)] public readonly System.Collections.Generic.List<string> obj = new System.Collections.Generic.List<string>();
+        }
+";
+        TestUtils.GenerateSource(src);
+    }
 }
