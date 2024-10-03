@@ -32,6 +32,7 @@ namespace Ninjadini.Neuro.Editor
         ToolbarToggle rawBinaryToggle;
 
         ReferencedItemsFinder refsFinder;
+        ReferencedItemsFinder.SearchReferencesTask refsSearchTask;
 
         NeuroJsonWriter jsonWriter;
         NeuroBytesWriter _neuroBytesWriter;
@@ -272,11 +273,26 @@ namespace Ninjadini.Neuro.Editor
             {
                 refsFinder = new ReferencedItemsFinder();
             }
-            
+            refsSearchTask?.Cancel();
+            refsSearchTask = null;
             refsView.Clear();
+            
             if (obj is IReferencable referencable)
             {
-                refsFinder.AddReferenceBtnsTo(refsView, referencable, refs, GotoRef);
+                NeuroUiUtils.AddLabel(refsView, "Searching for references...");
+                refsSearchTask = ReferencedItemsFinder.SearchReferencesTask.Start(referencable, refs);
+                var localTask = refsSearchTask;
+                refsView.schedule.Execute(OnRefsViewUpdate).Until(() => localTask != refsSearchTask);
+            }
+        }
+
+        void OnRefsViewUpdate()
+        {
+            if (refsSearchTask is { Busy: false })
+            {
+                refsView.Clear();
+                refsSearchTask.DrawResultToUI(refsView, GotoRef);
+                refsSearchTask = null;
             }
         }
 
@@ -297,14 +313,26 @@ namespace Ninjadini.Neuro.Editor
             else if(tester.ValidatorsVisited.Count == 0)
             {
                 testResultsBuilder.Append("No validator matches found.\nMake a new class extending from ")
-                    .Append(nameof(INeuroContentValidator)).Append("<").Append(obj.GetType().Name).Append("> to get started.");
+                    .Append(nameof(INeuroContentValidator)).Append("<").Append(GetTypeName(obj.GetType())).Append("> to get started.");
             }
             else
             {
                 testResultsBuilder.Append(" \u2714");
-                testResultsBuilder.AppendJoin("\n \u2714", tester.ValidatorsVisited.Select(v => v.Name));
+                testResultsBuilder.AppendJoin("\n \u2714", tester.ValidatorsVisited.Select(GetTypeName));
             }
             debugText.value = testResultsBuilder.ToString();
+        }
+
+        static string GetTypeName(Type type)
+        {
+            var result = type.Name;
+            type = type.DeclaringType;
+            while (type != null)
+            {
+                result = type.Name + "." + result;
+                type = type.DeclaringType;
+            }
+            return result;
         }
 
         void UpdateLiveTest(object obj)

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -12,82 +13,113 @@ namespace Ninjadini.Neuro.Editor
 {
     public class ReferencedItemsFinder
     {
-        public void AddReferenceBtnsTo(VisualElement visualElement, IReferencable obj, NeuroReferences references, Action<IReferencable> callback)
+        public class SearchReferencesTask
         {
-            var referencesList = SearchInReferences(obj, references);
-            foreach (var refObj in referencesList)
-            {
-                var btn = new Button();
-                if (refObj.referencable is ISingletonReferencable)
-                {
-                    btn.text = $"[{refObj.referencable.GetType().Name}] > {refObj.path}";
-                }
-                else
-                {
-                    btn.text = $"[{refObj.referencable.GetType().Name}] {refObj.referencable.TryGetIdAndName()} > {refObj.path}";
-                }
-                btn.style.unityTextAlign = TextAnchor.MiddleLeft;
-                var localRefObj = refObj.referencable;
-                btn.clicked += delegate
-                {
-                    callback(localRefObj);
-                };
-                visualElement.Add(btn);
-            }
-            if (referencesList.Count == 0)
-            {
-                visualElement.Add(new Label("No references found"));
-            }
+            IReferencable _searchingObj;
+            List<(IReferencable referencable, string path)> _result;
+            CancellationTokenSource _cancellationTokenSource;
             
-            var searchInPrefabsResult = new VisualElement();
-            var searchResultLbl = new Label();
-            searchResultLbl.style.paddingTop = 5;
-            searchResultLbl.style.paddingLeft = 5;
+            public bool Busy => _searchingObj != null && _result == null;
+            public IReadOnlyList<(IReferencable referencable, string path)> Result => _result;
 
-            var searchInPrefabsBtn = new Button();
-            searchInPrefabsBtn.text = "Search in Unity objects (not scenes)";
-            searchInPrefabsBtn.clicked += delegate
+            public static SearchReferencesTask Start(IReferencable obj, NeuroReferences references)
             {
-                var prefabPaths = SearchInPrefabs(obj);
-                searchInPrefabsResult.Clear();
-                searchInPrefabsResult.Add(searchResultLbl);
-                foreach (var match in prefabPaths)
+                var task = new SearchReferencesTask();
+                task._searchingObj = obj;
+                task._cancellationTokenSource = new CancellationTokenSource();
+                var cancellationToken = task._cancellationTokenSource.Token;
+                ThreadPool.QueueUserWorkItem((state) =>
+                {
+                    task._result = SearchInReferences(obj, references, cancellationToken);
+                }, cancellationToken);
+                return task;
+            }
+
+            public void Cancel()
+            {
+                _cancellationTokenSource?.Cancel();
+            }
+
+            public void DrawResultToUI(VisualElement visualElement, Action<IReferencable> callback)
+            {
+                if (Busy || _result == null)
+                {
+                    return;
+                }
+                foreach (var refObj in _result)
                 {
                     var btn = new Button();
-                    var obj = match.obj;
-                    btn.text = GetPath(obj) + " > " + match.Item2;
-                    btn.style.unityTextAlign = TextAnchor.MiddleLeft;
-                    if (obj)
+                    if (refObj.referencable is ISingletonReferencable)
                     {
-                        btn.clicked += () =>
-                        {
-                            EditorUtility.FocusProjectWindow();
-                            EditorGUIUtility.PingObject(obj);
-                        };
+                        btn.text = $"[{refObj.referencable.GetType().Name}] > {refObj.path}";
                     }
                     else
                     {
-                        btn.SetEnabled(false);
+                        btn.text = $"[{refObj.referencable.GetType().Name}] {refObj.referencable.TryGetIdAndName()} > {refObj.path}";
                     }
-                    searchInPrefabsResult.Add(btn);
+                    btn.style.unityTextAlign = TextAnchor.MiddleLeft;
+                    var localRefObj = refObj.referencable;
+                    btn.clicked += delegate
+                    {
+                        callback(localRefObj);
+                    };
+                    visualElement.Add(btn);
                 }
+                if (_result.Count == 0)
+                {
+                    visualElement.Add(new Label("No references found"));
+                }
+                
+                var searchInPrefabsResult = new VisualElement();
+                var searchResultLbl = new Label();
+                searchResultLbl.style.paddingTop = 5;
+                searchResultLbl.style.paddingLeft = 5;
 
-                if (prefabPaths.Count > 0)
+                var searchInPrefabsBtn = new Button();
+                searchInPrefabsBtn.text = "Search in Unity objects (not scenes)";
+                searchInPrefabsBtn.clicked += delegate
                 {
-                    searchResultLbl.text = prefabPaths.Count + " references found in Unity objects...";
-                }
-                else
-                {
-                    var searchingType = NeuroReferences.GetRootReferencable(obj.GetType());
-                    searchResultLbl.text = $"No references found in Unity objects.\nWe looked for serialized fields with type:\n<b>Reference<{searchingType}></b>\n- in Prefabs and ScriptableObjects";
-                }
-                if (searchInPrefabsResult.parent == null)
-                {
-                    visualElement.Add(searchInPrefabsResult);
-                    searchInPrefabsResult.PlaceBehind(searchInPrefabsBtn);
-                }
-            };
-            visualElement.Add(searchInPrefabsBtn);
+                    var prefabPaths = SearchInPrefabs(_searchingObj);
+                    searchInPrefabsResult.Clear();
+                    searchInPrefabsResult.Add(searchResultLbl);
+                    foreach (var match in prefabPaths)
+                    {
+                        var btn = new Button();
+                        var obj = match.obj;
+                        btn.text = GetPath(obj) + " > " + match.Item2;
+                        btn.style.unityTextAlign = TextAnchor.MiddleLeft;
+                        if (obj)
+                        {
+                            btn.clicked += () =>
+                            {
+                                EditorUtility.FocusProjectWindow();
+                                EditorGUIUtility.PingObject(obj);
+                            };
+                        }
+                        else
+                        {
+                            btn.SetEnabled(false);
+                        }
+                        searchInPrefabsResult.Add(btn);
+                    }
+
+                    if (prefabPaths.Count > 0)
+                    {
+                        searchResultLbl.text = prefabPaths.Count + " references found in Unity objects...";
+                    }
+                    else
+                    {
+                        var searchingType = NeuroReferences.GetRootReferencable(_searchingObj.GetType());
+                        searchResultLbl.text = $"No references found in Unity objects.\nWe looked for serialized fields with type:\n<b>Reference<{searchingType}></b>\n- in Prefabs and ScriptableObjects";
+                    }
+                    if (searchInPrefabsResult.parent == null)
+                    {
+                        visualElement.Add(searchInPrefabsResult);
+                        searchInPrefabsResult.PlaceBehind(searchInPrefabsBtn);
+                    }
+                };
+                visualElement.Add(searchInPrefabsBtn);
+            }
         }
 
         public static List<(Object obj, string path)> SearchInPrefabs(IReferencable referencable)
@@ -202,7 +234,7 @@ namespace Ninjadini.Neuro.Editor
             return path;
         }   
         
-        public static List<(IReferencable referencable, string path)> SearchInReferences(IReferencable obj, NeuroReferences references)
+        public static List<(IReferencable referencable, string path)> SearchInReferences(IReferencable obj, NeuroReferences references, CancellationToken? cancellationToken = null)
         {
             var neuroVisitor = new NeuroVisitor();
             var visitor = new Visitor(obj);
@@ -211,6 +243,10 @@ namespace Ninjadini.Neuro.Editor
             {
                 foreach (var referencable in references.GetTable(baseType).SelectAll())
                 {
+                    if (cancellationToken is { IsCancellationRequested: true })
+                    {
+                        return result;
+                    }
                     if (referencable == obj)
                     {
                         continue;
