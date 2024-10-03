@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Runtime.CompilerServices;
 using Ninjadini.Neuro.Sync;
 using UnityEngine;
 
@@ -129,5 +130,23 @@ namespace Ninjadini.Neuro
             }
         }
         public static NeuroReferences SharedReferences => Shared.References;
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static NeuroReferenceTable<T> GetSharedTable<T>() where T: class,  IReferencable
+        {
+            return Shared.References.GetTable<T>();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static INeuroReferenceTable GetSharedTable(Type type)
+        {
+            return Shared.References.GetTable(type);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T GetSharedSingleton<T>() where T : class, ISingletonReferencable
+        {
+            return Shared.References.Get<T>();
+        }
     }
 }

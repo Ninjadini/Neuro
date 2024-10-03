@@ -28,6 +28,11 @@ namespace Ninjadini.Neuro
 
         public void Read<T>(in BytesChunk bytesChunk, ref T result,  in ReaderOptions opts = default)
         {
+            if (bytesChunk.Length == 0)
+            {
+                result = default;
+                return;
+            }
             if (typeof(T) == typeof(object))
             {
                 object obj = result;

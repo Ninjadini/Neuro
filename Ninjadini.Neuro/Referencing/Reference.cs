@@ -82,14 +82,10 @@ namespace Ninjadini.Neuro
             }
         }
         
-        #if NEURO_STATIC_REFERENCES
+        #if !NEURO_DISABLE_STATIC_REFERENCES
         public T GetValue()
         {
             return NeuroReferences.Default?.Get(this);
-        }
-        public static implicit operator T(Reference<T> refId)
-        {
-            return NeuroReferences.Default?.Get(refId);
         }
         #endif
 
