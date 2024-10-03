@@ -1,0 +1,5 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:ScrollView name="stationsHolder" mode="Horizontal" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" style="position: absolute; bottom: 0; left: 0; right: 0; height: 100px;" />
+    <ui:Label tabindex="-1" text="Select a station" parse-escape-sequences="true" display-tooltip-when-elided="true" name="stationName" style="-unity-text-align: upper-center;" />
+    <ui:ScrollView name="itemsHolder" mode="Horizontal" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Hidden" style="position: relative; height: 100px;" />
+</ui:UXML>
