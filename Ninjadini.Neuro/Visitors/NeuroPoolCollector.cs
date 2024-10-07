@@ -132,6 +132,22 @@ namespace Ninjadini.Neuro
             }
         }
 
+        void INeuroSync.Sync<TKey, TValue>(uint key, string name, ref Dictionary<TKey, TValue> values)
+        {
+            if (values != null)
+            {
+                foreach (var kv in values)
+                {
+                    if (kv.Value is INeuroPoolable)
+                    {
+                        var v = kv.Value;
+                        SyncObj<TValue>(ref v);
+                    }
+                }
+                values.Clear();
+            }
+        }
+
         public class BasicPool : INeuroObjectPool
         {
             // TODO not real thing yet.

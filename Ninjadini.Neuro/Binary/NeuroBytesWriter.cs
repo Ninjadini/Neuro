@@ -186,7 +186,6 @@ namespace Ninjadini.Neuro
             return null;
         }
         
-        bool INeuroSync.IsReading => false;
         bool INeuroSync.IsWriting => true;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -290,28 +289,29 @@ namespace Ninjadini.Neuro
 
         void INeuroSync.Sync<T>(uint key, string name, ref T value)
         {
-            if (value != null)
+            if (value == null)
             {
-                var sizeType = NeuroSyncTypes<T>.SizeType;
-                if (sizeType == NeuroConstants.Child && value.GetType() != typeof(T))
-                {
-                    WriteHeader(key, NeuroConstants.ChildWithType);
-                    lastKey = 0;
-                    var subTag = NeuroSyncSubTypes<T>.GetTag(value.GetType());
-                    proto.Write(subTag);
-                    NeuroSyncSubTypes<T>.Sync(this, subTag, ref value);
-                }
-                else
-                {
-                    WriteHeader(key, sizeType);
-                    lastKey = 0;
-                    NeuroSyncTypes<T>.GetOrThrow()(this, ref value);
-                }
-                lastKey = key;
-                if (sizeType >= NeuroConstants.Child)
-                {
-                    proto.Write(NeuroConstants.Child);
-                }
+                return;
+            }
+            var sizeType = NeuroSyncTypes<T>.SizeType;
+            if (sizeType == NeuroConstants.Child && value.GetType() != typeof(T))
+            {
+                WriteHeader(key, NeuroConstants.ChildWithType);
+                lastKey = 0;
+                var subTag = NeuroSyncSubTypes<T>.GetTag(value.GetType());
+                proto.Write(subTag);
+                NeuroSyncSubTypes<T>.Sync(this, subTag, ref value);
+            }
+            else
+            {
+                WriteHeader(key, sizeType);
+                lastKey = 0;
+                NeuroSyncTypes<T>.GetOrThrow()(this, ref value);
+            }
+            lastKey = key;
+            if (sizeType >= NeuroConstants.Child)
+            {
+                proto.Write(NeuroConstants.Child);
             }
         }
 
@@ -324,48 +324,142 @@ namespace Ninjadini.Neuro
             proto.Write(NeuroConstants.Child);
         }
 
+        void INeuroSync.Sync<T>(uint key, string name, List<T> values)
+        {
+            if (values == null || values.Count == 0)
+            {
+                return;
+            }
+            WriteList(key, name, ref values);
+        }
+
         void INeuroSync.Sync<T>(uint key, string name, ref List<T> values)
         {
-            if (values != null)
+            if (values == null)
             {
-                var sizeType = NeuroSyncTypes<T>.SizeType;
-                if (sizeType >= NeuroConstants.Child && NeuroSyncSubTypes<T>.Exists())
+                return;
+            }
+            if (values.Count == 0)
+            {
+                WriteHeader(key, NeuroConstants.RepeatedMask);
+                proto.Write(0u);
+                return;
+            }
+            WriteList(key, name, ref values);
+        }
+
+        void WriteList<T>(uint key, string name, ref List<T> values)
+        {
+            var sizeType = NeuroSyncTypes<T>.SizeType;
+            if (sizeType >= NeuroConstants.Child && NeuroSyncSubTypes<T>.Exists())
+            {
+                sizeType = NeuroConstants.ChildWithType;
+            }
+            WriteHeader(key, sizeType | NeuroConstants.RepeatedMask);
+            var count = values.Count;
+            proto.Write((uint)count);
+            var del = NeuroSyncTypes<T>.GetOrThrow();
+            for (var index = 0; index < count; index++)
+            {
+                lastKey = 0;
+                var value = values[index];
+                if (sizeType == NeuroConstants.ChildWithType)
                 {
-                    sizeType = NeuroConstants.ChildWithType;
-                }
-                WriteHeader(key, sizeType | NeuroConstants.RepeatedMask);
-                var count = values.Count;
-                proto.Write((uint)count);
-                var del = NeuroSyncTypes<T>.GetOrThrow();
-                for (var index = 0; index < count; index++)
-                {
-                    lastKey = 0;
-                    var value = values[index];
-                    if (sizeType == NeuroConstants.ChildWithType)
+                    if (value != null)
                     {
-                        if (value != null)
-                        {
-                            var tag = NeuroSyncSubTypes<T>.GetTag(value.GetType());
-                            proto.Write(tag);
-                            NeuroSyncSubTypes<T>.Sync(this, tag, ref value);
-                        }
-                        else
-                        {
-                            proto.Write(0);
-                            proto.Write(0);
-                        }
+                        var tag = NeuroSyncSubTypes<T>.GetTag(value.GetType());
+                        proto.Write(tag);
+                        NeuroSyncSubTypes<T>.Sync(this, tag, ref value);
                     }
                     else
                     {
-                        del(this, ref value);
-                    }
-                    if (sizeType >= NeuroConstants.Child)
-                    {
-                        proto.Write(NeuroConstants.Child);
+                        proto.Write(0);
+                        proto.Write(0);
                     }
                 }
-                lastKey = key;
+                else
+                {
+                    del(this, ref value);
+                }
+                if (sizeType >= NeuroConstants.Child)
+                {
+                    proto.Write(NeuroConstants.Child);
+                }
             }
+            lastKey = key;
+        }
+
+        void INeuroSync.Sync<TKey, TValue>(uint key, string name, Dictionary<TKey, TValue> values)
+        {
+            if (values == null || values.Count == 0)
+            {
+                return;
+            }
+            WriteDictionary(key, name, ref values);
+        }
+
+        void INeuroSync.Sync<TKey, TValue>(uint key, string name, ref Dictionary<TKey, TValue> values)
+        {
+            if (values == null)
+            {
+                return;
+            }
+            if (values.Count == 0)
+            {
+                WriteHeader(key, NeuroConstants.RepeatedMask);
+                proto.Write(0u);
+                return;
+            }
+            WriteDictionary(key, name, ref values);
+        }
+
+        void WriteDictionary<TKey, TValue>(uint key, string name, ref Dictionary<TKey, TValue> values)
+        {
+            WriteHeader(key, NeuroConstants.Dictionary);
+            var kSizeType = NeuroSyncTypes<TKey>.SizeType;
+            var vSizeType = NeuroSyncTypes<TValue>.SizeType;
+            if (vSizeType >= NeuroConstants.Child && NeuroSyncSubTypes<TValue>.Exists())
+            {
+                vSizeType = NeuroConstants.ChildWithType;
+            }
+            proto.Write(kSizeType | vSizeType << NeuroConstants.HeaderShift);
+            proto.Write((uint)values.Count);
+            var kDel = NeuroSyncTypes<TKey>.GetOrThrow();
+            var vDel = NeuroSyncTypes<TValue>.GetOrThrow();
+            foreach (var kv in values)
+            {
+                var k = kv.Key;
+                kDel(this, ref k);
+                //if (kSizeType >= NeuroConstants.Child)
+                //{
+                //    proto.Write(NeuroConstants.Child);
+                //}
+                lastKey = 0;
+                var v = kv.Value;
+                if (vSizeType == NeuroConstants.ChildWithType)
+                {
+                    if (v != null)
+                    {
+                        var tag = NeuroSyncSubTypes<TValue>.GetTag(v.GetType());
+                        proto.Write(tag);
+                        NeuroSyncSubTypes<TValue>.Sync(this, tag, ref v);
+                    }
+                    else
+                    {
+                        proto.Write(0);
+                        proto.Write(0);
+                    }
+                }
+                else
+                {
+                    vDel(this, ref v);
+                }
+                if (vSizeType >= NeuroConstants.Child)
+                {
+                    proto.Write(NeuroConstants.Child);
+                }
+            }
+            lastKey = key;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

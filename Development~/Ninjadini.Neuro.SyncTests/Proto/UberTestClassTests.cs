@@ -107,6 +107,8 @@ namespace Ninjadini.Neuro.SyncTests
         public void TestBlank()
         {
             var testObj = new UberTestClass();
+            testObj.ListTexts.Clear();
+            testObj.DictionaryIntObj.Clear();
             TestClone(testObj);
             var bytes = NeuroBytesWriter.Shared.Write(testObj);
             Assert.AreEqual(2, bytes.Length);
@@ -117,6 +119,7 @@ namespace Ninjadini.Neuro.SyncTests
         {
             var refs = new NeuroReferences();
             var src = UberTestClass.CreateTestClass(refs);
+            src.LastItem = 12345;
             var writer = NeuroBytesWriter.Shared;
             var bytes = writer.Write(src);
             Console.WriteLine(RawProtoReader.GetDebugString(bytes));
@@ -180,6 +183,50 @@ namespace Ninjadini.Neuro.SyncTests
                 var target = NeuroJsonReader.Shared.Read<UberTestClass>(jsonStr);
                 UberTestClass.TestAllValuesMatch(src, target);
             }
+        }
+        
+        [Test]
+        public void WIP()
+        {
+            var testObj = new UberTestClass();
+            
+            testObj.DictionaryIntStr = new Dictionary<int, string>()
+            {
+                {1, "a"},
+                {2, "b"},
+                {3, "c"},
+            };
+            testObj.DictionaryRefObj = new Dictionary<Reference<ReferencableClass>, BaseTestClass1>()
+            {
+                {
+                    new Reference<ReferencableClass>() { RefId = 1 }, new SubTestClass1()
+                    {
+                        NumValue = 123,
+                        Value = "Value1",
+                        Name = "Name1"
+                    }
+                }
+                ,
+                {
+                new Reference<ReferencableClass>() { RefId = 2 }, new SubTestClass1()
+                    {
+                        NumValue = 234,
+                        Value = "Value2",
+                        Name = "Name2"
+                    }
+                }
+            };
+
+            testObj.DictionaryStringObj = new Dictionary<string, BaseTestClass1>()
+            {
+                { "1", new BaseTestClass1() { Id = 1 } },
+                { "2", new SubTestClass1() { Id = 1, Value = "1" } }
+            };
+            
+            testObj.DictionaryIntObj.Add(1, new TestChildClass() { Id = 1 });
+            testObj.DictionaryIntObj.Add(2, new TestChildClass() { Id = 2 });
+            
+            TestClone(testObj, testJson:false);
         }
     }
 }

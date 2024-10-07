@@ -281,7 +281,6 @@ namespace Ninjadini.Neuro
         }
 
         bool INeuroSync.IsReading => true;
-        bool INeuroSync.IsWriting => false;
         
         void INeuroSync.Sync(ref bool value)
         {
@@ -490,8 +489,76 @@ namespace Ninjadini.Neuro
                     }
                 }
             }
-            else
+            else if(values != null)
             {
+                values.Clear();
+                values = null;
+            }
+        }
+
+        void INeuroSync.Sync<TKey, TValue>(uint key, string name, ref Dictionary<TKey, TValue> values)
+        {
+            if(key == 0 || SeekKey(key))
+            {
+                var sizeType = nextHeader & NeuroConstants.SizeTypeMask;
+                if (sizeType != NeuroConstants.Dictionary)
+                {
+                    if (proto.ReadUint() == 0)
+                    {
+                        values.Clear();
+                        return;
+                    }
+                    throw new Exception("Invalid dictionary content.");
+                }
+                var vSizeType = proto.ReadUint() >> NeuroConstants.HeaderShift;
+                
+                var count = (int)proto.ReadUint();
+                values ??= new Dictionary<TKey, TValue>(count);
+                values.Clear();
+                
+                var kDel = NeuroSyncTypes<TKey>.GetOrThrow();
+                var vDel = NeuroSyncTypes<TValue>.GetOrThrow();
+                var kSizeType = NeuroSyncTypes<TKey>.SizeType;
+                for (var i = 0; i < count; i++)
+                {
+                    TKey itemKey = default;
+                    if (kSizeType >= NeuroConstants.Child)
+                    {
+                        nextKey = 0;
+                        kDel(this, ref itemKey);
+                        SeekKey(uint.MaxValue);
+                        nextKey = key;
+                    }
+                    else
+                    {
+                        kDel(this, ref itemKey);
+                    }
+                    TValue itemValue = default;
+                    if (vSizeType >= NeuroConstants.Child)
+                    {
+                        nextKey = 0;
+                        if (vSizeType == NeuroConstants.ChildWithType)
+                        {
+                            var tag = proto.ReadUint();
+                            NeuroSyncSubTypes<TValue>.Sync(this, tag, ref itemValue);
+                        }
+                        else
+                        {
+                            vDel(this, ref itemValue);
+                        }
+                        SeekKey(uint.MaxValue);
+                        nextKey = key;
+                    }
+                    else
+                    {
+                        vDel(this, ref itemValue);
+                    }
+                    values[itemKey] = itemValue;
+                }
+            }
+            else if(values != null)
+            {
+                values.Clear();
                 values = null;
             }
         }
@@ -534,43 +601,60 @@ namespace Ninjadini.Neuro
                 while (count > 0)
                 {
                     count--;
-                    if(sizeType == NeuroConstants.VarInt)
-                    {
-                        proto.ReadUint();
-                    }
-                    else if(sizeType == NeuroConstants.Fixed32)
-                    {
-                        proto.Skip(4);
-                    }
-                    else if(sizeType == NeuroConstants.Fixed64)
-                    {
-                        proto.Skip(8);
-                    }
-                    else if(sizeType == NeuroConstants.Length)
-                    {
-                        proto.Skip((int)proto.ReadUint());
-                    }
-                    else
-                    {
-                        var prevKey = nextKey;
-                        if (sizeType == NeuroConstants.ChildWithType)
-                        {
-                            if (keyIncrement > 0)
-                            {
-                                proto.ReadUint(); // subtype's tag.
-                            }
-                            SkipGroup();
-                        }
-                        else
-                        {
-                            nextKey = 0;
-                            SeekKey(uint.MaxValue);
-                        }
-                        nextKey = prevKey;
-                    }
+                    Skip(sizeType, keyIncrement > 0);
                 }
             }
             return false;
+        }
+
+        void Skip(uint sizeType, bool isFirstPoly = true)
+        {
+            if(sizeType == NeuroConstants.VarInt)
+            {
+                proto.ReadUint();
+            }
+            else if(sizeType == NeuroConstants.Fixed32)
+            {
+                proto.Skip(4);
+            }
+            else if(sizeType == NeuroConstants.Fixed64)
+            {
+                proto.Skip(8);
+            }
+            else if(sizeType == NeuroConstants.Length)
+            {
+                proto.Skip((int)proto.ReadUint());
+            }
+            else if(sizeType == NeuroConstants.Dictionary)
+            {
+                var types = proto.ReadUint();
+                var keyType = types & NeuroConstants.HeaderMask;
+                var valueType = types >> NeuroConstants.HeaderShift;
+                var dictCount = proto.ReadUint();
+                for (var i = 0; i < dictCount; i++)
+                {
+                    Skip(keyType);
+                    Skip(valueType);
+                }
+            }
+            else
+            {
+                var prevKey = nextKey;
+                if (sizeType == NeuroConstants.ChildWithType)
+                {
+                    if (isFirstPoly)
+                    {
+                        proto.ReadUint(); // subtype's tag.
+                    }
+                    SkipGroup();
+                }
+                else
+                {
+                    nextKey = 0;
+                    SeekKey(uint.MaxValue);
+                }
+                nextKey = prevKey;
+            }
         }
 
         void SkipGroup()

@@ -22,10 +22,7 @@ namespace Ninjadini.Neuro
             SyncObj(ref obj);
             return hash;
         }
-        
-        bool INeuroSync.IsReading => false;
-        bool INeuroSync.IsWriting => false;
-        
+
         T INeuroSync.GetPooled<T>()
         {
             return null;
@@ -151,6 +148,11 @@ namespace Ninjadini.Neuro
                     SyncObj<T>(ref v);
                 }
             }
+        }
+
+        void INeuroSync.Sync<TKey, TValue>(uint key, string name, ref Dictionary<TKey, TValue> values)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -45,9 +45,6 @@ namespace Ninjadini.Neuro
             }
         }
         
-        bool INeuroSync.IsReading => false;
-        bool INeuroSync.IsWriting => false;
-        
         T INeuroSync.GetPooled<T>()
         {
             return null;
@@ -162,6 +159,21 @@ namespace Ninjadini.Neuro
                 }
                 visitor.EndVisit();
             }
+        }
+
+        void INeuroSync.Sync<TKey, TValue>(uint key, string name, ref Dictionary<TKey, TValue> values)
+        {
+            visitor.BeginVisit(ref values, name, null);
+            var index = 0;
+            foreach (var kv in values)
+            {
+                var k = kv.Key;
+                SyncObj(ref k, name, index);
+                var v = kv.Value;
+                SyncObj(ref v, name, index);
+                index++;
+            }
+            visitor.EndVisit();
         }
 
         public static string GeneratePathFromStack(IEnumerable<StackItem> stack)

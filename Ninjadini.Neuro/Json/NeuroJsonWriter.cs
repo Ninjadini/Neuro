@@ -131,7 +131,6 @@ namespace Ninjadini.Neuro
         
         public StringBuilder CurrentStringBuilder => stringBuilder;
 
-        bool INeuroSync.IsReading => false;
         bool INeuroSync.IsWriting => true;
 
         void INeuroSync.Sync(ref bool value)
@@ -384,6 +383,11 @@ namespace Ninjadini.Neuro
                 numIndents--;
                 AppendIndents().Append("],\n");
             }
+        }
+
+        void INeuroSync.Sync<TKey, TValue>(uint key, string name, ref Dictionary<TKey, TValue> values)
+        {
+            throw new NotImplementedException();
         }
     }
 }

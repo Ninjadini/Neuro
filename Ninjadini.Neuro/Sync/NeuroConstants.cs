@@ -21,8 +21,9 @@ namespace Ninjadini.Neuro.Sync
         public const uint Fixed32 = (uint)FieldSizeType.Fixed32;
         public const uint Fixed64 = (uint)FieldSizeType.Fixed64;
         public const uint Length = (uint)FieldSizeType.Length;
-        public const uint Child = (uint)FieldSizeType.Child; 
+        public const uint Child = (uint)FieldSizeType.Child;
         public const uint ChildWithType = (uint)FieldSizeType.ChildWithTag; 
+        public const uint Dictionary = (uint)FieldSizeType.Dictionary; 
 
         public static readonly DateTime TwentyTwentyTime = new DateTime(2020, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
         public static readonly long TwentyTwentyTicks = TwentyTwentyTime.Ticks;

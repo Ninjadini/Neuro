@@ -104,7 +104,6 @@ namespace Ninjadini.Neuro
         }
 
         bool INeuroSync.IsReading => true;
-        bool INeuroSync.IsWriting => false;
 
         void INeuroSync.Sync(ref bool value)
         {
@@ -380,6 +379,11 @@ namespace Ninjadini.Neuro
             {
                 values = default;
             }
+        }
+
+        void INeuroSync.Sync<TKey, TValue>(uint key, string name, ref Dictionary<TKey, TValue> values)
+        {
+            throw new NotImplementedException();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
