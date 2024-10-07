@@ -241,9 +241,11 @@ namespace Ninjadini.Neuro.SyncTests
             result.ListTexts.Add("a");
             result.ListTexts.Add("b");
             result.ListTexts.Add("c");
+            //result.ListTexts.Add(null);
             
             result.DictionaryIntObj.Add(1, new TestChildClass(){ Id = 1});
             result.DictionaryIntObj.Add(2, new TestChildClass(){ Id = 2, Name = "2"});
+            //result.DictionaryIntObj.Add(3, null);
 
             return result;
         }
@@ -368,9 +370,9 @@ namespace Ninjadini.Neuro.SyncTests
             neuro.Sync(205, nameof(ListBaseClasses), ref value.ListBaseClasses);
             
             neuro.Sync(210, nameof(DictionaryIntStr), ref value.DictionaryIntStr);
-            neuro.Sync(211, nameof(DictionaryStringObj), value.DictionaryIntObj);
+            neuro.Sync(211, nameof(DictionaryIntObj), value.DictionaryIntObj);
             neuro.Sync(212, nameof(DictionaryStringObj), ref value.DictionaryStringObj);
-            neuro.Sync(213, nameof(DictionaryStringObj), ref value.DictionaryRefObj);
+            neuro.Sync(213, nameof(DictionaryRefObj), ref value.DictionaryRefObj);
             
             neuro.Sync(300, nameof(NullableId), ref value.NullableId);
             neuro.Sync(301, nameof(NullableEnum), ref value.NullableEnum);
@@ -458,8 +460,15 @@ namespace Ninjadini.Neuro.SyncTests
             {
                 if (b.DictionaryIntObj.TryGetValue(kv.Key, out var bValue))
                 {
-                    Assert.AreEqual(kv.Value.Id, bValue.Id);
-                    Assert.AreEqual(kv.Value.Name, bValue.Name);
+                    if (kv.Value != null)
+                    {
+                        Assert.AreEqual(kv.Value.Id, bValue.Id);
+                        Assert.AreEqual(kv.Value.Name, bValue.Name);
+                    }
+                    else
+                    {
+                        Assert.IsNull(bValue);
+                    }
                 }
                 else
                 {

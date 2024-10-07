@@ -377,9 +377,13 @@ namespace Ninjadini.Neuro
                         proto.Write(0);
                     }
                 }
-                else
+                else if(value != null)
                 {
                     del(this, ref value);
+                }
+                else
+                {
+                    throw new Exception($"Null list item is not supported @ {name}");
                 }
                 if (sizeType >= NeuroConstants.Child)
                 {
@@ -430,12 +434,12 @@ namespace Ninjadini.Neuro
             {
                 var k = kv.Key;
                 kDel(this, ref k);
-                //if (kSizeType >= NeuroConstants.Child)
-                //{
-                //    proto.Write(NeuroConstants.Child);
-                //}
                 lastKey = 0;
                 var v = kv.Value;
+                if (v == null)
+                {
+                    
+                }
                 if (vSizeType == NeuroConstants.ChildWithType)
                 {
                     if (v != null)
@@ -450,9 +454,13 @@ namespace Ninjadini.Neuro
                         proto.Write(0);
                     }
                 }
-                else
+                else if (v != null)
                 {
                     vDel(this, ref v);
+                }
+                else
+                {
+                    throw new Exception($"Null dictionary item is not supported @ {name}");
                 }
                 if (vSizeType >= NeuroConstants.Child)
                 {

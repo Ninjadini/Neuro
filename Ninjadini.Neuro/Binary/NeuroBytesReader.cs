@@ -505,6 +505,7 @@ namespace Ninjadini.Neuro
                 {
                     if (proto.ReadUint() == 0)
                     {
+                        values ??= new Dictionary<TKey, TValue>();
                         values.Clear();
                         return;
                     }
@@ -518,11 +519,11 @@ namespace Ninjadini.Neuro
                 
                 var kDel = NeuroSyncTypes<TKey>.GetOrThrow();
                 var vDel = NeuroSyncTypes<TValue>.GetOrThrow();
-                var kSizeType = NeuroSyncTypes<TKey>.SizeType;
+                //var kSizeType = NeuroSyncTypes<TKey>.SizeType;
                 for (var i = 0; i < count; i++)
                 {
                     TKey itemKey = default;
-                    if (kSizeType >= NeuroConstants.Child)
+                    /*if (kSizeType >= NeuroConstants.Child)
                     {
                         nextKey = 0;
                         kDel(this, ref itemKey);
@@ -530,9 +531,9 @@ namespace Ninjadini.Neuro
                         nextKey = key;
                     }
                     else
-                    {
+                    {*/
                         kDel(this, ref itemKey);
-                    }
+                    //}
                     TValue itemValue = default;
                     if (vSizeType >= NeuroConstants.Child)
                     {

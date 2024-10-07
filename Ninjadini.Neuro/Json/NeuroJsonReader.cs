@@ -311,69 +311,25 @@ namespace Ninjadini.Neuro
             }
         }
 
+        void INeuroSync.Sync<T>(uint key, string name, List<T> values)
+        {
+            var node = FindNode(name);
+            if (node.Type == NeuroJsonTokenizer.NodeType.Array)
+            {
+                ReadList(node, ref values);
+            }
+            else
+            {
+                values?.Clear();
+            }
+        }
+
         void INeuroSync.Sync<T>(uint key, string name, ref List<T> values)
         {
             var node = FindNode(name);
             if (node.Type == NeuroJsonTokenizer.NodeType.Array)
             {
-                var parentBefore = currentParent;
-                var nodeId = node.Value.Start;
-                var count = node.Value.End;
-                if (values == null)
-                {
-                    values = new List<T>(count);
-                }
-                else if(values.Count > count)
-                {
-                    values.RemoveRange(count, values.Count - count);
-                }
-                else if(values.Capacity < count)
-                {
-                    values.Capacity = count;
-                }
-                var del = NeuroJsonSyncTypes<T>.GetOrThrow();
-
-                var arr = nodes.Array;
-                var targetIndex = 0;
-                for(var i = 0; i < nodes.Count; i++)
-                {
-                    // TODO this can be optimised via skipping some nodes + nextNode
-                    ref var childNode = ref arr[i];
-                    if (childNode.Parent == nodeId)
-                    {
-                        currentParent = childNode.Value.Start;
-                        currentValue = childNode.Value;
-                        T value = i < values.Count ? values[i] : default;
-                        
-                        if (NeuroSyncSubTypes<T>.Exists())
-                        {
-                            var subTypeNode = FindNode(NeuroJsonWriter.FieldName_ClassTag);
-                            if (subTypeNode.Type != NeuroJsonTokenizer.NodeType.Unknown)
-                            {
-                                var tag = GetFirstUintPart(subTypeNode.Value);
-                                NeuroSyncSubTypes<T>.Sync(this, tag, ref value);
-                            }
-                            else
-                            {
-                                del(this, ref value);
-                            }
-                        }
-                        else
-                        {
-                            del(this, ref value);
-                        }
-                        if (targetIndex < values.Count)
-                        {
-                            values[targetIndex] = value;
-                        }
-                        else
-                        {
-                            values.Add(value);
-                        }
-                        targetIndex++;
-                    }
-                }
-                currentParent = parentBefore;
+                ReadList(node, ref values);
             }
             else
             {
@@ -381,9 +337,150 @@ namespace Ninjadini.Neuro
             }
         }
 
+        void ReadList<T>(NeuroJsonTokenizer.VisitedNode node, ref List<T> values)
+        {
+            var parentBefore = currentParent;
+            var nodeId = node.Value.Start;
+            var count = node.Value.End;
+            if (values == null)
+            {
+                values = new List<T>(count);
+            }
+            else if (values.Count > count)
+            {
+                values.RemoveRange(count, values.Count - count);
+            }
+            else if (values.Capacity < count)
+            {
+                values.Capacity = count;
+            }
+
+            var del = NeuroJsonSyncTypes<T>.GetOrThrow();
+
+            var arr = nodes.Array;
+            var targetIndex = 0;
+            for (var i = 0; i < nodes.Count; i++)
+            {
+                // TODO this can be optimised via skipping some nodes + nextNode
+                ref var childNode = ref arr[i];
+                if (childNode.Parent == nodeId)
+                {
+                    currentParent = childNode.Value.Start;
+                    currentValue = childNode.Value;
+                    T value = i < values.Count ? values[i] : default;
+
+                    if (NeuroSyncSubTypes<T>.Exists())
+                    {
+                        var subTypeNode = FindNode(NeuroJsonWriter.FieldName_ClassTag);
+                        if (subTypeNode.Type != NeuroJsonTokenizer.NodeType.Unknown)
+                        {
+                            var tag = GetFirstUintPart(subTypeNode.Value);
+                            NeuroSyncSubTypes<T>.Sync(this, tag, ref value);
+                        }
+                        else
+                        {
+                            del(this, ref value);
+                        }
+                    }
+                    else
+                    {
+                        del(this, ref value);
+                    }
+
+                    if (targetIndex < values.Count)
+                    {
+                        values[targetIndex] = value;
+                    }
+                    else
+                    {
+                        values.Add(value);
+                    }
+
+                    targetIndex++;
+                }
+            }
+
+            currentParent = parentBefore;
+        }
+
+        void INeuroSync.Sync<TKey, TValue>(uint key, string name, Dictionary<TKey, TValue> values)
+        {
+            var node = FindNode(name);
+            if (node.Type == NeuroJsonTokenizer.NodeType.Group)
+            {
+                ReadDictionary(node, ref values);
+            }
+            else
+            {
+                values?.Clear();
+            }
+        }
+
         void INeuroSync.Sync<TKey, TValue>(uint key, string name, ref Dictionary<TKey, TValue> values)
         {
-            throw new NotImplementedException();
+            var node = FindNode(name);
+            if (node.Type == NeuroJsonTokenizer.NodeType.Group)
+            {
+                ReadDictionary(node, ref values);
+            }
+            else
+            {
+                values = default;
+            }
+        }
+
+        void ReadDictionary<TKey, TValue>(NeuroJsonTokenizer.VisitedNode node, ref Dictionary<TKey, TValue> values)
+        {
+            var count = node.Value.End;
+            values ??= new Dictionary<TKey, TValue>(count);
+            values.Clear();
+            if (count == 0)
+            {
+                return;
+            }
+            var parentBefore = currentParent;
+            var nodeId = node.Value.Start;
+            
+            var kDel = NeuroJsonSyncTypes<TKey>.GetOrThrow();
+            var vDel = NeuroJsonSyncTypes<TValue>.GetOrThrow();
+            var isPloyValues = NeuroSyncSubTypes<TValue>.Exists();
+            
+            var arr = nodes.Array;
+            for (var i = 0; i < nodes.Count; i++)
+            {
+                // TODO this can be optimised via skipping some nodes + nextNode
+                ref var childNode = ref arr[i];
+                if (childNode.Parent == nodeId)
+                {
+                    currentParent = childNode.Value.Start;
+                    currentValue = childNode.Key;
+                    TKey itemKey = default;
+                    kDel(this, ref itemKey);
+                    
+                    currentValue = childNode.Value;
+                    TValue itemValue = default;
+
+                    if (isPloyValues)
+                    {
+                        var subTypeNode = FindNode(NeuroJsonWriter.FieldName_ClassTag);
+                        if (subTypeNode.Type != NeuroJsonTokenizer.NodeType.Unknown)
+                        {
+                            var tag = GetFirstUintPart(subTypeNode.Value);
+                            NeuroSyncSubTypes<TValue>.Sync(this, tag, ref itemValue);
+                        }
+                        else
+                        {
+                            vDel(this, ref itemValue);
+                        }
+                    }
+                    else
+                    {
+                        vDel(this, ref itemValue);
+                    }
+                    values[itemKey] = itemValue;
+                }
+            }
+            currentParent = parentBefore;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

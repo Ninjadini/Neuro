@@ -14,7 +14,7 @@ namespace Ninjadini.Neuro.SyncTests
         }
 
         [Test]
-        public void TestBinaryWrite()
+        public void TestUberClass()
         {
             var refs = new NeuroReferences();
             var testObj = UberTestClass.CreateTestClass(refs);
@@ -185,6 +185,101 @@ namespace Ninjadini.Neuro.SyncTests
             }
         }
         
+        
+        [Test]
+        public void ErrorOnNullItemsInLists()
+        {
+            var testObj = new UberTestClass();
+            testObj.ListTexts.Add(null);
+            
+            const string errMsg = "Null list item is not supported";
+            ExpectException(() =>
+            {
+                NeuroBytesWriter.Shared.Write(testObj);
+            }, errMsg);
+            ExpectException(() =>
+            {
+                NeuroJsonWriter.Shared.Write(testObj);
+            }, errMsg);
+            
+            testObj = new UberTestClass();
+            testObj.ListClass = new List<TestChildClass>() { null };
+            ExpectException(() =>
+            {
+                NeuroBytesWriter.Shared.Write(testObj);
+            }, errMsg);
+            ExpectException(() =>
+            {
+                NeuroJsonWriter.Shared.Write(testObj);
+            }, errMsg);
+        }
+        
+        [Test]
+        public void ErrorOnNullItemsInDictionary()
+        {
+            
+            var testObj = new UberTestClass();
+            
+            testObj.DictionaryIntStr = new Dictionary<int, string>()
+            {
+                {2, null},
+            };
+            
+            const string errMsg = "Null dictionary item is not supported";
+            
+            ExpectException(() =>
+            {
+                NeuroBytesWriter.Shared.Write(testObj);
+            }, errMsg);
+            ExpectException(() =>
+            {
+                NeuroJsonWriter.Shared.Write(testObj);
+            }, errMsg);
+            
+            testObj = new UberTestClass();
+            testObj.DictionaryIntObj.Add(1, null);
+            ExpectException(() =>
+            {
+                NeuroBytesWriter.Shared.Write(testObj);
+            }, errMsg);
+            ExpectException(() =>
+            {
+                NeuroJsonWriter.Shared.Write(testObj);
+            }, errMsg);
+        }
+
+        static void ExpectException(Action action, string exceptionMessage = null)
+        {
+            Exception caughtException = null;
+            try
+            {
+                action();
+            }
+            catch (Exception e)
+            {
+                caughtException = e;
+            }
+
+            if (caughtException == null)
+            {
+                Assert.Fail("Exception was not thrown");
+            }
+            else if (!string.IsNullOrEmpty(exceptionMessage) && !caughtException.Message.Contains(exceptionMessage))
+            {
+                Assert.Fail("Expected exception type was not thrown");
+            }
+        }
+        
+        [Test]
+        public void EmptyListAndDictionaries()
+        {
+            var testObj = new UberTestClass();
+            testObj.ListClass = new List<TestChildClass>();
+            testObj.DictionaryIntStr = new Dictionary<int, string>();
+            
+            TestClone(testObj);
+        }
+        
         [Test]
         public void WIP()
         {
@@ -196,6 +291,7 @@ namespace Ninjadini.Neuro.SyncTests
                 {2, "b"},
                 {3, "c"},
             };
+            /*
             testObj.DictionaryRefObj = new Dictionary<Reference<ReferencableClass>, BaseTestClass1>()
             {
                 {
@@ -225,8 +321,28 @@ namespace Ninjadini.Neuro.SyncTests
             
             testObj.DictionaryIntObj.Add(1, new TestChildClass() { Id = 1 });
             testObj.DictionaryIntObj.Add(2, new TestChildClass() { Id = 2 });
-            
-            TestClone(testObj, testJson:false);
+            */
+            //TestClone(testObj, testJson:false);
+            var references = new NeuroReferences();
+            var ref1 = new ReferencableClass()
+            {
+                RefId = 1,
+                Name = "ref1",
+                RefName = "ref1",
+            };
+            references.Register(ref1);
+            var ref2 = new ReferencableClass()
+            {
+                RefId = 2,
+                Name = "ref2",
+                RefName = "ref2",
+            };
+            references.Register(ref2);
+
+            //var jsonStr = NeuroJsonWriter.Shared.Write(testObj, references);
+            //Console.WriteLine("JSON:\n"+jsonStr);
+
+            TestClone(testObj);
         }
     }
 }
