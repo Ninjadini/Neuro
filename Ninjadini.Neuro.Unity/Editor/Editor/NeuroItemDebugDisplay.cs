@@ -202,6 +202,9 @@ namespace Ninjadini.Neuro.Editor
 
         public void Refresh()
         {
+            refsSearchTask?.Cancel();
+            refsSearchTask = null;
+            
             var obj = getObjFunc();
             if (obj != null)
             {
@@ -273,8 +276,6 @@ namespace Ninjadini.Neuro.Editor
             {
                 refsFinder = new ReferencedItemsFinder();
             }
-            refsSearchTask?.Cancel();
-            refsSearchTask = null;
             refsView.Clear();
             
             if (obj is IReferencable referencable)

@@ -13,7 +13,7 @@ public class CraftItem : Referencable, INeuroRefDropDownCustomizable
     [Neuro(2)] [AssetType(typeof(Sprite))] 
     public AssetAddress Icon; // < The icon sprite to show in UI
     
-    [Header("Crafting the item")]
+    [Header(">Crafting the item")] // starting with '>' makes it a fold out
     
     [Neuro(3)] [Tooltip("When this item is crafted, how many items should it produce")] 
     public int CraftOutputCount = 1;

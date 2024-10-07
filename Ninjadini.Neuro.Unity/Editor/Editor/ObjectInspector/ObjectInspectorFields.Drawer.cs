@@ -13,7 +13,7 @@ namespace Ninjadini.Neuro.Editor
 {
     public partial class ObjectInspectorFields
     {
-        public const int NameFieldWidth = 131;
+        public const int NameFieldWidth = 120;
         
         public static VisualElement CreateUnsupportedDrawer(string name, Type type, Func<object> getter)
         {
@@ -242,6 +242,7 @@ namespace Ninjadini.Neuro.Editor
             var canEdit = data.Controller.CanEdit(data.type, value);
 
             var horizontal = new VisualElement();
+            horizontal.style.marginLeft = 3f;
             horizontal.style.flexDirection = new StyleEnum<FlexDirection>(FlexDirection.Row);
 
             AddFieldNameLabel(horizontal, data.GetDisplayName());
@@ -249,6 +250,7 @@ namespace Ninjadini.Neuro.Editor
             var fields = new List<IntegerField>();
             
             var yearField = new IntegerField("y");
+            yearField.style.marginLeft = 0f;
             yearField.style.minWidth = 50;
             fields.Add(yearField);
             
@@ -278,6 +280,12 @@ namespace Ninjadini.Neuro.Editor
             {
                 horizontal.Add(field);
                 field.labelElement.style.minWidth = Length.Auto();
+                var inputElement = field.Query<VisualElement>("unity-text-input").First();
+                if (inputElement != null)
+                {
+                    inputElement.style.unityTextAlign = TextAnchor.MiddleRight;
+                }
+                field.style.flexDirection = FlexDirection.RowReverse;
                 field.SetEnabled(data.setter != null && canEdit);
                 if (data.setter != null)
                 {
@@ -344,6 +352,7 @@ namespace Ninjadini.Neuro.Editor
             var canEdit = data.Controller.CanEdit(data.type, value);
 
             var horizontal = new VisualElement();
+            horizontal.style.marginLeft = 3f;
             horizontal.style.flexDirection = new StyleEnum<FlexDirection>(FlexDirection.Row);
 
             AddFieldNameLabel(horizontal, data.GetDisplayName());
@@ -351,6 +360,7 @@ namespace Ninjadini.Neuro.Editor
             var fields = new List<IntegerField>();
             
             var dayField = new IntegerField("d");
+            dayField.style.marginLeft = 0f;
             dayField.style.minWidth = 40;
             fields.Add(dayField);
             
@@ -374,6 +384,12 @@ namespace Ninjadini.Neuro.Editor
             {
                 horizontal.Add(field);
                 field.labelElement.style.minWidth = Length.Auto();
+                var inputElement = field.Query<VisualElement>("unity-text-input").First();
+                if (inputElement != null)
+                {
+                    inputElement.style.unityTextAlign = TextAnchor.MiddleRight;
+                }
+                field.style.flexDirection = FlexDirection.RowReverse;
                 field.SetEnabled(data.setter != null && canEdit);
                 if (data.setter != null)
                 {
@@ -562,7 +578,8 @@ namespace Ninjadini.Neuro.Editor
                         UpdateCall(true);
                     }
                 });
-                addBtn.style.marginLeft = NameFieldWidth + 28;
+                addBtn.style.height = 18;
+                addBtn.style.marginLeft = NameFieldWidth + 5;
                 addBtn.style.position = Position.Absolute;
                 listView.hierarchy.Add(addBtn);
             }
