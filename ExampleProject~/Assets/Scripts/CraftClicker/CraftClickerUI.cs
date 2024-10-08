@@ -127,8 +127,9 @@ public class CraftClickerUI : MonoBehaviour
 
     void OnCraftItemClicked(CraftItem craftItem)
     {
-        if (logic.CraftItem(craftItem))
+        if (logic.CanCraftItem(craftItem))
         {
+            logic.CraftItem(craftItem);
             RefreshItems();
         }
     }

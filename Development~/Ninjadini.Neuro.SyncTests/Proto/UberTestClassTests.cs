@@ -187,65 +187,35 @@ namespace Ninjadini.Neuro.SyncTests
         
         
         [Test]
-        public void ErrorOnNullItemsInLists()
+        public void NullItemsInLists()
         {
             var testObj = new UberTestClass();
+            testObj.ListTexts.Add("a");
             testObj.ListTexts.Add(null);
-            
-            const string errMsg = "Null list item is not supported";
-            ExpectException(() =>
-            {
-                NeuroBytesWriter.Shared.Write(testObj);
-            }, errMsg);
-            ExpectException(() =>
-            {
-                NeuroJsonWriter.Shared.Write(testObj);
-            }, errMsg);
+            testObj.ListTexts.Add("c");
+            TestClone(testObj);
             
             testObj = new UberTestClass();
-            testObj.ListClass = new List<TestChildClass>() { null };
-            ExpectException(() =>
-            {
-                NeuroBytesWriter.Shared.Write(testObj);
-            }, errMsg);
-            ExpectException(() =>
-            {
-                NeuroJsonWriter.Shared.Write(testObj);
-            }, errMsg);
+            testObj.ListClass = new List<TestChildClass>() { null , new TestChildClass()};
+            TestClone(testObj);
         }
         
         [Test]
-        public void ErrorOnNullItemsInDictionary()
+        public void NullItemsInDictionary()
         {
-            
             var testObj = new UberTestClass();
             
             testObj.DictionaryIntStr = new Dictionary<int, string>()
             {
-                {2, null},
+                {1, null},
+                {2, "hello"},
             };
-            
-            const string errMsg = "Null dictionary item is not supported";
-            
-            ExpectException(() =>
-            {
-                NeuroBytesWriter.Shared.Write(testObj);
-            }, errMsg);
-            ExpectException(() =>
-            {
-                NeuroJsonWriter.Shared.Write(testObj);
-            }, errMsg);
+            TestClone(testObj);
             
             testObj = new UberTestClass();
-            testObj.DictionaryIntObj.Add(1, null);
-            ExpectException(() =>
-            {
-                NeuroBytesWriter.Shared.Write(testObj);
-            }, errMsg);
-            ExpectException(() =>
-            {
-                NeuroJsonWriter.Shared.Write(testObj);
-            }, errMsg);
+            testObj.DictionaryIntObj.Add(1, new TestChildClass());
+            testObj.DictionaryIntObj.Add(2, null);
+            TestClone(testObj);
         }
 
         static void ExpectException(Action action, string exceptionMessage = null)

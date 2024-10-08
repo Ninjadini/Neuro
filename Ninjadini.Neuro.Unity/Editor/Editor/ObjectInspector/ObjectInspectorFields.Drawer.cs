@@ -541,7 +541,6 @@ namespace Ninjadini.Neuro.Editor
             var canEdit = data.Controller.CanEdit(data.type, value);
             
             var listView = new ListView();
-            listView.style.flexDirection = new StyleEnum<FlexDirection>(FlexDirection.Row);
             listView.reorderable = canEdit;
             listView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
             listView.showAddRemoveFooter = canEdit;
@@ -559,7 +558,7 @@ namespace Ninjadini.Neuro.Editor
             var existsToggle = NeuroUiUtils.AddToggle(null, "", value != null);
             if (!isReadOnly && (data.setter == null || !canEdit || data.Controller.CanSetToNull(data.type, value)))
             {
-                existsToggle.style.marginLeft = NameFieldWidth + 8;
+                existsToggle.style.marginLeft = NameFieldWidth + 3;
                 existsToggle.style.marginTop = 3;
                 existsToggle.style.position = Position.Absolute;
                 existsToggle.SetEnabled(data.setter != null && canEdit);
@@ -579,7 +578,7 @@ namespace Ninjadini.Neuro.Editor
                     }
                 });
                 addBtn.style.height = 18;
-                addBtn.style.marginLeft = NameFieldWidth + 5;
+                addBtn.style.marginLeft = NameFieldWidth + (existsToggle?.parent != null ? 20 : 0);
                 addBtn.style.position = Position.Absolute;
                 listView.hierarchy.Add(addBtn);
             }
@@ -718,6 +717,259 @@ namespace Ninjadini.Neuro.Editor
             return obj;
         }
 
+        public static VisualElement CreateDictionaryDrawer(ObjectInspector.Data data)
+        {
+            var value = data.getter() as IDictionary;
+            var canEdit = (value == null || !value.IsReadOnly) && data.Controller.CanEdit(data.type, value);
+            var genericArgs = data.type.GetGenericArguments();
+            if (genericArgs.Length != 2)
+            {
+                return new Label("Unsupported Dictionary type. Only `Dictionary<TKey, TValue>` kind of dictionary format is supported.");
+            }
+            var keyType = genericArgs[0];
+            var valueType = genericArgs[1];
+            HelpBox hasConflictKeysBox = null;
+            
+            var keysAndValuesList = new List<(object key, object value)>();
+            var listView = new ListView();
+            listView.reorderable = canEdit;
+            listView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
+            listView.showAddRemoveFooter = canEdit;
+            listView.showFoldoutHeader = true;
+            listView.headerTitle = string.IsNullOrEmpty(data.name) ? data.type.Name : data.GetDisplayName();
+            listView.reorderMode = ListViewReorderMode.Animated;
+            listView.selectionType = SelectionType.Single;
+
+            var isReadOnly = value != null && data.MemberInfo is FieldInfo { IsInitOnly: true };
+            
+            var existsToggle = NeuroUiUtils.AddToggle(null, "", value != null);
+            if (!isReadOnly && (data.setter == null || !canEdit || data.Controller.CanSetToNull(data.type, value)))
+            {
+                existsToggle.style.marginLeft = NameFieldWidth + 3;
+                existsToggle.style.marginTop = 3;
+                existsToggle.style.position = Position.Absolute;
+                existsToggle.SetEnabled(data.setter != null && canEdit);
+                listView.hierarchy.Add(existsToggle);
+            }
+
+            Button addBtn = null;
+            if (data.setter != null && canEdit)
+            {
+                addBtn = NeuroUiUtils.AddButton(null, "+", delegate()
+                {
+                    if (data.getter() is not IDictionary dict || dict.Count == 0)
+                    {
+                        value = (IDictionary)Activator.CreateInstance(data.type);
+                        if (keysAndValuesList.Count == 0)
+                        {
+                            keysAndValuesList.Add(default);
+                        }
+                        SyncKeysAndValuesFromList(true);
+                        UpdateCall(true);
+                    }
+                });
+                addBtn.style.height = 18;
+                addBtn.style.marginLeft = NameFieldWidth + (existsToggle?.parent != null ? 20 : 0);
+                addBtn.style.position = Position.Absolute;
+                listView.hierarchy.Add(addBtn);
+            }
+
+            void ShowHasConflictKeys(bool show)
+            {
+                if (hasConflictKeysBox == null)
+                {
+                    hasConflictKeysBox = new HelpBox("One or more Dictionary keys shares the same value", HelpBoxMessageType.Error);
+                    listView.hierarchy.Add(hasConflictKeysBox);
+                }
+                hasConflictKeysBox.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            void SyncKeysAndValuesToList()
+            {
+                keysAndValuesList.Clear();
+                if (value != null)
+                {
+                    foreach (var key in value.Keys)
+                    {
+                        keysAndValuesList.Add((key, value[key]));
+                    }
+                }
+            }
+
+            void SyncKeysAndValuesFromList(bool setValue)
+            {
+                value.Clear();
+                var needsViewRefresh = false;
+                var hasAnyConflictingKeys = false;
+                for (var index = 0; index < keysAndValuesList.Count; index++)
+                {
+                    var kv = keysAndValuesList[index];
+                    if (kv.key == null)
+                    {
+                        kv.key = keyType == typeof(string) ? "" : Activator.CreateInstance(keyType);
+                        keysAndValuesList[index] = kv;
+                        needsViewRefresh = true;
+                    }
+                    if (kv.value == null && valueType.IsValueType)
+                    {
+                        kv.value = Activator.CreateInstance(valueType);
+                        keysAndValuesList[index] = kv;
+                        needsViewRefresh = true;
+                    }
+                    var hasConflictingKeys = value.Contains(kv.key);
+                    if (!hasConflictingKeys)
+                    {
+                        value.Add(kv.key, kv.value);
+                    }
+                    hasAnyConflictingKeys |= hasConflictingKeys;
+                    var element = listView.GetRootElementForIndex(index);
+                    if (element != null)
+                    {
+                        element.style.backgroundColor =  hasConflictingKeys ? Color.red: default;
+                    }
+                }
+                if (setValue)
+                {
+                    data.SetValue(value);
+                }
+                if (needsViewRefresh)
+                {
+                    listView.RefreshItems();
+                }
+                ShowHasConflictKeys(hasAnyConflictingKeys);
+            }
+
+            void UpdateCall(bool forcedUpdate)
+            {
+                var v = data.getter() as IDictionary;
+                if (forcedUpdate || value != v)
+                {
+                    value = v;
+                    SyncKeysAndValuesToList();
+                    var hasValue = v != null;
+                    existsToggle.SetValueWithoutNotify(v != null);
+                    listView.itemsSource = keysAndValuesList;
+                    listView.showAddRemoveFooter = hasValue;
+                    listView.showBoundCollectionSize = hasValue;
+                    listView.Rebuild();
+                }
+                if (addBtn != null)
+                {
+                    addBtn.style.display = v == null || v.Count == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+                }
+            }
+            existsToggle.RegisterValueChangedCallback((evt) =>
+            {
+                if (evt.currentTarget == evt.target)
+                {
+                    Action performChange = () =>
+                    {
+                        var vv = evt.newValue ? CreateListType(data, 0) : null;
+                        data.SetValue(vv);
+                        UpdateCall(true);
+                    };
+                    if (!evt.newValue && evt.previousValue)
+                    {
+                        ShowNullConfirmation(data, existsToggle, delegate(bool confirmed)
+                        {
+                            if (confirmed)
+                            {
+                                performChange();
+                            }
+                            else
+                            {
+                                existsToggle.SetValueWithoutNotify(true);
+                            }
+                        });
+                    }
+                    else
+                    {
+                        performChange();
+                    }
+                }
+            });
+
+            listView.makeItem = () => new VisualElement()
+            {
+                style = { flexDirection = FlexDirection.Row }
+            };
+            listView.bindItem = (element, index) =>
+            {
+                element.Clear();
+                if (keysAndValuesList[index].key == null)
+                {
+                    return; // not ready yet.
+                }
+                var keyData = data;
+                keyData.name = "";
+                keyData.type = keyType;
+                keyData.getter = () => keysAndValuesList[index].key;
+                keyData.setter = (v) =>
+                {
+                    var kv = keysAndValuesList[index];
+                    kv.key = v;
+                    keysAndValuesList[index] = kv;
+                    SyncKeysAndValuesFromList(true);
+                };
+                keyData.Controller = new DictionaryKeyController(data.Controller);
+                keyData.path = data.path + " > " + index;
+                var keyElement = CreateField(keyData);
+                keyElement.style.width = NameFieldWidth;
+                keyElement.style.maxWidth = 200;
+                keyElement.style.flexGrow = 01f;
+                //keyElement.style.backgroundColor = new StyleColor(new Color(0.26f, 0.26f, 0.26f));
+                element.Add(keyElement);
+                element.userData = keyElement;
+                //
+                var valueData = data;
+                valueData.name = "";
+                valueData.type = valueType;
+                valueData.getter = () => keysAndValuesList[index].value;
+                valueData.setter = (v) =>
+                {
+                    var kv = keysAndValuesList[index];
+                    kv.value = v;
+                    keysAndValuesList[index] = kv;
+                    SyncKeysAndValuesFromList(true);
+                };
+                valueData.path = data.path + " > " + index; 
+                var valueElement = CreateField(valueData);
+                valueElement.style.flexGrow = 1f;
+                valueElement.style.backgroundColor = new StyleColor(new Color(0.26f, 0.26f, 0.26f));
+                element.Add(valueElement);
+            };
+            listView.SetViewController(new ListViewController());
+            listView.viewController.itemsSourceSizeChanged += () =>
+            {
+                SyncKeysAndValuesFromList(true);
+            };
+            listView.itemIndexChanged += delegate(int i, int i1)
+            {
+                SyncKeysAndValuesFromList(true);
+            };
+            SyncKeysAndValuesToList();
+            listView.itemsSource = keysAndValuesList;
+            listView.schedule.Execute(() => UpdateCall(false)).Every(RefreshRate);
+            UpdateCall(true);
+            return listView;
+        }
+
+        class DictionaryKeyController : ObjectInspector.IController
+        {
+            ObjectInspector.IController _parent;
+            public DictionaryKeyController(ObjectInspector.IController parent)
+            {
+                _parent = parent;
+            }
+            
+            bool ObjectInspector.IController.ShouldDrawField(FieldInfo fieldInfo, object holderObject) => _parent?.ShouldDrawField(fieldInfo, holderObject) ?? true;
+            bool ObjectInspector.IController.ShouldDrawProperty(PropertyInfo propertyInfo, object holderObject) => _parent?.ShouldDrawProperty(propertyInfo, holderObject) ?? false;
+            bool ObjectInspector.IController.CanEdit(Type type, object value) => _parent?.CanEdit(type, value) ?? true;
+            VisualElement ObjectInspector.IController.CreateCustomDrawer(ObjectInspector.Data data) => _parent?.CreateCustomDrawer(data);
+            void ObjectInspector.IController.ApplyStyle(ObjectInspector.Data data, VisualElement element) => _parent?.ApplyStyle(data, element);
+            bool ObjectInspector.IController.CanSetToNull(Type type, object value) => false;
+        }
+
         internal static void ShowNullConfirmation(ObjectInspector.Data data, VisualElement visualElement, Action<bool> callback)
         {
             var rect = visualElement.worldBound;
@@ -730,7 +982,7 @@ namespace Ninjadini.Neuro.Editor
 
         internal static void AddToggleToFoldOut(Foldout foldout, VisualElement element, bool hasName, int additionalLeftShift = 0)
         {
-            element.style.left = (hasName ? 136 : 20) + additionalLeftShift;
+            element.style.left = (hasName ? NameFieldWidth : 20) + additionalLeftShift;
             element.style.top = 2;
             element.style.position = Position.Absolute;
             foldout.hierarchy.Add(element);

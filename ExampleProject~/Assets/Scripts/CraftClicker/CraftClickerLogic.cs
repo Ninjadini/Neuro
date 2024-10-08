@@ -19,7 +19,7 @@ public class CraftClickerLogic : MonoBehaviour
         _gameSave = LocalNeuroContinuousSave<CraftClickerSaveData>.CreateInPersistedData(saveFileName);
     }
 
-    public bool CraftItem(CraftItem item)
+    public bool CanCraftItem(CraftItem item)
     {
         if (item.RequiredItems != null)
         {
@@ -30,6 +30,14 @@ public class CraftClickerLogic : MonoBehaviour
                     return false;
                 }
             }
+        }
+        return true;
+    }
+
+    public void CraftItem(CraftItem item)
+    {
+        if (item.RequiredItems != null)
+        {
             foreach (var requiredItem in item.RequiredItems)
             {
                 AddOwnedCount(requiredItem.Item, -requiredItem.Amount);
@@ -37,7 +45,6 @@ public class CraftClickerLogic : MonoBehaviour
         }
         AddOwnedCount(item, item.CraftOutputCount);
         Save();
-        return true;
     }
 
     void AddOwnedCount(Reference<CraftItem> item, int amount)
@@ -57,9 +64,8 @@ public class CraftClickerLogic : MonoBehaviour
             {
                 throw new Exception($"{item.TryGetIdAndName()}'s owned amount can not be negative");
             }
-            Data.OwnedItems.Add(new OwnedCraftItem()
+            Data.OwnedItems.Add(item, new OwnedCraftItem()
             {
-                Item = item,
                 Amount = amount
             });
         }
@@ -72,14 +78,9 @@ public class CraftClickerLogic : MonoBehaviour
 
     public OwnedCraftItem GetOwned(Reference<CraftItem> item)
     {
-        foreach (var ownedItem in Data.OwnedItems)
-        {
-            if (ownedItem.Item == item)
-            {
-                return ownedItem;
-            }
-        }
-        return null;
+        OwnedCraftItem result = null;
+        Data.OwnedItems.TryGetValue(item, out result);
+        return result;
     }
 
     void Save()

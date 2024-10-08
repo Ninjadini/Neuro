@@ -436,10 +436,6 @@ namespace Ninjadini.Neuro
                 kDel(this, ref k);
                 lastKey = 0;
                 var v = kv.Value;
-                if (v == null)
-                {
-                    
-                }
                 if (vSizeType == NeuroConstants.ChildWithType)
                 {
                     if (v != null)
@@ -460,7 +456,7 @@ namespace Ninjadini.Neuro
                 }
                 else
                 {
-                    throw new Exception($"Null dictionary item is not supported @ {name}");
+                    throw new Exception($"Null dictionary item is not supported yet @ {name}");
                 }
                 if (vSizeType >= NeuroConstants.Child)
                 {

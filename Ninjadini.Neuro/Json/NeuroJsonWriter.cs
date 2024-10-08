@@ -389,8 +389,7 @@ namespace Ninjadini.Neuro
                 }
                 else
                 {
-                    //stringBuilder.Append("null,\n");
-                    throw new Exception($"Null list item is not supported @ {name}");
+                    stringBuilder.Append("null,\n");
                 }
             }
             numIndents--;
@@ -462,8 +461,7 @@ namespace Ninjadini.Neuro
                 }
                 else
                 {
-                    //stringBuilder.Append("null");
-                    throw new Exception($"Null dictionary item is not supported @ {name}");
+                    stringBuilder.Append("null");
                 }
                 stringBuilder.AppendLine(",");
             }

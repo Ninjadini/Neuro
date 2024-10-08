@@ -419,8 +419,11 @@ namespace Ninjadini.Neuro.SyncTests
             Assert.AreEqual(a.ListClass?.Count, b.ListClass?.Count);
             if (a.ListClass?.Count > 0)
             {
-                Assert.AreEqual(a.ListClass[0].Id, b.ListClass[0].Id);
-                Assert.AreEqual(a.ListClass[0].Name, b.ListClass[0].Name);
+                for(var i = 0; i < a.ListClass.Count; i++)
+                {
+                    Assert.AreEqual(a.ListClass[i]?.Id, b.ListClass[i]?.Id);
+                    Assert.AreEqual(a.ListClass[i]?.Name, b.ListClass[i]?.Name);
+                }
             }
 
             if (a.ListBaseClasses?.Count > 0)

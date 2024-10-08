@@ -152,7 +152,7 @@ namespace Ninjadini.Neuro.CodeGen
         
         public static bool IsSupportedGenericType(INamedTypeSymbol typeSymbol)
         {
-            if (typeSymbol.Name == "List" && IsNameSpaceReversed(typeSymbol.ContainingNamespace, "Generic", "Collections", "System"))
+            if ((typeSymbol.Name == "List" || typeSymbol.Name == "Dictionary") && IsNameSpaceReversed(typeSymbol.ContainingNamespace, "Generic", "Collections", "System"))
             {
                 return true;
             }

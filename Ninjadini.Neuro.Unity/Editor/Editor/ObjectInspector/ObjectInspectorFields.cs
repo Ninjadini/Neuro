@@ -26,7 +26,7 @@ namespace Ninjadini.Neuro.Editor
             result = TryUnityStructs(data);
             if (result != null)  return result;
             
-            result = TryListTypes(data);
+            result = TryCollectionTypes(data);
             if (result != null)  return result;
             
             result = TryObjectTypes(data);
@@ -225,12 +225,16 @@ namespace Ninjadini.Neuro.Editor
             return null;
         }
 
-        static VisualElement TryListTypes(in ObjectInspector.Data data)
+        static VisualElement TryCollectionTypes(in ObjectInspector.Data data)
         {
             var type = data.type;
             if (typeof(IList).IsAssignableFrom(type))
             {
                 return CreateListDrawer(data);
+            }
+            if (typeof(IDictionary).IsAssignableFrom(type))
+            {
+                return CreateDictionaryDrawer(data);
             }
             return null;
         }

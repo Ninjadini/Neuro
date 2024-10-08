@@ -24,6 +24,9 @@ public partial class MassiveTableRow : IReferencable
     [Neuro(20)] public MassiveTableRow Child;
     [Neuro(21)] public List<MassiveTableRow> Children = new List<MassiveTableRow>();
     [Neuro(30)] public List<string> Strings = new List<string>();
+    [Neuro(31)] public Dictionary<int, string> IntAndString = new Dictionary<int, string>();
+    [Neuro(32)] public Dictionary<string, MassiveTableRow> StringAndChild = new Dictionary<string, MassiveTableRow>();
+    [Neuro(33)] public Dictionary<Reference<MassiveTableRow>, DateTime> RefAndTime = new Dictionary<Reference<MassiveTableRow>, DateTime>();
     
     [Header(">Polymorphic")]
     [Neuro(40)] public MyTestRef Poly;

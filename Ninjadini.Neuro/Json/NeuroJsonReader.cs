@@ -172,10 +172,21 @@ namespace Ninjadini.Neuro
                 value = stringBuilder.ToString();
                 stringBuilder.Length = 0;
             }
+            else if(IsCurrentValueNull())
+            {
+                value = null;
+            }
             else
             {
                 value = jsonStr.Substring(currentValue.Start, currentValue.Length);
             }
+        }
+
+        bool IsCurrentValueNull()
+        {
+            return currentValue.Length == 4 && jsonStr[currentValue.Start] == 'n' &&
+                   jsonStr[currentValue.Start + 1] == 'u' && jsonStr[currentValue.Start + 2] == 'l' &&
+                   jsonStr[currentValue.Start + 2] == 'l';
         }
         
         public ReadOnlySpan<char> CurrentValue => jsonStr != null ? currentValue.AsSpan(jsonStr) : default;
@@ -368,8 +379,11 @@ namespace Ninjadini.Neuro
                     currentParent = childNode.Value.Start;
                     currentValue = childNode.Value;
                     T value = i < values.Count ? values[i] : default;
-
-                    if (NeuroSyncSubTypes<T>.Exists())
+                    if (IsCurrentValueNull())
+                    {
+                        value = default;
+                    }
+                    else if (NeuroSyncSubTypes<T>.Exists())
                     {
                         var subTypeNode = FindNode(NeuroJsonWriter.FieldName_ClassTag);
                         if (subTypeNode.Type != NeuroJsonTokenizer.NodeType.Unknown)
@@ -459,8 +473,11 @@ namespace Ninjadini.Neuro
                     
                     currentValue = childNode.Value;
                     TValue itemValue = default;
-
-                    if (isPloyValues)
+                    if (IsCurrentValueNull())
+                    {
+                        // NA
+                    }
+                    else if (isPloyValues)
                     {
                         var subTypeNode = FindNode(NeuroJsonWriter.FieldName_ClassTag);
                         if (subTypeNode.Type != NeuroJsonTokenizer.NodeType.Unknown)
