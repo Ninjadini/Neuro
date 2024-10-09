@@ -105,8 +105,24 @@ namespace Ninjadini.Neuro
                 while (countLeft > 0)
                 {
                     countLeft--;
-                    PrintContent(sizeType, indents, keyIncrement > 0);
-
+                    if (isList && sizeType >= NeuroConstants.Length)
+                    {
+                        var itemHeader = proto.ReadUint();
+                        if (itemHeader == 0)
+                        {
+                            stringBuilder.Append("(0) null");
+                        }
+                        else
+                        {
+                            sizeType = itemHeader & NeuroConstants.SizeTypeMask;
+                            var childTypeTag = nextHeader >> NeuroConstants.HeaderShift;
+                            PrintContent(sizeType, indents, childTypeTag, keyIncrement > 0);
+                        }
+                    }
+                    else
+                    {
+                        PrintContent(sizeType, indents, null, keyIncrement > 0);
+                    }
                     if (isList && countLeft > 0)
                     {
                         stringBuilder.AppendLine();
@@ -131,7 +147,7 @@ namespace Ninjadini.Neuro
             }
         }
 
-        void PrintContent(uint sizeType, int indents, bool isFirstPoly = true)
+        void PrintContent(uint sizeType, int indents, uint? childTypeTag, bool isFirstPoly = true)
         {
             if(sizeType == NeuroConstants.VarInt)
             {
@@ -160,7 +176,14 @@ namespace Ninjadini.Neuro
                     if (isFirstPoly)
                     {
                         stringBuilder.Append("<");
-                        stringBuilder.AppendNum(proto.ReadUint());
+                        if (!childTypeTag.HasValue)
+                        {
+                            stringBuilder.AppendNum(childTypeTag.Value);
+                        }
+                        else
+                        {
+                            stringBuilder.AppendNum(proto.ReadUint());
+                        }
                         stringBuilder.Append("> {");
                         ReadGroup(indents + 1);
                     }
@@ -191,9 +214,9 @@ namespace Ninjadini.Neuro
             {
                 AppendIndent(indents1);
                 stringBuilder.Append("{");
-                PrintContent(keyType, indents1);
+                PrintContent(keyType, indents1, null);
                 stringBuilder.Append(": ");
-                PrintContent(valueType, indents1);
+                PrintContent(valueType, indents1, null);
                 stringBuilder.AppendLine("}");
             }
             AppendIndent(indents);

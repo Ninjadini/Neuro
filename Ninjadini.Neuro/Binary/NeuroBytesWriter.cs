@@ -363,27 +363,30 @@ namespace Ninjadini.Neuro
             {
                 lastKey = 0;
                 var value = values[index];
-                if (sizeType == NeuroConstants.ChildWithType)
+                if (sizeType >= NeuroConstants.Length)
                 {
                     if (value != null)
                     {
-                        var tag = NeuroSyncSubTypes<T>.GetTag(value.GetType());
-                        proto.Write(tag);
-                        NeuroSyncSubTypes<T>.Sync(this, tag, ref value);
+                        if (sizeType == NeuroConstants.ChildWithType)
+                        {
+                            var tag = NeuroSyncSubTypes<T>.GetTag(value.GetType());
+                            proto.Write(tag);
+                            NeuroSyncSubTypes<T>.Sync(this, tag, ref value);
+                        }
+                        else
+                        {
+                            proto.Write(sizeType);
+                            del(this, ref value);
+                        }
                     }
                     else
                     {
-                        proto.Write(0);
-                        proto.Write(0);
+                        proto.Write(0u);
                     }
-                }
-                else if(value != null)
-                {
-                    del(this, ref value);
                 }
                 else
                 {
-                    throw new Exception($"Null list item is not supported @ {name}");
+                    del(this, ref value);
                 }
                 if (sizeType >= NeuroConstants.Child)
                 {
