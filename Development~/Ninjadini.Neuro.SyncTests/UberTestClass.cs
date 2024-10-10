@@ -241,7 +241,7 @@ namespace Ninjadini.Neuro.SyncTests
             result.ListTexts.Add("a");
             result.ListTexts.Add("b");
             result.ListTexts.Add("c");
-            //result.ListTexts.Add(null);
+            result.ListTexts.Add(null);
             
             result.DictionaryIntObj.Add(1, new TestChildClass(){ Id = 1});
             result.DictionaryIntObj.Add(2, new TestChildClass(){ Id = 2, Name = "2"});

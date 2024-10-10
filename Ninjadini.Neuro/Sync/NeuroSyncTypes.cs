@@ -33,6 +33,17 @@ namespace Ninjadini.Neuro.Sync
             }
         }
         
+        public static void RegisterBaseClass<T>(uint typeTag, NeuroSyncDelegate<T> d, uint globalTypeId = 0) where T : class
+        {
+            NeuroSyncTypes<T>.SizeType = (uint)FieldSizeType.Child;
+            NeuroSyncTypes<T>.Delegate = d;
+            NeuroSyncSubTypes<T>.RegisterBase(typeTag, d);
+            if (globalTypeId > 0)
+            {
+                NeuroGlobalTypes.Register<T>(globalTypeId);
+            }
+        }
+        
         public static void RegisterSubClass<TBaseType, TSubType>(uint typeTag, NeuroSyncDelegate<TSubType> d) where TSubType : class, TBaseType
         {
             NeuroSyncTypes<TSubType>.SizeType = (uint)FieldSizeType.ChildWithTag;

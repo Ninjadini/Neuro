@@ -63,8 +63,9 @@ namespace Ninjadini.Neuro.SyncTests
                     , new SubTestClass1()
                     {
                         Id = 22
-                    }
-                    , new SubTestClass1()
+                    },
+                    null,
+                    new SubTestClass1()
                     {
                         NumValue = 456
                     }
@@ -159,7 +160,7 @@ namespace Ninjadini.Neuro.SyncTests
             });
         }
 
-        void TestClone(UberTestClass src, NeuroReferences references = null, bool testBinary = true, bool testJson = true)
+        void TestClone(UberTestClass src, NeuroReferences references = null, bool testBinary = true, bool testJson = true, bool testSkipping = true)
         {
             if (testBinary)
             {
@@ -169,6 +170,12 @@ namespace Ninjadini.Neuro.SyncTests
                 Console.WriteLine(new NeuroBytesDebugWalker().Walk(writer.GetCurrentBytesChunk()));
                 var target = NeuroBytesReader.Shared.Read<UberTestClass>(writer.GetCurrentBytesChunk());
                 UberTestClass.TestAllValuesMatch(src, target);
+
+                if (testSkipping)
+                {
+                    var skipTarget = NeuroBytesReader.Shared.Read<UberTestClassWithJustLastItem>(writer.GetCurrentBytesChunk(), new ReaderOptions());
+                    Assert.AreEqual(src.LastItem, skipTarget.LastItem);
+                }
             }
 
             if (testJson)
@@ -249,9 +256,86 @@ namespace Ninjadini.Neuro.SyncTests
             
             TestClone(testObj);
         }
-        
+
         [Test]
         public void WIP()
+        {
+            var testObj = new UberTestClass();
+            
+            /*
+            testObj.ClassObj = new TestChildClass()
+            {
+                Id = 1
+            };
+
+            testObj.ListEnum = new List<TestEnum1>() { TestEnum1.B, TestEnum1.A };
+
+            testObj.ListTexts.Add("abcd");
+            testObj.ListTexts.Add(null);
+            testObj.ListTexts.Add("asdf");
+            testObj.ListClass = new List<TestChildClass>()
+            {
+                new TestChildClass()
+            };
+            */
+            testObj.BaseClassObj = new SubTestClass1()
+            {
+                //NumValue = 123,
+                Id = 1
+            };
+
+            TestClone(testObj);
+            /*
+            var writer = NeuroBytesWriter.Shared;
+            writer.Write(testObj);
+            Console.WriteLine(writer.GetDebugString());
+            Console.WriteLine(new NeuroBytesDebugWalker().Walk(writer.GetCurrentBytesChunk()));*/
+        }
+
+        [Test]
+        public void WIPlist()
+        {
+            var testObj = new UberTestClass();
+            testObj.ListBaseClasses = new List<BaseTestClass1>()
+            {
+                new BaseTestClass1()
+            };
+/*
+            testObj.ListTexts.Add("a");
+            testObj.ListTexts.Add(null);
+            testObj.ListTexts.Add("b");
+            testObj.ListClass = new List<TestChildClass>()
+            {
+                new TestChildClass()
+                {
+                    Id = 123,
+                    Name = "list1"
+                },
+                null
+            };*/
+            /*
+            var jsonStr = NeuroJsonWriter.Shared.Write(testObj);
+            Console.WriteLine("JSON:\n"+jsonStr);
+            
+            var writer = NeuroBytesWriter.Shared;
+            writer.Write(testObj);
+            Console.WriteLine(writer.GetDebugString());
+            Console.WriteLine(new NeuroBytesDebugWalker().Walk(writer.GetCurrentBytesChunk()));
+            var target = NeuroBytesReader.Shared.Read<UberTestClass>(writer.GetCurrentBytesChunk());
+            //UberTestClass.TestAllValuesMatch(testObj, target);
+            */
+
+            testObj.LastItem = 123456;
+            var writer = NeuroBytesWriter.Shared;
+            writer.Write(testObj);
+            Console.WriteLine(writer.GetDebugString());
+            Console.WriteLine(new NeuroBytesDebugWalker().Walk(writer.GetCurrentBytesChunk()));
+            var target = NeuroBytesReader.Shared.Read<UberTestClassWithJustLastItem>(writer.GetCurrentBytesChunk(), new ReaderOptions());
+            Assert.AreEqual(testObj.LastItem, target.LastItem);
+        }
+
+        [Test]
+        public void WIP2()
         {
             var testObj = new UberTestClass();
             

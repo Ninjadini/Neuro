@@ -1,4 +1,5 @@
 using System;
+using System.Numerics;
 using System.Text;
 using Ninjadini.Neuro.Utils;
 using Ninjadini.Neuro.Sync;
@@ -64,7 +65,7 @@ namespace Ninjadini.Neuro
             {
                 var positionAtStart = proto.Position;
                 var nextHeader = proto.ReadUint();
-                if(nextHeader == NeuroConstants.Child)
+                if(nextHeader == NeuroConstants.EndOfChild)
                 {
                     stringBuilder.AppendLine("");
                     AppendIndent(indents - 1);
@@ -81,125 +82,114 @@ namespace Ninjadini.Neuro
                     stringBuilder.AppendNum(nextKey);
                     stringBuilder.Append(": ");
                 }
-                
-                var count = 1u;
-                var isList = (nextHeader & NeuroConstants.RepeatedMask) != 0;
-                if (isList)
-                {
-                    indents++;
-                    count = proto.ReadUint();
-                    stringBuilder.Append("(");
-                    stringBuilder.AppendNum(count);
-                    if (count > 1)
-                    {
-                        stringBuilder.AppendLine(") [");
-                        AppendIndent(indents);
-                    }
-                    else
-                    {
-                        stringBuilder.Append(") [");
-                    }
-                }
-                var sizeType = nextHeader & NeuroConstants.SizeTypeMask;
-                var countLeft = count;
-                while (countLeft > 0)
-                {
-                    countLeft--;
-                    if (isList && sizeType >= NeuroConstants.Length)
-                    {
-                        var itemHeader = proto.ReadUint();
-                        if (itemHeader == 0)
-                        {
-                            stringBuilder.Append("(0) null");
-                        }
-                        else
-                        {
-                            sizeType = itemHeader & NeuroConstants.SizeTypeMask;
-                            var childTypeTag = nextHeader >> NeuroConstants.HeaderShift;
-                            PrintContent(sizeType, indents, childTypeTag, keyIncrement > 0);
-                        }
-                    }
-                    else
-                    {
-                        PrintContent(sizeType, indents, null, keyIncrement > 0);
-                    }
-                    if (isList && countLeft > 0)
-                    {
-                        stringBuilder.AppendLine();
-                        AppendIndent(indents);
-                    }
-                }
-                if (isList)
-                {
-                    indents--;
-                    if (count > 1)
-                    {
-                        stringBuilder.AppendLine();
-                        AppendIndent(indents);
-                        stringBuilder.Append("]");
-                    }
-                    else
-                    {
-                        stringBuilder.Append("]");
-                    }
-                }
+                PrintContent(nextHeader, indents);
                 AppendSizeSince(positionAtStart);
             }
         }
 
-        void PrintContent(uint sizeType, int indents, uint? childTypeTag, bool isFirstPoly = true)
+        void PrintContent(uint header, int indents, uint? subClassTag = null)
         {
-            if(sizeType == NeuroConstants.VarInt)
+            var dataType = header & NeuroConstants.HeaderMask;
+            if(dataType == NeuroConstants.VarInt)
             {
                 PrintVarInt();
             }
-            else if(sizeType == NeuroConstants.Fixed32)
+            else if(dataType == NeuroConstants.Fixed32)
             {
                 PrintFixed32();
             }
-            else if(sizeType == NeuroConstants.Fixed64)
+            else if(dataType == NeuroConstants.Fixed64)
             {
                 PrintFixed64();
             }
-            else if(sizeType == NeuroConstants.Length)
+            else if(dataType == NeuroConstants.Length)
             {
-                PrintFixedLength();
+                PrintContentWithLength();
             }
-            else if(sizeType == NeuroConstants.Dictionary)
+            else if(dataType == NeuroConstants.List)
+            {
+                PrintList(indents);
+            }
+            else if(dataType == NeuroConstants.Dictionary)
             {
                 PrintDictionary(indents);
             }
+            else if(dataType == NeuroConstants.Child)
+            {
+                stringBuilder.Append("{");
+                ReadGroup(indents + 1);
+            }
+            else if (dataType == NeuroConstants.ChildWithType)
+            {
+                if (header == NeuroConstants.ChildWithType)
+                {
+                    stringBuilder.Append("<{");
+                    ReadGroup(indents + 1);
+                    stringBuilder.Append(">");
+                }
+                else
+                {
+                    stringBuilder.Append("<");
+                    stringBuilder.AppendNum(subClassTag ?? proto.ReadUint());
+                    stringBuilder.Append("> {");
+                    ReadGroup(indents + 1);
+                }
+            }
+            else if(dataType == NeuroConstants.EndOfChild)
+            {
+                stringBuilder.Append("empty"); // empty list / dictionary
+            }
             else
             {
+                throw new Exception($"Unexpected sizeType: {dataType}");
+            }
+        }
+
+        void PrintList(int indents)
+        {
+            var header = proto.ReadUint();
+            NeuroBytesReader.ReadCollectionTypeAndSize(header, out var sizeType, out var count, out var containsNulls);
+            header = (header & ~NeuroConstants.HeaderMask) | sizeType;
+            indents++;
+            stringBuilder.AppendNum(count);
+            stringBuilder.AppendLine("x [");
+            AppendIndent(indents);
+            var countLeft = count;
+            while(countLeft > 0)
+            {
+                countLeft--;
                 if (sizeType == NeuroConstants.ChildWithType)
                 {
-                    if (isFirstPoly)
+                    var itemTypeTagOrNull = proto.ReadUint();
+                    if (itemTypeTagOrNull == 0)
                     {
-                        stringBuilder.Append("<");
-                        if (!childTypeTag.HasValue)
-                        {
-                            stringBuilder.AppendNum(childTypeTag.Value);
-                        }
-                        else
-                        {
-                            stringBuilder.AppendNum(proto.ReadUint());
-                        }
-                        stringBuilder.Append("> {");
-                        ReadGroup(indents + 1);
+                        stringBuilder.Append("(0) null");
                     }
                     else
                     {
-                        stringBuilder.Append("<{");
-                        ReadGroup(indents + 1);
-                        stringBuilder.Append(">");
+                        PrintContent(header, indents, itemTypeTagOrNull - 1);
+                    }
+                }
+                else if (containsNulls)
+                {
+                    var itemHeader = proto.ReadUint();
+                    if (itemHeader == 0)
+                    {
+                        stringBuilder.Append("(0) null");
+                    }
+                    else
+                    {
+                        PrintContent(itemHeader, indents);
                     }
                 }
                 else
                 {
-                    stringBuilder.Append("{");
-                    ReadGroup(indents + 1);
+                    PrintContent(sizeType, indents);
                 }
+                stringBuilder.AppendLine();
+                AppendIndent(countLeft > 0 ? indents : indents - 1);
             }
+            stringBuilder.Append("]");
         }
 
         void PrintDictionary(int indents)
@@ -214,9 +204,9 @@ namespace Ninjadini.Neuro
             {
                 AppendIndent(indents1);
                 stringBuilder.Append("{");
-                PrintContent(keyType, indents1, null);
+                PrintContent(keyType, indents1);
                 stringBuilder.Append(": ");
-                PrintContent(valueType, indents1, null);
+                PrintContent(valueType, indents1);
                 stringBuilder.AppendLine("}");
             }
             AppendIndent(indents);
@@ -231,7 +221,7 @@ namespace Ninjadini.Neuro
                 stringBuilder.AppendNum(u);
                 stringBuilder.Append("u");
                 //stringBuilder.Append("u / ");
-                //stringBuilder.AppendNum(ProtoReader.Zag(u));
+                //stringBuilder.AppendNum(RawProtoReader.Zag(u));
             }
             else
             {
@@ -247,7 +237,7 @@ namespace Ninjadini.Neuro
                 stringBuilder.AppendNum(u);
                 stringBuilder.Append(" fixed32");
                 //stringBuilder.Append("u / ");
-                //stringBuilder.AppendNum(ProtoReader.Zag(u));
+                //stringBuilder.AppendNum(RawProtoReader.Zag(u));
             }
             else
             {
@@ -263,7 +253,7 @@ namespace Ninjadini.Neuro
                 stringBuilder.AppendNum(u);
                 stringBuilder.Append(" fixed64");
                 //stringBuilder.Append("u / ");
-                //stringBuilder.AppendNum(ProtoReader.Zag(u));
+                //stringBuilder.AppendNum(RawProtoReader.Zag(u));
             }
             else
             {
@@ -271,7 +261,7 @@ namespace Ninjadini.Neuro
             }
         }
         
-        void PrintFixedLength()
+        void PrintContentWithLength()
         {
             var l = proto.ReadUint();
             if ((options & Options.PrintValues) != 0)

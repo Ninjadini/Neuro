@@ -18,6 +18,8 @@ namespace Ninjadini.Neuro
         private uint nextHeader;
 
         public ReaderOptions Options => options;
+        
+        const uint BaseClassKey = uint.MaxValue - 1; 
 
         public T Read<T>(in BytesChunk bytesChunk, in ReaderOptions opts = default)
         {
@@ -50,7 +52,7 @@ namespace Ninjadini.Neuro
             proto.Set(bytesChunk);
             options = opts;
             nextKey = 0;
-            var sizeType = proto.ReadUint() & NeuroConstants.SizeTypeMask;
+            var sizeType = proto.ReadUint() & NeuroConstants.HeaderMask;
             if (sizeType == NeuroConstants.ChildWithType)
             {
                 var tag = proto.ReadUint();
@@ -98,7 +100,7 @@ namespace Ninjadini.Neuro
             options = opts;
             nextKey = 0;
             
-            var sizeType = proto.ReadUint() & NeuroConstants.SizeTypeMask;
+            var sizeType = proto.ReadUint() & NeuroConstants.HeaderMask;
             if (sizeType == NeuroConstants.ChildWithType)
             {
                 var tag = proto.ReadUint();
@@ -129,14 +131,14 @@ namespace Ninjadini.Neuro
             options = opts;
             nextKey = 0;
             
-            var sizeType = proto.ReadUint() & NeuroConstants.SizeTypeMask;
-            if ((sizeType & NeuroConstants.SizeTypeMask) != NeuroConstants.VarInt)
+            var sizeType = proto.ReadUint() & NeuroConstants.HeaderMask;
+            if ((sizeType & NeuroConstants.HeaderMask) != NeuroConstants.VarInt)
             {
                 throw new Exception("Invalid header " + sizeType);
             }
             var typeId = proto.ReadUint();
             var tag = 0u;
-            sizeType = proto.ReadUint() & NeuroConstants.SizeTypeMask;
+            sizeType = proto.ReadUint() & NeuroConstants.HeaderMask;
             if (sizeType == NeuroConstants.ChildWithType)
             {
                 tag = proto.ReadUint();
@@ -160,7 +162,7 @@ namespace Ninjadini.Neuro
             while (proto.Available > 1)
             {
                 nextHeader = proto.ReadUint();
-                if ((nextHeader & NeuroConstants.SizeTypeMask) != NeuroConstants.VarInt)
+                if ((nextHeader & NeuroConstants.HeaderMask) != NeuroConstants.VarInt)
                 {
                     throw new Exception("Invalid header " + nextHeader);
                 }
@@ -171,12 +173,12 @@ namespace Ninjadini.Neuro
                     //continue;
                 }
                 nextHeader = proto.ReadUint();
-                if ((nextHeader & NeuroConstants.SizeTypeMask) != NeuroConstants.ChildWithType)
+                if ((nextHeader & NeuroConstants.HeaderMask) != NeuroConstants.ChildWithType)
                 {
                     throw new Exception("Invalid header " + nextHeader);
                 }
                 var countLeft = 1u;
-                if ((nextHeader & NeuroConstants.RepeatedMask) != 0)
+                if ((nextHeader & NeuroConstants.HeaderMask) != 0)
                 {
                     countLeft = proto.ReadUint();
                 }
@@ -401,7 +403,7 @@ namespace Ninjadini.Neuro
         {
             if(key == 0 || SeekKey(key))
             {
-                var sizeType = nextHeader & NeuroConstants.SizeTypeMask;
+                var sizeType = nextHeader & NeuroConstants.HeaderMask;
                 if (sizeType >= NeuroConstants.Child)
                 {
                     nextKey = 0;
@@ -430,20 +432,31 @@ namespace Ninjadini.Neuro
 
         void INeuroSync.SyncBaseClass<TRoot, TBase>(TBase value)
         {
-            SeekKey(uint.MaxValue); // skip to the end of the group (but before base classes start);
+            if (nextHeader == NeuroConstants.EndOfChild)
+            {
+                return;
+            }
+            if (!SeekKey(BaseClassKey))
+            {
+                return;
+            }
             nextKey = 0;
             var baseValue = (TRoot)value;
             NeuroSyncSubTypes<TRoot>.GetOrThrow(typeof(TBase))(this, ref baseValue);
-            SeekKey(uint.MaxValue);// read to end of base class
-            nextKey = 0;
+            SeekKey(uint.MaxValue);
+            if (nextHeader == NeuroConstants.EndOfChild)
+            {
+                nextKey = 0;
+                SeekKey(uint.MaxValue);
+            }
         }
 
         void INeuroSync.Sync<T>(uint key, string name, ref List<T> values)
         {
             if(key == 0 || SeekKey(key))
             {
-                var sizeType = nextHeader & NeuroConstants.SizeTypeMask;
-                var count = (int)proto.ReadUint();
+                var header = proto.ReadUint();
+                ReadCollectionTypeAndSize(header, out var sizeType, out var count, out var containsNulls);
                 if (values == null)
                 {
                     values = new List<T>(count);
@@ -457,23 +470,31 @@ namespace Ninjadini.Neuro
                     values.Capacity = count;
                 }
                 var del = NeuroSyncTypes<T>.GetOrThrow();
+                
                 for(var i = 0; i < count; i++)
                 {
+                    nextKey = 0;
                     T value = i < values.Count ? values[i] : default;
-                    if (sizeType >= NeuroConstants.Child)
+                    if (sizeType == NeuroConstants.ChildWithType)
                     {
-                        nextKey = 0;
-                        if (sizeType == NeuroConstants.ChildWithType)
+                        var itemTypeTagOrNull = proto.ReadUint();
+                        if (itemTypeTagOrNull != 0)
                         {
-                            var tag = proto.ReadUint();
-                            NeuroSyncSubTypes<T>.Sync(this, tag, ref value);
+                            NeuroSyncSubTypes<T>.Sync(this, itemTypeTagOrNull - 1, ref value);
+                            SeekKey(uint.MaxValue);
                         }
-                        else
+                    }
+                    else if (containsNulls)
+                    {
+                        var itemHeader = proto.ReadUint();
+                        if (itemHeader != 0)
                         {
                             del(this, ref value);
+                            if (sizeType >= NeuroConstants.Child)
+                            {
+                                SeekKey(uint.MaxValue);
+                            }
                         }
-                        SeekKey(uint.MaxValue);
-                        nextKey = key;
                     }
                     else
                     {
@@ -488,6 +509,7 @@ namespace Ninjadini.Neuro
                         values.Add(value);
                     }
                 }
+                nextKey = key;
             }
             else if(values != null)
             {
@@ -496,11 +518,19 @@ namespace Ninjadini.Neuro
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void ReadCollectionTypeAndSize(uint value, out uint type, out int size, out bool containsNulls)
+        {
+            type = value & NeuroConstants.CollectionTypeHeaderMask;
+            containsNulls = (value & NeuroConstants.CollectionHasNullMask) != 0;
+            size = (int)(value >> NeuroConstants.HeaderShift);
+        }
+
         void INeuroSync.Sync<TKey, TValue>(uint key, string name, ref Dictionary<TKey, TValue> values)
         {
             if(key == 0 || SeekKey(key))
             {
-                var sizeType = nextHeader & NeuroConstants.SizeTypeMask;
+                var sizeType = nextHeader & NeuroConstants.HeaderMask;
                 if (sizeType != NeuroConstants.Dictionary)
                 {
                     if (proto.ReadUint() == 0)
@@ -577,13 +607,19 @@ namespace Ninjadini.Neuro
             while(proto.Available > 0)
             {
                 nextHeader = proto.ReadUint();
-                var keyIncrement = (nextHeader >> NeuroConstants.HeaderShift);
-                if(keyIncrement == 0 && (nextHeader & NeuroConstants.RepeatedMask) == 0)
+                if (nextHeader == NeuroConstants.EndOfChild)
                 {
                     nextKey = uint.MaxValue;
-                    return false; // reached end of group
+                    return false; // reached end of group or just before start of base class
                 }
-                nextKey += keyIncrement;
+                if (nextHeader == NeuroConstants.ChildWithType)
+                {
+                    nextKey = BaseClassKey;
+                }
+                else
+                {
+                    nextKey += nextHeader >> NeuroConstants.HeaderShift;
+                }
                 if (nextKey == key)
                 {
                     return true;
@@ -592,110 +628,111 @@ namespace Ninjadini.Neuro
                 {
                     return false;
                 }
-
-                var count = 1u;
-                if ((nextHeader & NeuroConstants.RepeatedMask) != 0)
-                {
-                    count = proto.ReadUint();
-                }
-                var sizeType = nextHeader & NeuroConstants.SizeTypeMask;
-                while (count > 0)
-                {
-                    count--;
-                    Skip(sizeType, keyIncrement > 0);
-                }
+                Skip(nextHeader);
             }
             return false;
         }
 
-        void Skip(uint sizeType, bool isFirstPoly = true)
+        void Skip(uint header, uint? subClassTag = null)
         {
-            if(sizeType == NeuroConstants.VarInt)
+            var sizeType = header & NeuroConstants.HeaderMask;
+            switch (sizeType)
             {
-                proto.ReadUint();
-            }
-            else if(sizeType == NeuroConstants.Fixed32)
-            {
-                proto.Skip(4);
-            }
-            else if(sizeType == NeuroConstants.Fixed64)
-            {
-                proto.Skip(8);
-            }
-            else if(sizeType == NeuroConstants.Length)
-            {
-                proto.Skip((int)proto.ReadUint());
-            }
-            else if(sizeType == NeuroConstants.Dictionary)
-            {
-                var types = proto.ReadUint();
-                var keyType = types & NeuroConstants.HeaderMask;
-                var valueType = types >> NeuroConstants.HeaderShift;
-                var dictCount = proto.ReadUint();
-                for (var i = 0; i < dictCount; i++)
+                case NeuroConstants.VarInt:
+                    proto.ReadUint();
+                    break;
+                case NeuroConstants.Fixed32:
+                    proto.Skip(4);
+                    break;
+                case NeuroConstants.Fixed64:
+                    proto.Skip(8);
+                    break;
+                case NeuroConstants.Length:
+                    proto.Skip((int)proto.ReadUint());
+                    break;
+                case NeuroConstants.List:
+                    SkipList();
+                    break;
+                case NeuroConstants.Dictionary:
+                    SkipDictionary();
+                    break;
+                case NeuroConstants.Child:
                 {
-                    Skip(keyType);
-                    Skip(valueType);
-                }
-            }
-            else
-            {
-                var prevKey = nextKey;
-                if (sizeType == NeuroConstants.ChildWithType)
-                {
-                    if (isFirstPoly)
-                    {
-                        proto.ReadUint(); // subtype's tag.
-                    }
-                    SkipGroup();
-                }
-                else
-                {
+                    var prevKey = nextKey;
                     nextKey = 0;
                     SeekKey(uint.MaxValue);
+                    nextKey = prevKey;
+                    break;
                 }
-                nextKey = prevKey;
-            }
-        }
-
-        void SkipGroup()
-        { 
-            while(proto.Available > 0)
-            {
-                var header = proto.ReadUint();
-                var keyIncrement = (header >> NeuroConstants.HeaderShift);
-                if(header == NeuroConstants.Child)
+                case NeuroConstants.ChildWithType:
                 {
-                    return; // reached end of group
-                }
-                var count = 1u;
-                var isList = (header & NeuroConstants.RepeatedMask) != 0;
-                if (isList)
-                {
-                    count = proto.ReadUint();
-                }
-                var sizeType = header & NeuroConstants.SizeTypeMask;
-                var countLeft = count;
-                while (countLeft > 0)
-                {
-                    countLeft--;
-                    if(sizeType == NeuroConstants.VarInt)
+                    var prevKey = nextKey;
+                    nextKey = 0;
+                    if (header == NeuroConstants.ChildWithType)
                     {
-                        proto.ReadUint();
-                    }
-                    else if(sizeType == NeuroConstants.Length)
-                    {
-                        proto.Skip((int)proto.ReadUint());
+                        SeekKey(uint.MaxValue);
                     }
                     else
                     {
-                        if (sizeType == NeuroConstants.ChildWithType && keyIncrement > 0)
+                        if (subClassTag == null)
                         {
                             proto.ReadUint();
                         }
-                        SkipGroup();
+                        SeekKey(uint.MaxValue);
+                    }
+                    nextKey = prevKey;
+                    break;
+                }
+                case NeuroConstants.EndOfChild:
+                    // empty list / dictionary
+                    break;
+                default:
+                    throw new Exception($"Unexpected sizeType: {sizeType}");
+            }
+        }
+
+        void SkipList()
+        {
+            var header = proto.ReadUint();
+            ReadCollectionTypeAndSize(header, out var sizeType, out var count, out var containsNulls);
+            header = (header & ~NeuroConstants.HeaderMask) | sizeType;
+            var countLeft = count;
+            while(countLeft > 0)
+            {
+                countLeft--;
+                if (sizeType == NeuroConstants.ChildWithType)
+                {
+                    var itemTypeTagOrNull = proto.ReadUint();
+                    if (itemTypeTagOrNull != 0)
+                    {
+                        Skip(header, itemTypeTagOrNull - 1);
                     }
                 }
+                else if (containsNulls)
+                {
+                    var itemHeader = proto.ReadUint();
+                    if (itemHeader != 0)
+                    {
+                        Skip(itemHeader);
+                    }
+                }
+                else
+                {
+                    Skip(sizeType);
+                }
+            }
+        }
+
+        void SkipDictionary()
+        {
+            var types = proto.ReadUint();
+            var keyType = types & NeuroConstants.HeaderMask;
+            var valueType = types >> NeuroConstants.HeaderShift;
+            var dictCount = proto.ReadUint();
+            for (var i = 0; i < dictCount; i++)
+            {
+                Skip(keyType);
+                Skip(valueType);
             }
         }
     }

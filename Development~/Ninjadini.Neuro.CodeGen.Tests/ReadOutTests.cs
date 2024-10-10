@@ -380,12 +380,10 @@ using Ninjadini.Neuro;
 ";
         TestUtils.TestSourceGenerates(src, 
             @"
-var obj = value.obj;
-           neuro.Sync(1, nameof(value.obj), ref obj);
+           neuro.Sync(1, nameof(value.obj), value.obj);
 "
         );
     }
-
 
 // TestSketches
     [Neuro(1)]

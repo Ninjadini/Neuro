@@ -10,40 +10,32 @@ namespace Ninjadini.Neuro.Sync
         internal static Dictionary<Type, uint> _tagBySubClass;
         static NeuroSyncSubDelegate<TRootType> Delegate;
         
+        internal static void RegisterBase(uint typeId, NeuroSyncDelegate<TRootType> neuroSyncDelegate)
+        {
+            RegisterClass<TRootType, TRootType>(typeId);
+            _subClassesByTag[typeId] = neuroSyncDelegate;
+        }
+        
         internal static void RegisterSubClass<TSubClass>(uint tag) where TSubClass : class, TRootType
         {
-            if (tag == 0)
-            {
-                throw new Exception($"Tried to register sub class [{typeof(TSubClass)}] with tag 0");
-            }
             RegisterSubClass<TRootType, TSubClass>(tag);
         }
 
         internal static void RegisterSubClass<TBaseClass, TSubClass>(uint tag) where TSubClass : class, TBaseClass where TBaseClass : TRootType
         {
-            if (_subClassesByTag == null)
+            RegisterClass<TBaseClass, TSubClass>(tag);
+            NeuroSyncSubTypes<TSubClass>.Delegate = (INeuroSync neuro, uint tag, ref TSubClass value) =>
             {
-                _subClassesByTag = new Dictionary<uint, NeuroSyncDelegate<TRootType>>();
-                _tagBySubClass = new Dictionary<Type, uint>();
-                _tagBySubClass[typeof(TRootType)] = 0;
-            }
-
+                var baseValue = value != null ? (TRootType)value : default;
+                _subClassesByTag[tag](neuro, ref baseValue);
+                value = baseValue as TSubClass;
+            };
             if (NeuroSyncTypes<TRootType>.Delegate == null && typeof(TRootType).IsInterface)
             {
                 NeuroSyncTypes<TRootType>.SizeType = (uint)FieldSizeType.Child;
                 NeuroSyncTypes<TRootType>.Delegate = delegate(INeuroSync neuro, ref TRootType value)
                 {
                 };
-            }
-            if (_subClassesByTag.ContainsKey(tag))
-            {
-                foreach (var kv in _tagBySubClass)
-                {
-                    if (kv.Value == tag && kv.Key != typeof(TSubClass))
-                    {
-                        throw new System.Exception($"{typeof(TRootType)}'s subClass tag is already registered for {kv.Key} but we are trying to register again for {typeof(TSubClass)}");
-                    }
-                }
             }
             if (typeof(TBaseClass).IsInterface)
             {
@@ -64,14 +56,32 @@ namespace Ninjadini.Neuro.Sync
                     neuro.SyncBaseClass<TRootType, TBaseClass>(typedObj);
                 };
             }
+        }
+
+        static void RegisterClass<TBaseClass, TSubClass>(uint tag) where TSubClass : TBaseClass where TBaseClass : TRootType
+        {
+            if (_subClassesByTag == null)
+            {
+                _subClassesByTag = new Dictionary<uint, NeuroSyncDelegate<TRootType>>();
+                _tagBySubClass = new Dictionary<Type, uint>();
+                _tagBySubClass[typeof(TRootType)] = 0;
+            }
+            if (tag == 0)
+            {
+                throw new Exception($"Tried to register sub class [{typeof(TSubClass)}] with tag 0");
+            }
+            if (_subClassesByTag.ContainsKey(tag))
+            {
+                foreach (var kv in _tagBySubClass)
+                {
+                    if (kv.Value == tag && kv.Key != typeof(TSubClass))
+                    {
+                        throw new System.Exception($"{typeof(TRootType)}'s subClass tag is already registered for {kv.Key} but we are trying to register again for {typeof(TSubClass)}");
+                    }
+                }
+            }
             _tagBySubClass[typeof(TSubClass)] = tag;
             NeuroSyncSubTypes<TSubClass>._tagBySubClass = _tagBySubClass;
-            NeuroSyncSubTypes<TSubClass>.Delegate = (INeuroSync neuro, uint tag, ref TSubClass value) =>
-            {
-                var baseValue = value != null ? (TRootType)value : default;
-                _subClassesByTag[tag](neuro, ref baseValue);
-                value = baseValue as TSubClass;
-            };
         }
 
         internal static bool Exists()

@@ -85,6 +85,32 @@ using Ninjadini.Neuro;
     }
 
     [Test]
+    public void ListWithInvalidType_Fails2()
+    {
+        var src = @"
+using Ninjadini.Neuro;
+        partial class TestClass
+        {
+            [Neuro(1)] public System.Collections.Generic.List<System.Collections.Generic.Dictionary<string, string>> obj;
+        }
+";
+        TestUtils.GenerateSourceExpectingError(src, "Dictionary<string, string>");
+    }
+
+    [Test]
+    public void DictionaryWithInvalidType_Fails()
+    {
+        var src = @"
+using Ninjadini.Neuro;
+        partial class TestClass
+        {
+            [Neuro(1)] public System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<string>> obj;
+        }
+";
+        TestUtils.GenerateSourceExpectingError(src, "List<string>");
+    }
+
+    [Test]
     public void ListWithReadonlyDoesntWorkIfNoInitializer()
     {
         var src = @"
