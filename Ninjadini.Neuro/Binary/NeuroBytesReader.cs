@@ -455,6 +455,12 @@ namespace Ninjadini.Neuro
         {
             if(key == 0 || SeekKey(key))
             {
+                if ((nextHeader & NeuroConstants.HeaderMask) == NeuroConstants.EndOfChild)
+                {
+                    values ??= new List<T>();
+                    values.Clear();
+                    return;
+                }
                 var header = proto.ReadUint();
                 ReadCollectionTypeAndSize(header, out var sizeType, out var count, out var containsNulls);
                 if (values == null)
@@ -484,21 +490,17 @@ namespace Ninjadini.Neuro
                             SeekKey(uint.MaxValue);
                         }
                     }
-                    else if (containsNulls)
+                    else if (containsNulls && proto.ReadUint() == 0)
                     {
-                        var itemHeader = proto.ReadUint();
-                        if (itemHeader != 0)
-                        {
-                            del(this, ref value);
-                            if (sizeType >= NeuroConstants.Child)
-                            {
-                                SeekKey(uint.MaxValue);
-                            }
-                        }
+                        // null
                     }
                     else
                     {
                         del(this, ref value);
+                        if (sizeType >= NeuroConstants.Child)
+                        {
+                            SeekKey(uint.MaxValue);
+                        }
                     }
                     if (i < values.Count)
                     {
@@ -530,16 +532,11 @@ namespace Ninjadini.Neuro
         {
             if(key == 0 || SeekKey(key))
             {
-                var sizeType = nextHeader & NeuroConstants.HeaderMask;
-                if (sizeType != NeuroConstants.Dictionary)
+                if ((nextHeader & NeuroConstants.HeaderMask) == NeuroConstants.EndOfChild)
                 {
-                    if (proto.ReadUint() == 0)
-                    {
-                        values ??= new Dictionary<TKey, TValue>();
-                        values.Clear();
-                        return;
-                    }
-                    throw new Exception("Invalid dictionary content.");
+                    values ??= new Dictionary<TKey, TValue>();
+                    values.Clear();
+                    return;
                 }
                 var vSizeType = proto.ReadUint() >> NeuroConstants.HeaderShift;
                 
@@ -549,43 +546,34 @@ namespace Ninjadini.Neuro
                 
                 var kDel = NeuroSyncTypes<TKey>.GetOrThrow();
                 var vDel = NeuroSyncTypes<TValue>.GetOrThrow();
-                //var kSizeType = NeuroSyncTypes<TKey>.SizeType;
                 for (var i = 0; i < count; i++)
                 {
                     TKey itemKey = default;
-                    /*if (kSizeType >= NeuroConstants.Child)
-                    {
-                        nextKey = 0;
-                        kDel(this, ref itemKey);
-                        SeekKey(uint.MaxValue);
-                        nextKey = key;
-                    }
-                    else
-                    {*/
-                        kDel(this, ref itemKey);
-                    //}
+                    kDel(this, ref itemKey);
+                    
                     TValue itemValue = default;
-                    if (vSizeType >= NeuroConstants.Child)
+                    nextKey = 0;
+                    var itemHeader = proto.ReadUint();
+                    if (itemHeader == 0)
                     {
-                        nextKey = 0;
-                        if (vSizeType == NeuroConstants.ChildWithType)
-                        {
-                            var tag = proto.ReadUint();
-                            NeuroSyncSubTypes<TValue>.Sync(this, tag, ref itemValue);
-                        }
-                        else
-                        {
-                            vDel(this, ref itemValue);
-                        }
+                        // null
+                    }
+                    else if (vSizeType == NeuroConstants.ChildWithType)
+                    {
+                        NeuroSyncSubTypes<TValue>.Sync(this, itemHeader - 1, ref itemValue);
                         SeekKey(uint.MaxValue);
-                        nextKey = key;
                     }
                     else
                     {
                         vDel(this, ref itemValue);
+                        if (vSizeType >= NeuroConstants.Child)
+                        {
+                            SeekKey(uint.MaxValue);
+                        }
                     }
                     values[itemKey] = itemValue;
                 }
+                nextKey = key;
             }
             else if(values != null)
             {
@@ -668,7 +656,7 @@ namespace Ninjadini.Neuro
                 {
                     var prevKey = nextKey;
                     nextKey = 0;
-                    if (header == NeuroConstants.ChildWithType)
+                    if (header == NeuroConstants.ChildWithType && !subClassTag.HasValue)
                     {
                         SeekKey(uint.MaxValue);
                     }
@@ -728,11 +716,23 @@ namespace Ninjadini.Neuro
             var types = proto.ReadUint();
             var keyType = types & NeuroConstants.HeaderMask;
             var valueType = types >> NeuroConstants.HeaderShift;
-            var dictCount = proto.ReadUint();
-            for (var i = 0; i < dictCount; i++)
+            var count = proto.ReadUint();
+            for (var i = 0; i < count; i++)
             {
                 Skip(keyType);
-                Skip(valueType);
+                var header = proto.ReadUint();
+                if (header == 0u)
+                {
+                    // null
+                }
+                else if (valueType == NeuroConstants.ChildWithType)
+                {
+                    Skip(valueType, header - 1);
+                }
+                else
+                {
+                    Skip(valueType);
+                }
             }
         }
     }

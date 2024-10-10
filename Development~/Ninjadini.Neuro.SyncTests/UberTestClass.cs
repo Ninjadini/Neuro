@@ -147,7 +147,11 @@ namespace Ninjadini.Neuro.SyncTests
                 FlagEnum = TestFlagEnum1.B | TestFlagEnum1.C,
                 TimeSpan = TimeSpan.FromSeconds(123456),
                 ListEnum = new List<TestEnum1> { TestEnum1.C , TestEnum1.B},
-                ListStruct = new List<TestStruct>{new TestStruct(){ Id = 51}, new TestStruct(){ Id = 11, Name = "abcd"}},
+                ListStruct = new List<TestStruct>
+                {
+                    new TestStruct(){ Id = 51},
+                    new TestStruct(){ Id = 11, Name = "abcd"}
+                },
                 ListInt = new List<int>(){ 7, 6, 5, 3},
                 ListClass = new List<TestChildClass>(){ new TestChildClass()
                 {
@@ -245,8 +249,8 @@ namespace Ninjadini.Neuro.SyncTests
             
             result.DictionaryIntObj.Add(1, new TestChildClass(){ Id = 1});
             result.DictionaryIntObj.Add(2, new TestChildClass(){ Id = 2, Name = "2"});
-            //result.DictionaryIntObj.Add(3, null);
-
+            result.DictionaryIntObj.Add(3, null);
+            
             return result;
         }
     }
@@ -535,6 +539,11 @@ namespace Ninjadini.Neuro.SyncTests
 
         static void TestSame(BaseTestClass1 a, BaseTestClass1 b)
         {
+            Assert.AreEqual(a == null, b == null);
+            if (a == null)
+            {
+                return;
+            }
             Assert.AreEqual(a.Id, b.Id);
             Assert.AreEqual(a.Name, b.Name);
             if (a is SubTestClass1 subTestClassA && b is SubTestClass1 subTestClassB)

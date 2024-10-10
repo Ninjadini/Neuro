@@ -121,7 +121,7 @@ namespace Ninjadini.Neuro
             }
             else if (dataType == NeuroConstants.ChildWithType)
             {
-                if (header == NeuroConstants.ChildWithType)
+                if (header == NeuroConstants.ChildWithType && !subClassTag.HasValue)
                 {
                     stringBuilder.Append("<{");
                     ReadGroup(indents + 1);
@@ -203,11 +203,22 @@ namespace Ninjadini.Neuro
             for (var i = 0; i < count; i++)
             {
                 AppendIndent(indents1);
-                stringBuilder.Append("{");
                 PrintContent(keyType, indents1);
                 stringBuilder.Append(": ");
-                PrintContent(valueType, indents1);
-                stringBuilder.AppendLine("}");
+                var header = proto.ReadUint();
+                if (header == 0u)
+                {
+                    stringBuilder.Append("(0) null");
+                }
+                else if (valueType == NeuroConstants.ChildWithType)
+                {
+                    PrintContent(valueType, indents1, header - 1);
+                }
+                else
+                {
+                    PrintContent(valueType, indents1);
+                }
+                stringBuilder.AppendLine("");
             }
             AppendIndent(indents);
             stringBuilder.Append("}");

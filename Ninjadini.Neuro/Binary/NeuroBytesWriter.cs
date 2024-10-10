@@ -255,7 +255,7 @@ namespace Ninjadini.Neuro
                 lastKey = key;
                 if (sizeType >= NeuroConstants.Child)
                 {
-                    proto.Write(NeuroConstants.Child);
+                    proto.Write(NeuroConstants.EndOfChild);
                 }
             }
         }
@@ -272,7 +272,7 @@ namespace Ninjadini.Neuro
                 lastKey = key;
                 if (sizeType >= NeuroConstants.Child)
                 {
-                    proto.Write(NeuroConstants.Child);
+                    proto.Write(NeuroConstants.EndOfChild);
                 }
             }
         }
@@ -429,8 +429,7 @@ namespace Ninjadini.Neuro
             }
             if (values.Count == 0)
             {
-                WriteHeader(key, NeuroConstants.RepeatedMask);
-                proto.Write(0u);
+                WriteHeader(key, NeuroConstants.EndOfChild);
                 return;
             }
             WriteDictionary(key, name, ref values);
@@ -451,35 +450,32 @@ namespace Ninjadini.Neuro
             var vDel = NeuroSyncTypes<TValue>.GetOrThrow();
             foreach (var kv in values)
             {
-                var k = kv.Key;
-                kDel(this, ref k);
+                var itemKey = kv.Key;
+                kDel(this, ref itemKey);
                 lastKey = 0;
-                var v = kv.Value;
-                if (vSizeType == NeuroConstants.ChildWithType)
+                var itemValue = kv.Value;
+                if (itemValue != null)
                 {
-                    if (v != null)
+                    lastKey = 0;
+                    if (vSizeType == NeuroConstants.ChildWithType)
                     {
-                        var tag = NeuroSyncSubTypes<TValue>.GetTag(v.GetType());
-                        proto.Write(tag);
-                        NeuroSyncSubTypes<TValue>.Sync(this, tag, ref v);
+                        var tag = NeuroSyncSubTypes<TValue>.GetTag(itemValue.GetType());
+                        proto.Write(tag + 1);
+                        NeuroSyncSubTypes<TValue>.Sync(this, tag, ref itemValue);
                     }
                     else
                     {
-                        proto.Write(0);
-                        proto.Write(0);
+                        proto.Write(1u);
+                        vDel(this, ref itemValue);
                     }
-                }
-                else if (v != null)
-                {
-                    vDel(this, ref v);
+                    if (vSizeType >= NeuroConstants.Child)
+                    {
+                        proto.Write(NeuroConstants.EndOfChild);
+                    }
                 }
                 else
                 {
-                    throw new Exception($"Null dictionary item is not supported yet @ {name}");
-                }
-                if (vSizeType >= NeuroConstants.Child)
-                {
-                    proto.Write(NeuroConstants.Child);
+                    proto.Write(0u);
                 }
             }
             lastKey = key;
