@@ -10,12 +10,6 @@ namespace Ninjadini.Neuro.Sync
         internal static Dictionary<Type, uint> _tagBySubClass;
         static NeuroSyncSubDelegate<TRootType> Delegate;
         
-        internal static void RegisterBase(uint typeId, NeuroSyncDelegate<TRootType> neuroSyncDelegate)
-        {
-            RegisterClass<TRootType, TRootType>(typeId);
-            _subClassesByTag[typeId] = neuroSyncDelegate;
-        }
-        
         internal static void RegisterSubClass<TSubClass>(uint tag) where TSubClass : class, TRootType
         {
             RegisterSubClass<TRootType, TSubClass>(tag);
