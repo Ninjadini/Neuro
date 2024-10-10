@@ -1,20 +1,23 @@
 using System;
 using System.IO;
+using Ninjadini.Neuro.Sync;
 using UnityEngine;
 
 namespace Ninjadini.Neuro
 {
-    public class LocalNeuroContinuousSave<T> : IDisposable where T : new()
+    public class LocalNeuroContinuousSave<T> : IDisposable where T : class
     {
         readonly string _filePath;
         NeuroBytesWriter _bytesWriter;
         FileStream _fileStream;
 
         T _data;
+        Func<T> _createDataFunc;
         
-        public LocalNeuroContinuousSave(string filePath)
+        public LocalNeuroContinuousSave(string filePath, Func<T> createDataFunc = null)
         {
             _filePath = filePath;
+            _createDataFunc = createDataFunc;
         }
 
         public static LocalNeuroContinuousSave<T> CreateInPersistedData(string fileName)
@@ -26,12 +29,29 @@ namespace Ninjadini.Neuro
         {
             if (_data == null)
             {
-                if (File.Exists(_filePath))
+                try
                 {
-                    var bytes = File.ReadAllBytes(_filePath);
-                    _data = new NeuroBytesReader().Read<T>(bytes);
+                    if (File.Exists(_filePath))
+                    {
+                        var bytes = File.ReadAllBytes(_filePath);
+                        _data = new NeuroBytesReader().Read<T>(bytes);
+                    }
                 }
-                _data ??= new T();
+                catch (Exception e)
+                {
+                    try
+                    {
+                        var num = (DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+                        var failPath = $"{_filePath}-failed{num}";
+                        File.Copy(_filePath, failPath);
+                        Debug.LogWarning($"Error loading from persisted data @ {_filePath}, filed backed up @ {failPath}. Error: {e}");
+                    }
+                    catch(Exception)
+                    {
+                        Debug.LogWarning($"Error loading from persisted data @ {_filePath}. Error: {e}");
+                    }
+                }
+                _data ??= _createDataFunc?.Invoke() ?? Activator.CreateInstance<T>();
             }
             return _data;
         }
