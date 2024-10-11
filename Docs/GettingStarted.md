@@ -202,7 +202,7 @@ void LoadIcon(SomeObject obj)
 ```
 
 # Saving player progress
-For a complete example, see [CraftClickerLogic.cs](../ExampleProject~/Assets/Scripts/CraftClicker/CraftClickerLogic.cs)
+For a complete example, see [CraftClickerSaveManager.cs](../ExampleProject~/Assets/Scripts/CraftClicker/CraftClickerSaveManager.cs)
 ```
 public class MyPlayerSaveData
 {

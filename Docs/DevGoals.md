@@ -5,6 +5,7 @@
 - Reconsider the naming of things - should 'IReferencable' be just ConfigItem ?
 - Finish the doc
 - Add doc comments to core lib code and also in the demo
+- JSON migration util - so you can rename fields and classes easier.
 - More extreme tests like min max values and random numbers in between
 - Maybe actually build example ways to deploy new content live (might need new library code)
 

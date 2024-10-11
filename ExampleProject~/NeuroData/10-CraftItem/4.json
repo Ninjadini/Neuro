@@ -5,5 +5,6 @@
             "Item": 3,
             "Amount": 2
         }
-    ]
+    ],
+    "CraftDuration": 5000
 }

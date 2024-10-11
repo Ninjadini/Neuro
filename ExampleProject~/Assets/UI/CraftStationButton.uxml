@@ -1,3 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <ui:Button text="Button" parse-escape-sequences="true" display-tooltip-when-elided="true" style="flex-grow: 0; width: 100px; height: 100px; white-space: normal;" />
+    <ui:Button text="Button" parse-escape-sequences="true" display-tooltip-when-elided="true" style="flex-grow: 0; width: 100px; height: 120px; white-space: normal; -unity-text-align: lower-center;">
+        <ui:VisualElement name="image" style="flex-grow: 0; position: absolute; left: 5px; top: 5px; right: 5px; bottom: 30px;" />
+    </ui:Button>
 </ui:UXML>

@@ -2,21 +2,15 @@ using System;
 using System.Collections.Generic;
 using Ninjadini.Neuro;
 
+/// Player save data that gets saved on device
 public class CraftClickerSaveData
 {
     [Neuro(1)] public DateTime SaveTime;
-    [Neuro(3)] public readonly List<CraftingItemInProgress> ItemsInProgress = new List<CraftingItemInProgress>();
-    [Neuro(5)] public readonly Dictionary<Reference<CraftItem>, OwnedCraftItem> OwnedItems = new Dictionary<Reference<CraftItem>, OwnedCraftItem>();
+    [Neuro(3)] public readonly Dictionary<Reference<CraftItem>, DateTime> ItemCraftEndTimes = new ();
+    [Neuro(5)] public readonly Dictionary<Reference<CraftItem>, OwnedCraftItem> OwnedItems = new ();
     
     //[Neuro(6)] public List<ActiveCraftStatusEffect> StatusEffects = new List<ActiveCraftStatusEffect>();
 }
-
-public class CraftingItemInProgress
-{
-    [Neuro(1)] public Reference<CraftItem> Item;
-    [Neuro(2)] public DateTime StartedTime;
-}
-
 
 public class OwnedCraftItem
 {

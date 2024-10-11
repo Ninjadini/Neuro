@@ -7,7 +7,7 @@ using UnityEngine;
 // TODO 
 
 [NeuroGlobalType(12)]
-[DisplayName("CraftClicker: Status Effects")]
+[DisplayName("CraftClicker: Status Effects []")]
 public abstract class PostCraftStatusEffect : Referencable
 {
     [Header("Lifespan of this status effect")]

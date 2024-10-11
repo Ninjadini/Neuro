@@ -1,4 +1,5 @@
 {
     "Name": "Stones",
-    "CraftOutputCount": 2
+    "CraftOutputCount": 2,
+    "CraftDuration": 1000
 }

@@ -5,18 +5,16 @@ using UnityEngine;
 
 public class CraftClickerLogic : MonoBehaviour
 {
-    LocalNeuroContinuousSave<CraftClickerSaveData> _gameSave;
-    CraftClickerSaveData Data => _gameSave.GetData();
-
-    void Start()
-    {
-        var settings = NeuroDataProvider.GetSharedSingleton<CraftClickerSettings>();
-        var saveFileName = string.IsNullOrEmpty(settings?.SaveFileName) ? "save" : settings.SaveFileName;
-        _gameSave = LocalNeuroContinuousSave<CraftClickerSaveData>.CreateInPersistedData(saveFileName);
-    }
-
+    [SerializeField] CraftClickerSaveManager saveManager;
+    
+    CraftClickerSaveData Data => saveManager.GetData();
+    
     public bool CanCraftItem(CraftItem item)
     {
+        if (Data.ItemCraftEndTimes.ContainsKey(item))
+        {
+            return false;
+        }
         if (item.RequiredItems != null)
         {
             foreach (var requiredItem in item.RequiredItems)
@@ -36,12 +34,14 @@ public class CraftClickerLogic : MonoBehaviour
         {
             foreach (var requiredItem in item.RequiredItems)
             {
-                AddOwnedCount(requiredItem.Item, -requiredItem.Amount);
+                // deduct the required items
+                AddOwnedCount(requiredItem.Item, - requiredItem.Amount);
             }
         }
-        AddOwnedCount(item, item.CraftOutputCount);
+        // set the time it'll finish crafting
+        Data.ItemCraftEndTimes[item] = GetTime() + item.CraftDuration;
         
-        Save(); 
+        saveManager.Save(); 
     }
 
     void AddOwnedCount(Reference<CraftItem> item, int amount)
@@ -68,6 +68,37 @@ public class CraftClickerLogic : MonoBehaviour
         }
     }
 
+    void Update()
+    {
+        UpdateCraftingItems();
+    }
+
+    readonly List<Reference<CraftItem>> _itemsReadyToFinish = new List<Reference<CraftItem>>();
+    void UpdateCraftingItems()
+    {
+        var timeNow = GetTime();
+        _itemsReadyToFinish.Clear();
+        foreach (var (item, craftFinishTime) in Data.ItemCraftEndTimes)
+        {
+            if (craftFinishTime <= timeNow)
+            {
+                // this item is ready to finish crafting...
+                _itemsReadyToFinish.Add(item);
+            }
+        }
+        foreach (var itemRef in _itemsReadyToFinish)
+        {
+            Data.ItemCraftEndTimes.Remove(itemRef);
+            var craftOutputCount = itemRef.GetValue().CraftOutputCount;
+            AddOwnedCount(itemRef, craftOutputCount);
+        }
+    }
+    
+    DateTime GetTime()
+    {
+        return DateTime.UtcNow;
+    }
+
     public int GetOwnedCount(Reference<CraftItem> item)
     {
         return GetOwned(item)?.Amount ?? 0;
@@ -75,23 +106,18 @@ public class CraftClickerLogic : MonoBehaviour
 
     public OwnedCraftItem GetOwned(Reference<CraftItem> item)
     {
-        OwnedCraftItem result = null;
-        Data.OwnedItems.TryGetValue(item, out result);
+        Data.OwnedItems.TryGetValue(item, out var result);
         return result;
     }
 
-    void Save()
+    public float? GetCraftingProgress(Reference<CraftItem> itemRef)
     {
-        Data.SaveTime = DateTime.Now;
-        _gameSave.Save();
-        // ^ in the real world, you probably don't want to save on evey data change
-        // maybe delay the save for 5 seconds so that if you did like 3 actions within 5 seconds it's all
-        // rolled into just 1 save call.
-    }
-
-    void OnDestroy()
-    {
-        _gameSave?.Dispose();
-        //^ Because we keep the file open for writing very fast, we need to close it when you stop playing.
+        if (Data.ItemCraftEndTimes.TryGetValue(itemRef, out var endTime))
+        {
+            var item = itemRef.GetValue();
+            var currentTime = GetTime();
+            return 1f - Mathf.Clamp01((float)((endTime - currentTime).TotalSeconds / item.CraftDuration.TotalSeconds));
+        }
+        return null;
     }
 }

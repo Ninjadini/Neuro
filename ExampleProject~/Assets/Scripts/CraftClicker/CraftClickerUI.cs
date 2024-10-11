@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Ninjadini.Neuro;
@@ -15,7 +16,7 @@ public class CraftClickerUI : MonoBehaviour
     [SerializeField] VisualTreeAsset craftItemTree;
 
     VisualElement _root;
-    List<VisualElement> _craftItems = new List<VisualElement>();
+    List<DrawnCraftItem> _craftItems = new List<DrawnCraftItem>();
     StringBuilder _stringBuilder = new StringBuilder();
     
     async void Start()
@@ -23,7 +24,7 @@ public class CraftClickerUI : MonoBehaviour
         await NeuroDataProvider.Shared.LoadFromResAsync();
         // ^ this is not required. Just showcasing that you can async load neuro config data.
         // Limitation is that you can't grab any data while its loading.
-        // This is useful if you want to start loading things while your splash screen shows or intro animation is playing.
+        // This is useful if you want to start loading things in the background while your splash screen shows or intro animation is playing.
         
         var doc = GetComponent<UIDocument>();
 
@@ -49,6 +50,11 @@ public class CraftClickerUI : MonoBehaviour
 
             var btn = Get<Button>(stationItemElement);
             btn.text = stationConfig.Name;
+            stationConfig.Icon.LoadAssetAsync<Texture2D>((texture) =>
+            {
+                var img = Get<VisualElement>(stationItemElement, "image");
+                img.style.backgroundImage = texture;
+            });
             var localStationConfig = stationConfig; 
             // ^ if we don't do this, it'll always be the last item when you click any.
             btn.clicked += () =>
@@ -79,55 +85,95 @@ public class CraftClickerUI : MonoBehaviour
             {
                 OnCraftItemClicked(craftItem);
             };
-            craftItemElement.userData = craftItem;
-            _craftItems.Add(craftItemElement);
+            var drawnData = new DrawnCraftItem()
+            {
+                Element = craftItemElement,
+                Button = Get<Button>(craftItemElement),
+                ProgressBar = Get<ProgressBar>(craftItemElement),
+                CraftItem = craftItem,
+                DrawnOwnedCount = -1
+            };
+            craftItemElement.schedule.Execute(() => UpdateCraftItem(drawnData)).Every(1);
+            _craftItems.Add(drawnData);
             itemsHolder.Add(craftItemElement);
         }
-        RefreshItems();
     }
 
-    void RefreshItems()
+    void Update()
     {
         foreach (var craftItemElement in _craftItems)
         {
-            var craftItem = craftItemElement.userData as CraftItem;
-            if (craftItem == null)
-            {
-                continue;
-            }
-            _stringBuilder.Clear();
-            _stringBuilder.Append("<b>").AppendNum(craftItem.CraftOutputCount).AppendLine("x ").Append(craftItem.Name).AppendLine("</b>");
-
-            if (craftItem.RequiredItems is { Count: > 0 })
-            {
-                _stringBuilder.AppendLine("\nRequires");
-                foreach (var requiredItem in craftItem.RequiredItems)
-                {
-                    var ownedReqCount = logic.GetOwnedCount(requiredItem.Item);
-                    _stringBuilder
-                        .Append(requiredItem.Item.GetValue().Name)
-                        .Append(" (");
-                    if (ownedReqCount < requiredItem.Amount)
-                    {
-                        _stringBuilder.Append("<color=red>");
-                    }
-                    _stringBuilder
-                        .AppendNum(logic.GetOwnedCount(requiredItem.Item))
-                        .Append("/")
-                        .AppendNum(requiredItem.Amount);
-                    if (ownedReqCount < requiredItem.Amount)
-                    {
-                        _stringBuilder.Append("</color>");
-                    }
-                    _stringBuilder.AppendLine(")");
-                }
-            }
-            
-            _stringBuilder.Append("\nOwned: ").Append(logic.GetOwnedCount(craftItem));
-            
-            var btn = Get<Button>(craftItemElement);
-            btn.text = _stringBuilder.ToString();
+            UpdateCraftItem(craftItemElement);
         }
+    }
+
+    class DrawnCraftItem
+    {
+        public VisualElement Element;
+        public Button Button;
+        public ProgressBar ProgressBar;
+        public CraftItem CraftItem;
+        public int DrawnOwnedCount;
+    }
+
+    void UpdateCraftItem(DrawnCraftItem drawnItem)
+    {
+        var craftItem = drawnItem.CraftItem;
+        var ownedCount = logic.GetOwnedCount(craftItem);
+
+        var progress = logic.GetCraftingProgress(craftItem);
+        if (progress == null)
+        {
+            //drawnItem.Button.SetEnabled(true);
+            drawnItem.ProgressBar.style.display = DisplayStyle.None;
+        }
+        else
+        {
+            //drawnItem.Button.SetEnabled(false);
+            drawnItem.ProgressBar.style.display = DisplayStyle.Flex;
+            drawnItem.ProgressBar.value = progress.Value;
+        }
+        if (ownedCount != drawnItem.DrawnOwnedCount)
+        {
+            DrawCraftItemText(drawnItem);
+        }
+    }
+
+    void DrawCraftItemText(DrawnCraftItem drawnItem)
+    {
+        var craftItem = drawnItem.CraftItem;
+        var ownedCount = logic.GetOwnedCount(craftItem);
+        drawnItem.DrawnOwnedCount = ownedCount;
+        
+        _stringBuilder.Clear();
+        _stringBuilder.Append("<b>").AppendNum(craftItem.CraftOutputCount).AppendLine("x ").Append(craftItem.Name).AppendLine("</b>");
+
+        if (craftItem.RequiredItems is { Count: > 0 })
+        {
+            _stringBuilder.AppendLine("\nRequires");
+            foreach (var requiredItem in craftItem.RequiredItems)
+            {
+                var ownedReqCount = logic.GetOwnedCount(requiredItem.Item);
+                _stringBuilder
+                    .Append(requiredItem.Item.GetValue().Name)
+                    .Append(" (");
+                if (ownedReqCount < requiredItem.Amount)
+                {
+                    _stringBuilder.Append("<color=red>");
+                }
+                _stringBuilder
+                    .AppendNum(logic.GetOwnedCount(requiredItem.Item))
+                    .Append("/")
+                    .AppendNum(requiredItem.Amount);
+                if (ownedReqCount < requiredItem.Amount)
+                {
+                    _stringBuilder.Append("</color>");
+                }
+                _stringBuilder.AppendLine(")");
+            }
+        }
+        _stringBuilder.Append("\nOwned: ").Append(ownedCount);
+        drawnItem.Button.text = _stringBuilder.ToString();
     }
 
     void OnCraftItemClicked(CraftItem craftItem)
@@ -135,7 +181,6 @@ public class CraftClickerUI : MonoBehaviour
         if (logic.CanCraftItem(craftItem))
         {
             logic.CraftItem(craftItem);
-            RefreshItems();
         }
     }
 

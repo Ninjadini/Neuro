@@ -292,6 +292,7 @@ GameObject:
   m_Component:
   - component: {fileID: 825798561}
   - component: {fileID: 825798560}
+  - component: {fileID: 825798562}
   m_Layer: 0
   m_Name: CraftClickerLogic
   m_TagString: Untagged
@@ -311,7 +312,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fb6e0a19283f489f90de2fbb0c8b522b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  saveFileName: save
+  saveManager: {fileID: 825798562}
 --- !u!4 &825798561
 Transform:
   m_ObjectHideFlags: 0
@@ -327,6 +328,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &825798562
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 825798559}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d4b8b2499604d458862bbc4e7fd3235, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0

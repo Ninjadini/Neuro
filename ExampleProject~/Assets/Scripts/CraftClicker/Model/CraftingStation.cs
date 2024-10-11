@@ -1,12 +1,16 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using Ninjadini.Neuro;
+using UnityEngine;
 
 [NeuroGlobalType(13)]
-[DisplayName("CraftClicker: Stations")]
+[DisplayName("CraftClicker: Stations []")]
 public class CraftingStation : Referencable
 {
     [Neuro(1)] public string Name;
+    
+    [AssetType(typeof(Texture2D))]
+    [Neuro(3)] public AssetAddress Icon;
     
     [Neuro(2)] public List<Reference<CraftItem>> CraftItems = new List<Reference<CraftItem>>();
     

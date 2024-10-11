@@ -406,7 +406,7 @@ namespace Ninjadini.Neuro.Editor
                     Math.Clamp(minuteField.value, 0, 59),
                     Math.Clamp(secondField.value, 0, 59),
                     Math.Clamp(msField.value, 0, 999));
-                data.setter(value);
+                data.SetValue(value);
                 UpdateFields();
             }
             void UpdateFields()

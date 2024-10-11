@@ -5,7 +5,7 @@ using Ninjadini.Neuro;
 using UnityEngine;
 
 [NeuroGlobalType(10)]
-[DisplayName("CraftClicker: Items")]
+[DisplayName("CraftClicker: Items []")]
 public class CraftItem : Referencable, INeuroRefDropDownCustomizable
 {
     [Neuro(1)] public string Name;
