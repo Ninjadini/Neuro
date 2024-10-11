@@ -18,8 +18,13 @@ public class CraftClickerUI : MonoBehaviour
     List<VisualElement> _craftItems = new List<VisualElement>();
     StringBuilder _stringBuilder = new StringBuilder();
     
-    void Start()
+    async void Start()
     {
+        await NeuroDataProvider.Shared.LoadFromResAsync();
+        // ^ this is not required. Just showcasing that you can async load neuro config data.
+        // Limitation is that you can't grab any data while its loading.
+        // This is useful if you want to start loading things while your splash screen shows or intro animation is playing.
+        
         var doc = GetComponent<UIDocument>();
 
         _root = doc.rootVisualElement;
