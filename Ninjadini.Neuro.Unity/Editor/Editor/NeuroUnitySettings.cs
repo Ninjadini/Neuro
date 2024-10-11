@@ -23,7 +23,10 @@ namespace Ninjadini.Neuro.Editor
         public string ResourcesDir = "Assets/Resources/";
         public string PrimaryDataPath;
         
-        [Tooltip("Experimental")]
+        [Tooltip("Debug.Log() neuro loading timings in case you need to know how long things are taking.")]
+        public bool LogTimings;
+        
+        [Header("Experimental")]
         public bool UndoRedosEnabled;
 
         public List<NeuroEditorTypeItemSetting> ClassSettings = new List<NeuroEditorTypeItemSetting>();

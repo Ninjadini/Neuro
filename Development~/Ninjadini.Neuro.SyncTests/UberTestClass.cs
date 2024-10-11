@@ -29,12 +29,13 @@ namespace Ninjadini.Neuro.SyncTests
         [Neuro(201)] public List<TestEnum1> ListEnum;
         [Neuro(202)] public List<TestChildClass> ListClass;
         [Neuro(203)] public List<TestStruct> ListStruct;
-        [Neuro(204)] public List<string> ListTexts;
+        [Neuro(204)] public readonly List<string> ListTexts = new List<string>();
         [Neuro(205)] public List<BaseTestClass1> ListBaseClasses;
         
-        public Dictionary<int, string> DictionaryIntStr;
-        public Dictionary<int, TestChildClass> DictionaryIntObj;
-        public Dictionary<string, BaseTestClass1> DictionaryStringObj;
+        [Neuro(210)] public Dictionary<int, string> DictionaryIntStr;
+        [Neuro(211)] public readonly Dictionary<int, TestChildClass> DictionaryIntObj = new Dictionary<int, TestChildClass>();
+        [Neuro(212)] public Dictionary<string, BaseTestClass1> DictionaryStringObj;
+        [Neuro(213)] public Dictionary<Reference<ReferencableClass>, BaseTestClass1> DictionaryRefObj;
         
         [Neuro(300)] public int? NullableId;
         [Neuro(301)] public TestEnum1? NullableEnum;
@@ -130,7 +131,7 @@ namespace Ninjadini.Neuro.SyncTests
             };
             references.Register(ref2);
             
-            return new UberTestClass()
+            var result = new UberTestClass()
             {
                 Id = 1234,
                 Float = 456.78f,
@@ -146,7 +147,11 @@ namespace Ninjadini.Neuro.SyncTests
                 FlagEnum = TestFlagEnum1.B | TestFlagEnum1.C,
                 TimeSpan = TimeSpan.FromSeconds(123456),
                 ListEnum = new List<TestEnum1> { TestEnum1.C , TestEnum1.B},
-                ListStruct = new List<TestStruct>{new TestStruct(){ Id = 51}, new TestStruct(){ Id = 11, Name = "abcd"}},
+                ListStruct = new List<TestStruct>
+                {
+                    new TestStruct(){ Id = 51},
+                    new TestStruct(){ Id = 11, Name = "abcd"}
+                },
                 ListInt = new List<int>(){ 7, 6, 5, 3},
                 ListClass = new List<TestChildClass>(){ new TestChildClass()
                 {
@@ -185,7 +190,7 @@ namespace Ninjadini.Neuro.SyncTests
                         NumValue = 456
                     }
                 },
-                /*
+                
                 DictionaryIntStr = new Dictionary<int, string>()
                 {
                     {1, "first"},
@@ -197,7 +202,24 @@ namespace Ninjadini.Neuro.SyncTests
                     {"first", new BaseTestClass1() { Id = 1, Name = "first's base"}},
                     {"second", new SubTestClass1() { Id = 2, NumValue = 2}},
                     {"third", new SubTestClass1() { Id = 3, Value = "VALUE"}}
-                },*/
+                },
+                DictionaryRefObj = new Dictionary<Reference<ReferencableClass>, BaseTestClass1>()
+                {
+                    {new Reference<ReferencableClass>() { RefId = 1 }, new BaseTestClass1()
+                    {
+                        Id = 1,
+                        Name = "Name1"
+                    }},
+                    
+                    {new Reference<ReferencableClass>() { RefId = 2 }, new SubTestClass1()
+                    {
+                        Id = 2,
+                        NumValue = 234,
+                        Value = "Value2",
+                        Name = "Name3"
+                    }}  
+                },
+                
                 NullableId = 123,
                 NullableDate = new DateTime(12340000),
                 NullableStr = new TestStruct()
@@ -220,6 +242,16 @@ namespace Ninjadini.Neuro.SyncTests
                 },
                 Referencable = ref1
             };
+            result.ListTexts.Add("a");
+            result.ListTexts.Add("b");
+            result.ListTexts.Add("c");
+            result.ListTexts.Add(null);
+            
+            result.DictionaryIntObj.Add(1, new TestChildClass(){ Id = 1});
+            result.DictionaryIntObj.Add(2, new TestChildClass(){ Id = 2, Name = "2"});
+            result.DictionaryIntObj.Add(3, null);
+            
+            return result;
         }
     }
 
@@ -235,14 +267,14 @@ namespace Ninjadini.Neuro.SyncTests
 
     }
     
-    [Neuro(2), NeuroGlobalType(10)]
+    [Neuro(1), NeuroGlobalType(10)]
     public partial class BaseTestClass1
     {
         [Neuro(1)] public int Id;
         [Neuro(2)] public string Name;
     }
     
-    [Neuro(3)]
+    [Neuro(2)]
     public partial class SubTestClass1 : BaseTestClass1
     {
         [Neuro(1)] public int NumValue;
@@ -338,12 +370,14 @@ namespace Ninjadini.Neuro.SyncTests
             neuro.Sync(201, nameof(ListEnum), ref value.ListEnum);
             neuro.Sync(202, nameof(ListClass), ref value.ListClass);
             neuro.Sync(203, nameof(ListStruct), ref value.ListStruct);
-            neuro.Sync(204, nameof(ListTexts), ref value.ListTexts);
+            neuro.Sync(204, nameof(ListTexts), value.ListTexts);
             neuro.Sync(205, nameof(ListBaseClasses), ref value.ListBaseClasses);
             
-            //neuro.Sync(210, nameof(DictionaryIntStr), ref value.DictionaryIntStr);
-            //neuro.Sync(212, nameof(DictionaryStringObj), ref value.DictionaryStringObj);
-                
+            neuro.Sync(210, nameof(DictionaryIntStr), ref value.DictionaryIntStr);
+            neuro.Sync(211, nameof(DictionaryIntObj), value.DictionaryIntObj);
+            neuro.Sync(212, nameof(DictionaryStringObj), ref value.DictionaryStringObj);
+            neuro.Sync(213, nameof(DictionaryRefObj), ref value.DictionaryRefObj);
+            
             neuro.Sync(300, nameof(NullableId), ref value.NullableId);
             neuro.Sync(301, nameof(NullableEnum), ref value.NullableEnum);
             neuro.Sync(302, nameof(NullableDate), ref value.NullableDate);
@@ -389,8 +423,11 @@ namespace Ninjadini.Neuro.SyncTests
             Assert.AreEqual(a.ListClass?.Count, b.ListClass?.Count);
             if (a.ListClass?.Count > 0)
             {
-                Assert.AreEqual(a.ListClass[0].Id, b.ListClass[0].Id);
-                Assert.AreEqual(a.ListClass[0].Name, b.ListClass[0].Name);
+                for(var i = 0; i < a.ListClass.Count; i++)
+                {
+                    Assert.AreEqual(a.ListClass[i]?.Id, b.ListClass[i]?.Id);
+                    Assert.AreEqual(a.ListClass[i]?.Name, b.ListClass[i]?.Name);
+                }
             }
 
             if (a.ListBaseClasses?.Count > 0)
@@ -424,7 +461,28 @@ namespace Ninjadini.Neuro.SyncTests
             {
                 CollectionAssert.AreEquivalent(a.DictionaryIntStr.ToList(), b.DictionaryIntStr.ToList());
             }
-/*
+            
+            Assert.AreEqual(a.DictionaryIntObj.Count, b.DictionaryIntObj.Count);
+            foreach (var kv in a.DictionaryIntObj)
+            {
+                if (b.DictionaryIntObj.TryGetValue(kv.Key, out var bValue))
+                {
+                    if (kv.Value != null)
+                    {
+                        Assert.AreEqual(kv.Value.Id, bValue.Id);
+                        Assert.AreEqual(kv.Value.Name, bValue.Name);
+                    }
+                    else
+                    {
+                        Assert.IsNull(bValue);
+                    }
+                }
+                else
+                {
+                    Assert.Fail($"Key missing, {kv.Key}");
+                }
+            }
+
             if (a.DictionaryStringObj != null)
             {
                 Assert.AreEqual(a.DictionaryStringObj.Count, b.DictionaryStringObj.Count);
@@ -432,24 +490,30 @@ namespace Ninjadini.Neuro.SyncTests
                 {
                     if (b.DictionaryStringObj.TryGetValue(kv.Key, out var bValue))
                     {
-                        Assert.AreEqual(kv.Value.Id, bValue.Id);
-                        Assert.AreEqual(kv.Value.Name, bValue.Name);
-                        if (kv.Value is SubTestClass1 subTestClassA && kv.Value is SubTestClass1 subTestClassB)
-                        {
-                            Assert.AreEqual(subTestClassA.NumValue, subTestClassB.NumValue);
-                            Assert.AreEqual(subTestClassA.Value, subTestClassB.Value);
-                        }
-                        else
-                        {
-                            Assert.Fail($"Not matching type {kv.Value} vs {bValue}");
-                        }
+                        TestSame(kv.Value, bValue);
                     }
                     else
                     {
                         Assert.Fail($"Key missing, {kv.Key}");
                     }
                 }
-            }*/
+            }
+            
+            if (a.DictionaryRefObj != null)
+            {
+                Assert.AreEqual(a.DictionaryRefObj.Count, b.DictionaryRefObj.Count);
+                foreach (var kv in a.DictionaryRefObj)
+                {
+                    if (b.DictionaryRefObj.TryGetValue(kv.Key, out var bValue))
+                    {
+                        TestSame(kv.Value, bValue);
+                    }
+                    else
+                    {
+                        Assert.Fail($"Key missing, {kv.Key}");
+                    }
+                }
+            }
             
             Assert.AreEqual(a.BaseClassObj?.GetType(), b.BaseClassObj?.GetType());
             if (a.BaseClassObj != null)
@@ -471,6 +535,26 @@ namespace Ninjadini.Neuro.SyncTests
             Assert.AreEqual(a.NullableEnum, b.NullableEnum);
             
             Assert.AreEqual(a.LastItem, b.LastItem);
+        }
+
+        static void TestSame(BaseTestClass1 a, BaseTestClass1 b)
+        {
+            Assert.AreEqual(a == null, b == null);
+            if (a == null)
+            {
+                return;
+            }
+            Assert.AreEqual(a.Id, b.Id);
+            Assert.AreEqual(a.Name, b.Name);
+            if (a is SubTestClass1 subTestClassA && b is SubTestClass1 subTestClassB)
+            {
+                Assert.AreEqual(subTestClassA.NumValue, subTestClassB.NumValue);
+                Assert.AreEqual(subTestClassA.Value, subTestClassB.Value);
+            }
+            else if(a.GetType() != b.GetType())
+            {
+                Assert.Fail($"Not matching type {a} vs {b}");
+            }
         }
     }
 }

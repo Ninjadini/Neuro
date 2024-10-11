@@ -131,7 +131,6 @@ namespace Ninjadini.Neuro
         
         public StringBuilder CurrentStringBuilder => stringBuilder;
 
-        bool INeuroSync.IsReading => false;
         bool INeuroSync.IsWriting => true;
 
         void INeuroSync.Sync(ref bool value)
@@ -360,29 +359,122 @@ namespace Ninjadini.Neuro
             NeuroSyncSubTypes<TRoot>.GetOrThrow(typeof(TBase))(this, ref baseValue);
         }
 
+        void INeuroSync.Sync<T>(uint key, string name, List<T> values)
+        {
+            if (values != null && values.Count > 0)
+            {
+                WriteList(key, name, ref values);
+            }
+        }
+
         void INeuroSync.Sync<T>(uint key, string name, ref List<T> values)
         {
             if (values != null)
             {
-                AppendIndents().Append("\"").Append(name).Append("\": [\n");
-                numIndents++;
-                foreach (var value in values)
+                WriteList(key, name, ref values);
+            }
+        }
+
+        void WriteList<T>(uint key, string name, ref List<T> values)
+        {
+            AppendIndents().Append("\"").Append(name).Append("\": [\n");
+            numIndents++;
+            foreach (var value in values)
+            {
+                AppendIndents();
+                if (value != null)
                 {
-                    AppendIndents();
-                    if (value != null)
-                    {
-                        var v = value;
-                        SyncObj(null, ref v);
-                    }
-                    else
-                    {
-                        stringBuilder.Append("null,\n");
-                    }
+                    var v = value;
+                    SyncObj(null, ref v);
                 }
-                stringBuilder.Length -= values.Count == 0 ? 1 : 2;
+                else
+                {
+                    stringBuilder.Append("null,\n");
+                }
+            }
+            numIndents--;
+            if (values.Count == 0)
+            {
+                stringBuilder.Length -= 1;
+                stringBuilder.Append("],\n");
+            }
+            else
+            {
+                stringBuilder.Length -= 2;
                 stringBuilder.Append("\n");
-                numIndents--;
                 AppendIndents().Append("],\n");
+            }
+        }
+
+        void INeuroSync.Sync<TKey, TValue>(uint key, string name, Dictionary<TKey, TValue> values)
+        {
+            if (values != null && values.Count > 0)
+            {
+                WriteDictionary(key, name, ref values);
+            }
+        }
+
+        void INeuroSync.Sync<TKey, TValue>(uint key, string name, ref Dictionary<TKey, TValue> values)
+        {
+            if (values != null)
+            {
+                WriteDictionary(key, name, ref values);
+            }
+        }
+
+        void WriteDictionary<TKey, TValue>(uint key, string name, ref Dictionary<TKey, TValue> values)
+        {
+            if (values == null)
+            {
+                return;
+            }
+            AppendIndents().Append("\"").Append(name).Append("\": {\n");
+            numIndents++;
+            var keySizeType = NeuroSyncTypes<TKey>.SizeType;
+            var kDel = NeuroJsonSyncTypes<TKey>.GetOrThrow();
+            foreach (var value in values)
+            {
+                AppendIndents();
+                var startInd = -1;
+                if (keySizeType != NeuroConstants.Length)
+                {
+                    startInd = stringBuilder.Length;
+                    stringBuilder.Append("\"");
+                }
+                var k = value.Key;
+                kDel(this, ref k);
+                if (stringBuilder[^1] != '\"')
+                {
+                    stringBuilder.Append("\"");
+                }
+                else if (startInd >= 0)
+                {
+                    // oops, the content already contains ", 
+                    stringBuilder.Remove(startInd, 1);
+                }
+                stringBuilder.Append(": ");
+                var v = value.Value;
+                if (v != null)
+                {
+                    SyncObj(null, ref v);
+                    stringBuilder.Length -= 2;
+                }
+                else
+                {
+                    stringBuilder.Append("null");
+                }
+                stringBuilder.AppendLine(",");
+            }
+            numIndents--;
+            if (values.Count > 0)
+            {
+                stringBuilder.Remove(stringBuilder.Length -2, 1);
+                AppendIndents().AppendLine("},");
+            }
+            else
+            {
+                stringBuilder.Length--;
+                stringBuilder.AppendLine("},");
             }
         }
     }

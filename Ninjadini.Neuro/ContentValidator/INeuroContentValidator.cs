@@ -1,6 +1,7 @@
 using System;
+using Ninjadini.Neuro.Utils;
 
-namespace Ninjadini.Neuro.Utils
+namespace Ninjadini.Neuro
 {
     public interface INeuroContentValidator : IAssemblyTypeScannable
     {

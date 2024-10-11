@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -14,8 +15,10 @@ namespace Ninjadini.Neuro.CodeGen
         public const string InvalidTagDiagnosticID = "Neuro301";
         public const string FieldTagConflictDiagnosticID = "Neuro300";
         
-        static readonly DiagnosticDescriptor ReadOnlyFieldRule = new DiagnosticDescriptor("Neuro022", "Readonly Neuro field", "Neuro attributed field with readonly keyword found @ {0}", "Syntax", DiagnosticSeverity.Error, true);
+        static readonly DiagnosticDescriptor ReadOnlyFieldRule = new DiagnosticDescriptor("Neuro022", "Readonly Neuro field on primitive types", "Neuro attributed field with readonly keyword found @ {0}, which is not a class type", "Syntax", DiagnosticSeverity.Error, true);
+        static readonly DiagnosticDescriptor ReadOnlyWithoutInitializerFieldRule = new DiagnosticDescriptor("Neuro023", "Readonly Neuro fields without an initializer", "Neuro attribute field that is readonly must have a 'new' initializer assignment @ {0}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor UnsupportedTypeRule = new DiagnosticDescriptor("Neuro101", "Unsupported type", "Unsupported type `{0}` found @ {1}", "Syntax", DiagnosticSeverity.Error, true);
+        static readonly DiagnosticDescriptor InvalidDictionaryKeyTypeRule = new DiagnosticDescriptor("Neuro101", "Invalid dictionary key type", "Unsupported dictionary key type `{0}` found @ {1}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor InvalidTagRangeRule = new DiagnosticDescriptor(InvalidTagDiagnosticID, "Invalid field neuro tag", "Neuro field attribute tag must be between 0 and "+int.MaxValue+" @ {1}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor FieldTagConflictRule = new DiagnosticDescriptor(FieldTagConflictDiagnosticID, "Field attribute tag already used", "Neuro field attribute tag {0} of `{1}` is already used by another field `{2}`", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor MissingClassAttributeRule = new DiagnosticDescriptor("Neuro404", "Missing neuro class attribute", "`{0}` needs neuro class attribute because it's base class `{1}` is a Neuro class.", "Syntax", DiagnosticSeverity.Error, true);
@@ -33,7 +36,9 @@ namespace Ninjadini.Neuro.CodeGen
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(
             UnsupportedTypeRule,
+            InvalidDictionaryKeyTypeRule,
             ReadOnlyFieldRule, 
+            ReadOnlyWithoutInitializerFieldRule,
             InvalidTagRangeRule, 
             FieldTagConflictRule, 
             MissingClassAttributeRule, 
@@ -93,14 +98,28 @@ namespace Ninjadini.Neuro.CodeGen
                 var fieldAttribute = NeuroCodeGenUtils.FindNeuroAttribute(fieldSymbol);
                 if (fieldAttribute != null)
                 {
-                    if(fieldSymbol.IsReadOnly)// && fieldSymbol.Type.TypeKind != TypeKind.Class
+                    if(fieldSymbol.IsReadOnly)
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(ReadOnlyFieldRule, fieldSymbol.Locations.FirstOrDefault(), fieldSymbol.ToString()));
-                        continue;
+                        if (fieldSymbol.Type.TypeKind != TypeKind.Class)
+                        {
+                            context.ReportDiagnostic(Diagnostic.Create(ReadOnlyFieldRule, fieldSymbol.Locations.FirstOrDefault(), fieldSymbol.ToString()));
+                            continue;
+                        }
+                        if (!HasFieldInitializer(fieldSymbol))
+                        {
+                            context.ReportDiagnostic(Diagnostic.Create(ReadOnlyWithoutInitializerFieldRule, fieldSymbol.Locations.FirstOrDefault(), fieldSymbol.ToString()));
+                            continue;
+                        }
                     }
-                    if(!IsTypeSupported(fieldSymbol.Type))
+                    var typeProblem = GetTypeProblem(fieldSymbol.Type);
+                    if(typeProblem != null)
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(UnsupportedTypeRule, fieldSymbol.Locations.FirstOrDefault(), fieldSymbol.Type.ToString(), fieldSymbol.ToString()));
+                        var syntaxReference = fieldSymbol.DeclaringSyntaxReferences.FirstOrDefault();
+                        var fieldDeclarationSyntax = syntaxReference?.GetSyntax() as VariableDeclaratorSyntax;
+                        var variableDeclaration = fieldDeclarationSyntax?.Parent as VariableDeclarationSyntax;
+                        var typeSyntax = variableDeclaration?.Type;
+                        var location = typeSyntax?.GetLocation() ?? fieldSymbol.Locations.FirstOrDefault();
+                        context.ReportDiagnostic(Diagnostic.Create(typeProblem, location, fieldSymbol.Type.ToString(), fieldSymbol.ToString()));
                         continue;
                     }
                     if (fieldSymbol.DeclaredAccessibility != Accessibility.Public)
@@ -128,6 +147,24 @@ namespace Ninjadini.Neuro.CodeGen
             }
             return result;
         }
+        
+        public static bool HasFieldInitializer(IFieldSymbol fieldSymbol)
+        {
+            var declaringSyntaxReference = fieldSymbol.DeclaringSyntaxReferences.FirstOrDefault();
+            if (declaringSyntaxReference != null)
+            {
+                var fieldDeclarationSyntax = declaringSyntaxReference.GetSyntax() as VariableDeclaratorSyntax;
+                if (fieldDeclarationSyntax?.Initializer != null)
+                {
+                    var initializerExpression = fieldDeclarationSyntax.Initializer.Value;
+                    if (initializerExpression is BaseObjectCreationExpressionSyntax)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
 
         enum ClassFieldsInfo
         {
@@ -136,7 +173,7 @@ namespace Ninjadini.Neuro.CodeGen
             NeuroWithPrivateFields
         }
 
-        bool IsTypeSupported(ITypeSymbol classSymbol)
+        DiagnosticDescriptor GetTypeProblem(ITypeSymbol classSymbol)
         {
             var typeKind = classSymbol.TypeKind;
             if (typeKind != TypeKind.Class 
@@ -144,26 +181,39 @@ namespace Ninjadini.Neuro.CodeGen
                 && typeKind != TypeKind.Interface 
                 && typeKind != TypeKind.Enum)
             {
-                return false;
+                return UnsupportedTypeRule;
             }
             if (classSymbol is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.IsGenericType)
             {
                 if (NeuroCodeGenUtils.IsSupportedGenericType(namedTypeSymbol))
                 {
-                    foreach (var typeArgument in namedTypeSymbol.TypeArguments)
+                    var typeArguments = namedTypeSymbol.TypeArguments;
+                    foreach (var typeArgument in typeArguments)
                     {
-                        if(
-                            (typeArgument is INamedTypeSymbol namedTypeArg && namedTypeArg.IsGenericType && !NeuroCodeGenUtils.IsReferenceType(namedTypeArg)) 
-                            || !IsTypeSupported(typeArgument))
+                        if(typeArgument is INamedTypeSymbol namedTypeArg && namedTypeArg.IsGenericType && !NeuroCodeGenUtils.IsReferenceType(namedTypeArg))
                         {
-                            return false;
+                            return UnsupportedTypeRule;
+                        }
+                        var argProblem = GetTypeProblem(typeArgument);
+                        if(argProblem != null)
+                        {
+                            return argProblem;
                         }
                     }
-                    return true;
+                    if (namedTypeSymbol.Name == "Dictionary")
+                    {
+                        var keyArg = typeArguments[0];
+                        if(!(keyArg is INamedTypeSymbol namedTypeArg) 
+                           || (namedTypeArg.TypeKind != TypeKind.Struct &&namedTypeArg.TypeKind != TypeKind.Enum && namedTypeArg.SpecialType != SpecialType.System_String))
+                        {
+                            return InvalidDictionaryKeyTypeRule;
+                        }
+                    }
+                    return null;
                 }
-                return false;
+                return UnsupportedTypeRule;
             }
-            return true;
+            return null;
 
         }
 

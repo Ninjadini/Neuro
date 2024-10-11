@@ -231,7 +231,7 @@ var myData = NeuroJsonReader.Shared.Read<MyData>(jsonString);
 > [!TIP]
 > JSON output will print references and enum in this format `"myItem": "2:mySecondItemName"`
 > 
-> This looks like you can't change the ref name of items or it will unlick the values, but that is not the case
+> This looks like you can't change the ref name of items or it will unlink the values, but that is not the case
 > 
 > The only thing that matters is the number. You can just have `"myItem": 2` and it'll work
 > 
@@ -492,6 +492,12 @@ public class MyObjectWithOldFields
 }
 ```
 
+When changing a type of an existing field, it is recommended to also change the tag number. 
+
+This ensures it keeps the backward compatibility to old saved data.
+
+If you are in early stage of development, it might be ok to reuse the tags and just wipe the data to keep the tag numbers tidy.
+
 ---
 
 ## Goals
@@ -521,12 +527,12 @@ public class MyObjectWithOldFields
 - Primitives: bool, byte, int, uint, long, ulong, float, double
 - Enums
 - List<>
-- Array[] ❌
-- Dictionary<,> ❌
+- Dictionary<,>
 - System structs: DateTime, TimeSpan
 - Classes and subclasses
 - Structs
 - Nullable structs and primitives
+- Array[] ❌
 
 ## Maybe - Future Features
 - Nested embeds (same ref in multiple places)

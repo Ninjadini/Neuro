@@ -17,9 +17,7 @@ public partial class VisitorTests
         for(var i = 0; i < 10; i++)
         {
             var copy = NeuroBytesWriter.Clone(uberObj);
-            Assert.AreEqual(uberObj.Id, copy.Id);
-            Assert.AreEqual(uberObj.Name, copy.Name);
-            Assert.AreEqual(uberObj.Date, copy.Date);
+            uberObj.AssertEquals(copy);
         }
     }
 }

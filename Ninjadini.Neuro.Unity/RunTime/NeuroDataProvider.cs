@@ -1,5 +1,7 @@
 using System;
-using System.Collections;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 using Ninjadini.Neuro.Sync;
 using UnityEngine;
 
@@ -19,30 +21,75 @@ namespace Ninjadini.Neuro
             _loadFromResFile = loadFromResFile;
         }
 
-        ///  TODO, actually try it out
-        public IEnumerator LoadFromResAsync()
+        public async Task LoadFromResAsync(bool forceLoadFromResInEditor = false)
         {
+            const string alreadyLoadedStr = "LoadFromResAsync did nothing because it appears to be already loaded, possibly from a different call.";
+            
+            if (__references != null)
+            {
+                Debug.LogWarning(alreadyLoadedStr);
+                return;
+            }
+            if (_loadingAsync)
+            {
+                while (_loadingAsync)
+                {
+                    Thread.Sleep(20);
+                }
+                return;
+            }
+
             _loadingAsync = true;
-            var req = Resources.LoadAsync<TextAsset>("NeuroData");
-            while (!req.isDone)
+            
+            if (_referencesProvider != null)
             {
-                yield return null;
+                // doesn't really change much for editor path where we load from neuro editor / json files.
+                __references = _referencesProvider.References;
+                if (__references == null)
+                {
+                    throw new Exception($"{nameof(IReferencesProvider)} returned null reference");
+                }
             }
-            try
+            else
             {
-                var textAsset = req.asset as TextAsset;
-                var bytes = RawProtoReader.Decompress(textAsset.bytes);
-                new NeuroBytesReader().ReadReferencesListInto(References, bytes);
+                var taskCompletionSource = new TaskCompletionSource<bool>();
+                var req = Resources.LoadAsync<TextAsset>("NeuroData");
+                req.completed += operation =>
+                {
+                    taskCompletionSource.SetResult(true);
+                };
+                await taskCompletionSource.Task;
+                var bytes = req.asset is TextAsset textAsset ? textAsset.bytes : null;
+                if (bytes == null)
+                {
+                    Debug.LogError("Neuro data resource file not found");
+                }
+                await Task.Run(() =>
+                {
+                    try
+                    {
+                        if (__references == null)
+                        {
+                            __references = NeuroReferences.Default ??= new NeuroReferences();
+                            NeuroSyncTypes.TryRegisterAllAssemblies();
+                            bytes = RawProtoReader.Decompress(bytes);
+                            new NeuroBytesReader().ReadReferencesListInto(__references, bytes);
+                        }
+                        else
+                        {
+                            Debug.LogWarning(alreadyLoadedStr);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogError($"Failed to read ({BinaryResourceName}) from resources. Error: " + e);
+                    }
+                });
             }
-            catch (Exception e)
-            {
-                Debug.LogError($"Failed to read ({BinaryResourceName}) from Resources: " + e);
-            }
-            finally
-            {
-                _loadingAsync = false;
-            }
+            _loadingAsync = false;
         }
+
+        public bool LoadingAsync => _loadingAsync;
 
         private NeuroReferences __references;
         public NeuroReferences References
@@ -129,5 +176,23 @@ namespace Ninjadini.Neuro
             }
         }
         public static NeuroReferences SharedReferences => Shared.References;
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static NeuroReferenceTable<T> GetSharedTable<T>() where T: class,  IReferencable
+        {
+            return Shared.References.GetTable<T>();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static INeuroReferenceTable GetSharedTable(Type type)
+        {
+            return Shared.References.GetTable(type);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T GetSharedSingleton<T>() where T : class, ISingletonReferencable
+        {
+            return Shared.References.Get<T>();
+        }
     }
 }

@@ -281,6 +281,15 @@ namespace Ninjadini.Neuro.Editor
                     }
                 }
             }
+
+            if (fieldsParent.childCount == 0)
+            {
+                fieldsParent.Add(new HelpBox()
+                {
+                    text = $"Nothing to draw for {type}, maybe unsupported type?",
+                    messageType = HelpBoxMessageType.Warning
+                });
+            }
         }
 
         static void ApplyStyles(Data data, VisualElement element)
@@ -382,7 +391,7 @@ namespace Ninjadini.Neuro.Editor
                 }
                 return;
             }
-            var allClasses = data.Controller?.GetPossibleCreationTypesOf(data.type) ?? FindAllPossibleCreationTypesOf(data.type);
+            var allClasses = data.Controller?.GetPossibleCreationTypesOf(data.type) ?? FindAllPossibleCreationTypesOf(data.type).ToArray();
             if (allClasses.Length == 0 || (allClasses.Length == 1 && allClasses[0] == obj?.GetType()))
             {
                 NeuroUiUtils.SetDisplay(subtypesDropDown, false);
@@ -419,7 +428,7 @@ namespace Ninjadini.Neuro.Editor
 
         void OnSubtypeDropDownChanged(ChangeEvent<string> evt)
         {
-            var allClasses = data.Controller?.GetPossibleCreationTypesOf(data.type) ?? FindAllPossibleCreationTypesOf(data.type);
+            var allClasses = data.Controller?.GetPossibleCreationTypesOf(data.type) ?? FindAllPossibleCreationTypesOf(data.type).ToArray();
             var newType = allClasses.FirstOrDefault(t => t.Name == evt.newValue);
             object newObj = null;
             data.Controller?.SwitchObjectType(data.getter(), newType, ref newObj);
@@ -501,18 +510,23 @@ namespace Ninjadini.Neuro.Editor
             }
         }
         
-        public static Type[] FindAllPossibleCreationTypesOf(Type type)
+        public static List<Type> FindAllPossibleCreationTypesOf(Type type)
         {
             var typeIsClass = type.IsClass;
             // https://stackoverflow.com/questions/857705/get-all-derived-types-of-a-type
-            return (from domainAssembly in AppDomain.CurrentDomain.GetAssemblies()
+            var result = (from domainAssembly in AppDomain.CurrentDomain.GetAssemblies()
                 where !domainAssembly.IsDynamic
                 from assemblyType in domainAssembly.GetExportedTypes()
                 where assemblyType.IsClass 
                       && !assemblyType.IsAbstract
                       && !assemblyType.IsInterface
                       && (assemblyType == type || (typeIsClass ? assemblyType.IsSubclassOf(type) : type.IsAssignableFrom(assemblyType)))
-                select assemblyType).ToArray();
+                select assemblyType).ToList();
+            if (typeIsClass && !type.IsAbstract && !type.IsInterface && !result.Contains(type))
+            {
+                result.Insert(0, type);
+            }
+            return result;
         }
 
         public static void ShowCreateInstanceWindow(Type type, VisualElement fromElement, Action<object> createdCallback)
@@ -522,7 +536,7 @@ namespace Ninjadini.Neuro.Editor
         
         public static void ShowCreateInstanceWindow(Data dataInstance, Type type, VisualElement fromElement, Action<object> createdCallback)
         {
-            var allClasses = dataInstance.Controller?.GetPossibleCreationTypesOf(type) ?? FindAllPossibleCreationTypesOf(type);
+            var allClasses = dataInstance.Controller?.GetPossibleCreationTypesOf(type) ?? FindAllPossibleCreationTypesOf(type).ToArray();
             if (allClasses.Length == 0)
             {
                 EditorUtility.DisplayDialog("", $"Could not find any valid sub types of {type}", "OK");

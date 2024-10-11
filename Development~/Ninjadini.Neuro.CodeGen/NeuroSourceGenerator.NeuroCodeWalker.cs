@@ -133,7 +133,8 @@ namespace Ninjadini.Neuro.CodeGen
                         Name = fieldSymbol.Name,
                         Tag = NeuroCodeGenUtils.GetNeuroTag(fieldAttribute),
                         DefaultValue = defaultValue,
-                        IsEnum = fieldType.TypeKind == TypeKind.Enum
+                        IsEnum = fieldType.TypeKind == TypeKind.Enum,
+                        IsReadonly = fieldSymbol.IsReadOnly
                     });
                     if (fieldType.TypeKind == TypeKind.Enum)
                     {
@@ -289,6 +290,7 @@ namespace Ninjadini.Neuro.CodeGen
 
             public string DefaultValue;
             public bool IsEnum;
+            public bool IsReadonly;
         }
     }
 }

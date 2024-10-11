@@ -1,0 +1,9 @@
+{
+    "Name": "Sharpened Stones",
+    "RequiredItems": [
+        {
+            "Item": 3,
+            "Amount": 2
+        }
+    ]
+}

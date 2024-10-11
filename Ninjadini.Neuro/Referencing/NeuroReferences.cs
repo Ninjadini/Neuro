@@ -8,10 +8,31 @@ namespace Ninjadini.Neuro
 {
     public class NeuroReferences : IReferenceResolver
     {
-#if NEURO_STATIC_REFERENCES
-        public static NeuroReferences Default = new NeuroReferences();
-#else
+#if NEURO_DISABLE_STATIC_REFERENCES
+        // Completely disable reference linking via the static instance. 
+        // This disables being able to use myRef.GetValue()
+        // It allows you to use multiple references roots without accidentally calling the wrong one. 
         public static NeuroReferences Default;
+#elif NEURO_THREAD_STATIC_STATIC_REFERENCES
+        // The default reference linking source can be set per thread
+        // This allows you to run multiple references roots on different threads at the same time
+        // e.g. if you are running a c# server / service that need to handle multiple versions of the config
+        [ThreadStatic]
+        static NeuroReferences _default;
+
+        public static NeuroReferences Default
+        {
+            get
+            {
+                _default ??= new NeuroReferences();
+                return _default;
+            }
+            set => _default = value;
+        }
+#else
+        // Default unity friendly behaviour
+        // Calling myRef.GetValue() is auto resolved to the default reference root shared across the untiy instance.
+        public static NeuroReferences Default = new NeuroReferences();
 #endif
         
         Dictionary<Type, INeuroReferenceTable> tables = new Dictionary<Type, INeuroReferenceTable>();

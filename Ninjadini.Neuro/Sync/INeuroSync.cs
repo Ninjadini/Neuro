@@ -6,10 +6,10 @@ namespace Ninjadini.Neuro.Sync
     public interface INeuroSync
     {
         /// Most of the time you only need it false, unless you are writing serialisation code. You could case some data to reset if used wrongly.
-        bool IsReading { get; }
+        bool IsReading => false;
         
         /// Most of the time you only need it false, unless you are writing serialisation code. You could case some data to reset if used wrongly.
-        bool IsWriting { get; }
+        bool IsWriting => false;
         
         void Sync(ref bool value);
         void Sync(ref int value);
@@ -27,8 +27,25 @@ namespace Ninjadini.Neuro.Sync
         void SyncEnum<T>(uint key, string name, ref T value, int defaultValue) where T : Enum;
 
         void Sync<T>(uint key, string name, ref T value);
+
+        void Sync<T>(uint key, string name, T values)
+        {
+            Sync(key, name, ref values);
+        }
+        
         void SyncBaseClass<TRoot, TBase>(TBase value) where TBase : TRoot;
         void Sync<T>(uint key, string name, ref List<T> values);
+
+        void Sync<T>(uint key, string name, List<T> values)
+        {
+            Sync(key, name, ref values);
+        }
+
+        void Sync<TKey, TValue>(uint key, string name, ref Dictionary<TKey, TValue> values);
+        void Sync<TKey, TValue>(uint key, string name, Dictionary<TKey, TValue> values)
+        {
+            Sync(key, name, ref values);
+        }
         
         T GetPooled<T>() where T : class;
     }

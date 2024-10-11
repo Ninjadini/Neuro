@@ -367,7 +367,23 @@ neuro.SyncEnum(1, nameof(value.e), ref value.e, (int) MyEnum.B);
         );
     }
     
-
+        
+    [Test]
+    public void TestReadonlyList()
+    {
+        var src = @"
+using Ninjadini.Neuro;
+        partial class TestClass
+        {
+            [Neuro(1)] public readonly System.Collections.Generic.List<string> obj = new System.Collections.Generic.List<string>();
+        }
+";
+        TestUtils.TestSourceGenerates(src, 
+            @"
+           neuro.Sync(1, nameof(value.obj), value.obj);
+"
+        );
+    }
 
 // TestSketches
     [Neuro(1)]

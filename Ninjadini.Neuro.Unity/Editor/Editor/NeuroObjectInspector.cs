@@ -47,7 +47,14 @@ namespace Ninjadini.Neuro.Editor
             if (drawnObj is IReferencable referencable)
             {
                 idBefore = referencable.RefId;
-                writer.Write((object)drawnObj);
+                try
+                {
+                    writer.Write((object)drawnObj);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning(e);
+                }
             }
 
             base.Draw(drawData);
@@ -169,8 +176,14 @@ namespace Ninjadini.Neuro.Editor
                     reader.Read(writer.GetCurrentBytesChunk(), ref drawnObj);
                     return;
                 }
-
-                writer.Write(drawnObj);
+                try
+                {
+                    writer.Write(drawnObj);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning(e);
+                }
                 idBefore = idNow;
             }
 
@@ -199,14 +212,19 @@ namespace Ninjadini.Neuro.Editor
                 return NeuroGlobalTypes.GetAllRootTypes().ToArray();
             }
             var typeIsClass = type.IsClass;
-            return (from domainAssembly in AppDomain.CurrentDomain.GetAssemblies()
+            var result = (from domainAssembly in AppDomain.CurrentDomain.GetAssemblies()
                 where !domainAssembly.IsDynamic && domainAssembly.IsDefined(typeof(NeuroAssemblyAttribute))
                 from assemblyType in domainAssembly.GetExportedTypes()
-                where assemblyType.IsClass 
+                where assemblyType.IsClass
                       && (assemblyType == type || (typeIsClass ? assemblyType.IsSubclassOf(type) : type.IsAssignableFrom(assemblyType)))
-                      && NeuroSyncTypes.CheckIfTypeRegisteredUsingReflection(assemblyType)
                       && !assemblyType.IsDefined(typeof(HideInInspector))
-                select assemblyType).ToArray();
+                      && NeuroSyncTypes.CheckIfTypeRegisteredUsingReflection(assemblyType)
+                select assemblyType).ToList();
+            if (typeIsClass && !type.IsAbstract && !type.IsInterface && !result.Contains(type))
+            {
+                result.Insert(0, type);
+            }
+            return result.ToArray();
         }
 
         public static object SwitchObjectTypeWhileKeepingValues(object originalObject, Type newType, NeuroReferences references = null)

@@ -1,3 +1,5 @@
+using NUnit.Framework;
+
 namespace Ninjadini.Neuro.IntegrationTests;
 
 public class UberTestObject
@@ -12,8 +14,9 @@ public class UberTestObject
     [Neuro(12)] public TestFlagEnum1 FlagEnum;
         
     [Neuro(20)] public TestChildClass ClassObj;
-    [Neuro(21)] public BaseTestClass1 BaseClassObj;
-    [Neuro(22)] public ITestInterface Interface;
+    [Neuro(21)] public readonly TestChildClass ReadonlyClassObj = new TestChildClass();
+    [Neuro(22)] public BaseTestClass1 BaseClassObj;
+    [Neuro(23)] public ITestInterface Interface;
         
     [Neuro(50)] public TestStruct Struct;
     [Neuro(51)] public Reference<ReferencableClass> Referencable;
@@ -25,6 +28,12 @@ public class UberTestObject
     [Neuro(203)] public List<TestStruct> ListStruct;
     [Neuro(204)] public List<string> ListTexts;
     [Neuro(205)] public List<BaseTestClass1> ListBaseClasses;
+        
+    [Neuro(210)] public Dictionary<int, string> DictionaryIntStr;
+    [Neuro(211)] public readonly Dictionary<int, TestChildClass> DictionaryIntObj = new Dictionary<int, TestChildClass>();
+    [Neuro(212)] public Dictionary<string, BaseTestClass1> DictionaryStringObj;
+    [Neuro(213)] public Dictionary<Reference<ReferencableClass>, BaseTestClass1> DictionaryRefObj;
+    [Neuro(214)] public Dictionary<TestEnum1, BaseTestClass1> DictionaryEnumObj;
         
     [Neuro(300)] public int? NullableId;
     [Neuro(301)] public TestEnum1? NullableEnum;
@@ -39,7 +48,25 @@ public class UberTestObject
         Float = random.NextSingle();
         Name = "String:" + random.Next();
         Date = new DateTime(Math.Max(DateTime.MinValue.Ticks, Math.Min(random.NextInt64(), DateTime.MaxValue.Ticks)));
+        TimeSpan = new TimeSpan(Math.Max(TimeSpan.MinValue.Ticks, Math.Min(random.NextInt64(), TimeSpan.MaxValue.Ticks)));
+
+
+        DictionaryIntStr = new Dictionary<int, string>();
+        
+
         // ok I should fill in more values after this.
+    }
+
+
+    public void AssertEquals(UberTestObject other)
+    {
+        Assert.NotNull(other);
+        
+        Assert.AreEqual(Id, other.Id);
+        Assert.LessOrEqual(Math.Abs(Float - other.Float), 0.00001f);
+        Assert.AreEqual(Name, other.Name);
+        Assert.AreEqual(Date, other.Date);
+        Assert.AreEqual(TimeSpan, other.TimeSpan);
     }
 }
 

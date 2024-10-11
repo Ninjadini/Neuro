@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Ninjadini.Neuro.Utils
+namespace Ninjadini.Neuro
 {
     public class NeuroContentValidatorContext
     {

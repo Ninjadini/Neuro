@@ -14,40 +14,44 @@ namespace Ninjadini.Neuro.Editor
 
         public static IReadOnlyList<Type> GetAllScannableTypes()
         {
-            if (_allScannableTypes == null)
+            if (_allScannableTypes != null)
             {
-                var startTime = DateTime.Now;
-                
-                var result = AppDomain.CurrentDomain.GetAssemblies()
-                    .Where(assembly => !assembly.IsDynamic)
-                    .SelectMany(assembly =>
+                return _allScannableTypes;
+            }
+            
+            var startTime = DateTime.Now;
+            var result = AppDomain.CurrentDomain.GetAssemblies()
+                .Where(assembly => !assembly.IsDynamic)
+                .SelectMany(assembly =>
+                {
+                    try
                     {
-                        try
-                        {
-                            return assembly.GetTypes();
-                        }
-                        catch (Exception)
-                        {
-                            return Array.Empty<Type>();
-                        }
-                    })
-                    .Where(t =>
+                        return assembly.GetTypes();
+                    }
+                    catch (Exception)
                     {
-                        if (t.IsClass
-                            && !t.IsAbstract
-                            && typeof(IAssemblyTypeScannable).IsAssignableFrom(t))
+                        return Array.Empty<Type>();
+                    }
+                })
+                .Where(t =>
+                {
+                    if (t.IsClass
+                        && !t.IsAbstract
+                        && typeof(IAssemblyTypeScannable).IsAssignableFrom(t))
+                    {
+                        if (t.GetConstructor(Type.EmptyTypes) != null)
                         {
-                            if (t.GetConstructor(Type.EmptyTypes) != null)
-                            {
-                                return true;
-                            }
-                            Debug.LogError($"{t} is a {nameof(IAssemblyTypeScannable)} type but does not have a parameterless constructor.");
+                            return true;
                         }
-                        return false;
-                    })
-                    .ToArray();
-                _allScannableTypes = new ReadOnlyCollection<Type>(result);
-                
+                        Debug.LogError($"{t} is a {nameof(IAssemblyTypeScannable)} type but does not have a parameterless constructor.");
+                    }
+                    return false;
+                })
+                .ToArray();
+            _allScannableTypes = new ReadOnlyCollection<Type>(result);
+
+            if (NeuroUnityEditorSettings.Get().LogTimings)
+            {
                 var timeTaken = DateTime.Now - startTime;
                 Debug.Log($"All scannable types found in {timeTaken.TotalMilliseconds}ms");
             }

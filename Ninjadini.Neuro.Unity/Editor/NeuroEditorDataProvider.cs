@@ -128,7 +128,10 @@ namespace Ninjadini.Neuro.Editor
                     }
                 }
             }
-            Debug.Log($"Neuro ~ Found {count:N0} json files in {(DateTime.UtcNow - startTime).TotalMilliseconds:N0} ms");
+            if (NeuroUnityEditorSettings.Get().LogTimings)
+            {
+                Debug.Log($"Neuro ~ Found {count:N0} json files in {(DateTime.UtcNow - startTime).TotalMilliseconds:N0} ms");
+            }
         }
 
         void LoadFile(Type globalType, string filePath)

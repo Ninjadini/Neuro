@@ -47,4 +47,27 @@ public static class NeuroCodeGen_NeuroRoslyn_Test_Assembly
 }"
             );
     }
+        
+    [Test]
+    public void TestPolymorphics1()
+    {
+        var src = @"
+using Ninjadini.Neuro;
+[Neuro(1)]
+        partial class BaseClass
+        {
+
+        }
+[Neuro(2)]
+        partial class SubClass1 : BaseClass
+        {
+
+        }
+";
+        TestUtils.TestSourceGenerates(src, 
+            @"RegisterSubClass<BaseClass, SubClass1>(2, 
+"
+        );
+    }
+
 }

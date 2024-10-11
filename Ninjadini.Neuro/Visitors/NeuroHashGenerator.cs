@@ -10,11 +10,6 @@ namespace Ninjadini.Neuro
         public static NeuroHashGenerator Shared => _shared ??= new NeuroHashGenerator();
         
         private int hash;
-
-        public int Generate(NeuroReferences references)
-        {
-            throw new NotImplementedException();
-        }
         
         public int Generate<T>(T obj)
         {
@@ -22,10 +17,7 @@ namespace Ninjadini.Neuro
             SyncObj(ref obj);
             return hash;
         }
-        
-        bool INeuroSync.IsReading => false;
-        bool INeuroSync.IsWriting => false;
-        
+
         T INeuroSync.GetPooled<T>()
         {
             return null;
@@ -141,7 +133,7 @@ namespace Ninjadini.Neuro
 
         void INeuroSync.Sync<T>(uint key, string name, ref List<T> values)
         {
-            if (values != null && values.Count > 0)
+            if (values != null)
             {
                 hash += key.GetHashCode();
                 hash += values.Count;
@@ -149,6 +141,22 @@ namespace Ninjadini.Neuro
                 {
                     var v = value;
                     SyncObj<T>(ref v);
+                }
+            }
+        }
+
+        void INeuroSync.Sync<TKey, TValue>(uint key, string name, ref Dictionary<TKey, TValue> values)
+        {
+            if (values != null)
+            {
+                hash += key.GetHashCode();
+                hash += values.Count;
+                foreach (var kv in values)
+                {
+                    var k = kv.Key;
+                    var v = kv.Value;
+                    SyncObj(ref k);
+                    SyncObj(ref v);
                 }
             }
         }

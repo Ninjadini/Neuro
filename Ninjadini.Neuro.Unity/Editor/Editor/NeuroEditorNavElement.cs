@@ -452,7 +452,7 @@ namespace Ninjadini.Neuro.Editor
             {
                 value = selectedItem?.Value;
             }
-            catch (Exception exception)
+            catch (Exception)
             {
                 reloadPanel.style.display = DisplayStyle.Flex;
                 itemEditor.SetEnabled(false);
@@ -531,7 +531,7 @@ namespace Ninjadini.Neuro.Editor
         {
             var canCreate = !(selectedItem?.Value is ISingletonReferencable);
             addBtn.SetEnabled(canCreate);
-            cloneBtn.SetEnabled(canCreate);
+            cloneBtn.SetEnabled(canCreate && selectedItem != null);
         }
     }
 }
