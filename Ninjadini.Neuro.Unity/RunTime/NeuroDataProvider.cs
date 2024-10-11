@@ -182,6 +182,18 @@ namespace Ninjadini.Neuro
         {
             return Shared.References.GetTable<T>();
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T GetSharedTable<T>(uint refId) where T: class,  IReferencable
+        {
+            return Shared.References.GetTable<T>().Get(refId);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T GetSharedTable<T>(string refName) where T: class,  IReferencable
+        {
+            return Shared.References.GetTable<T>().Get(refName);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static INeuroReferenceTable GetSharedTable(Type type)

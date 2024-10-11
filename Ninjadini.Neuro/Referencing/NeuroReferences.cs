@@ -19,12 +19,13 @@ namespace Ninjadini.Neuro
         // e.g. if you are running a c# server / service that need to handle multiple versions of the config
         [ThreadStatic]
         static NeuroReferences _default;
+        static NeuroReferences _globalDefault;
 
         public static NeuroReferences Default
         {
             get
             {
-                _default ??= new NeuroReferences();
+                _default ??= _globalDefault ??= new NeuroReferences();
                 return _default;
             }
             set => _default = value;
