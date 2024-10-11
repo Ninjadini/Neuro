@@ -183,8 +183,8 @@ var settings = NeuroDataProvider.GetSharedSingleton<GameSettings>();
 ```
 
 # Loading unity assets
-[!IMPORTANT]
-We can not directly load assets unless it is an Addressable asset or located in Resources folder.
+> [!IMPORTANT]
+> We can not directly load assets unless it is an Addressable asset or located in Resources folder.
 ```
 public class SomeObject
 {
@@ -200,6 +200,42 @@ void LoadIcon(SomeObject obj)
     });
 }
 ```
+
+# Saving player progress
+For a complete example, see [CraftClickerLogic.cs](../ExampleProject~/Assets/Scripts/CraftClicker/CraftClickerLogic.cs)
+```
+public class MyPlayerSaveData
+{
+    [Neuro(1)] public int PlayerLevel;
+}
+
+public class MyGameSaveManager : MonoBehaviour
+{
+    LocalNeuroContinuousSave<MyPlayerSaveData> _gameSave;
+    
+    void Start()
+    {
+        _gameSave = LocalNeuroContinuousSave<MyPlayerSaveData>.CreateInPersistedData("save");
+    }
+    
+    public MyPlayerSaveData GetData()
+    {
+        return _gameSave.GetData();
+    }
+    
+    public void SaveData()
+    {
+        _gameSave.Save();
+    }
+    
+    void OnDestroy()
+    {
+        _gameSave?.Dispose(); 
+        //^ Because we keep the file open for writing very fast, we need to close it when you stop playing.
+    }
+}
+```
+
 
 # What's next ?
 

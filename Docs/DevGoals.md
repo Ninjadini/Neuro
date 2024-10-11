@@ -2,7 +2,9 @@
 
 ## Things to do next
 - Finish the demo project (timers and images)
+- Reconsider the naming of things - should 'IReferencable' be just ConfigItem ?
 - Finish the doc
+- Add doc comments to core lib code and also in the demo
 - More extreme tests like min max values and random numbers in between
 - Maybe actually build example ways to deploy new content live (might need new library code)
 

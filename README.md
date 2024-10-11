@@ -10,6 +10,8 @@ Enjoy the flexibility to update content, balance gameplay, and scale features—
 
 Inspired by Protobuf, but fully-integrated into Unity to streamline your data management workflow.
 
+[But why tho? I am not convinced...](Docs/ConvinceMe.md)
+
 ## [Getting Started >](Docs/GettingStarted.md)
 
 ## [Demo Project >](Docs/DemoProject.md)

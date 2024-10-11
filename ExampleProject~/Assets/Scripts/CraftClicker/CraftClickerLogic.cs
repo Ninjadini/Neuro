@@ -5,17 +5,13 @@ using UnityEngine;
 
 public class CraftClickerLogic : MonoBehaviour
 {
-    [SerializeField] string saveFileName = "save";
-    
     LocalNeuroContinuousSave<CraftClickerSaveData> _gameSave;
     CraftClickerSaveData Data => _gameSave.GetData();
 
     void Start()
     {
-        if (string.IsNullOrEmpty(saveFileName))
-        {
-            saveFileName = "save";
-        }
+        var settings = NeuroDataProvider.GetSharedSingleton<CraftClickerSettings>();
+        var saveFileName = string.IsNullOrEmpty(settings?.SaveFileName) ? "save" : settings.SaveFileName;
         _gameSave = LocalNeuroContinuousSave<CraftClickerSaveData>.CreateInPersistedData(saveFileName);
     }
 
@@ -96,5 +92,6 @@ public class CraftClickerLogic : MonoBehaviour
     void OnDestroy()
     {
         _gameSave?.Dispose();
+        //^ Because we keep the file open for writing very fast, we need to close it when you stop playing.
     }
 }
