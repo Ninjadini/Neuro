@@ -17,5 +17,6 @@ MonoBehaviour:
   BakeDataResourcesForBuild: 1
   ResourcesDir: Assets/Resources/
   PrimaryDataPath: NeuroData
+  LogTimings: 0
   UndoRedosEnabled: 0
   ClassSettings: []
