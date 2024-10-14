@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Ninjadini.Neuro.Sync
 {
     // This is auto picked up by code gen to be registered.
-    public struct NeuroDefaultUnityTypesHook : INeuroCustomTypesRegistryHook
+    struct NeuroDefaultUnityTypesHook : INeuroCustomTypesRegistryHook
     {
         static bool _registered;
         

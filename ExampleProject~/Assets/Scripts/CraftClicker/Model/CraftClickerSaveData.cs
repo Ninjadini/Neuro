@@ -5,7 +5,8 @@ using Ninjadini.Neuro;
 /// Player save data that gets saved on device
 public class CraftClickerSaveData
 {
-    [Neuro(1)] public DateTime SaveTime;
+    [Neuro(1)] public DateTime CreationTime;
+    [Neuro(2)] public DateTime LastSaveTime;
     [Neuro(3)] public readonly Dictionary<Reference<CraftItem>, DateTime> ItemCraftEndTimes = new ();
     [Neuro(5)] public readonly Dictionary<Reference<CraftItem>, OwnedCraftItem> OwnedItems = new ();
     

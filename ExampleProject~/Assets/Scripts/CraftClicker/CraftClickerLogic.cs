@@ -5,10 +5,24 @@ using UnityEngine;
 
 public class CraftClickerLogic : MonoBehaviour
 {
-    [SerializeField] CraftClickerSaveManager saveManager;
+    [SerializeField] LocalNeuroContinuousSave saves;
     
-    CraftClickerSaveData Data => saveManager.GetData();
-    
+    CraftClickerSaveData Data => saves.GetData<CraftClickerSaveData>();
+
+    void Start()
+    {
+        saves.SetCustomCreationFunction(CreateFreshSaveData);
+        // ^ an example way to create a 'new account'
+    }
+
+    CraftClickerSaveData CreateFreshSaveData()
+    {
+        return new CraftClickerSaveData()
+        {
+            CreationTime = GetTime()
+        };
+    }
+
     public bool CanCraftItem(CraftItem item)
     {
         if (Data.ItemCraftEndTimes.ContainsKey(item))
@@ -40,8 +54,16 @@ public class CraftClickerLogic : MonoBehaviour
         }
         // set the time it'll finish crafting
         Data.ItemCraftEndTimes[item] = GetTime() + item.CraftDuration;
-        
-        saveManager.Save(); 
+        Save();
+    }
+
+    void Save()
+    {
+        Data.LastSaveTime = DateTime.Now;
+        saves.Save(); 
+        // ^ in the real world, you probably don't want to save on evey data change
+        // maybe delay the save for 5 seconds so that if you did like 3 actions within 5 seconds it's all
+        // rolled into just 1 save call.
     }
 
     void AddOwnedCount(Reference<CraftItem> item, int amount)
@@ -91,6 +113,13 @@ public class CraftClickerLogic : MonoBehaviour
             Data.ItemCraftEndTimes.Remove(itemRef);
             var craftOutputCount = itemRef.GetValue().CraftOutputCount;
             AddOwnedCount(itemRef, craftOutputCount);
+        }
+        if (_itemsReadyToFinish.Count > 0)
+        {
+            Save();
+            // things would still work if we don't call save here...
+            // because it'll just call update on next launch and finish the items on return
+            // but better to be safe.
         }
     }
     

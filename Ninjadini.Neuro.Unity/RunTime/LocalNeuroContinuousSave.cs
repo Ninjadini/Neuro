@@ -1,11 +1,110 @@
 using System;
 using System.IO;
-using Ninjadini.Neuro.Sync;
 using UnityEngine;
 
 namespace Ninjadini.Neuro
 {
-    public class LocalNeuroContinuousSave<T> : IDisposable where T : class
+    /// This MonoBehaviour provides an easy and efficient way to save data continuously to disk.
+    /// For example, you want to save player progress.
+    /// This feature is written in such a way that it will not allocate memory to write into disk.
+    /// This only work for writing to a single file at a time, if you want to save to different files, use LocalNeuroStorage - but not as efficient
+    /// If you don't want to use MonoBehaviour, use LocalNeuroContinuousSave<T> directly.
+    public class LocalNeuroContinuousSave : MonoBehaviour
+    {
+        [SerializeField] string saveFileName = "save";
+        
+        INeuroSavable _gameSave;
+        Delegate _createDataFunc;
+
+        public T GetData<T>() where T : class
+        {
+            EnsureGameSave<T>();
+            return (T)_gameSave.GetData();
+        }
+
+        public void SetData<T>(T value) where T : class
+        {
+            EnsureGameSave<T>();
+            if (_gameSave.DataType != typeof(T))
+            {
+                throw new Exception($"Save data type mismatch. Was {_gameSave.DataType} but trying to set {typeof(T)}");
+            }
+            _gameSave.SetData(value);
+        }
+
+        void EnsureGameSave<T>() where T : class
+        {
+            if (_gameSave != null)
+            {
+                return;
+            }
+            if (string.IsNullOrEmpty(saveFileName))
+            {
+                throw new Exception($"{nameof(saveFileName)} can not be empty.");
+            }
+            Func<T> createDataFunc = _createDataFunc != null ? () => ((Func<T>)_createDataFunc)() : null;
+            _gameSave = LocalNeuroContinuousSave<T>.CreateInPersistedData(saveFileName, createDataFunc);
+        }
+
+        public void SetCustomCreationFunction<T>(Func<T> createDataFunc)
+        {
+            if (_gameSave != null)
+            {
+                throw new Exception($"Game data is already loaded, it is too late to call {nameof(SetCustomCreationFunction)}");
+            }
+            _createDataFunc = createDataFunc;
+        }
+
+        public void Save()
+        {
+            _gameSave?.Save();
+        }
+
+        public void DeleteAndDispose()
+        {
+            if (_gameSave != null)
+            {
+                _gameSave.DeleteAndDispose();
+            }
+            else
+            {
+                var path = Application.persistentDataPath + "/" + saveFileName;
+                try
+                {
+                    if (File.Exists(path))
+                    {
+                        File.Delete(path);
+                    }
+                }
+                catch (Exception err)
+                {
+                    Debug.LogWarning($"Failed to delete path {path}: {err}");
+                    throw;
+                }
+            }
+        }
+
+        void OnDestroy()
+        {
+            _gameSave?.Dispose();
+            _gameSave = null;
+        }
+    }
+        
+    public interface INeuroSavable : IDisposable
+    {
+        Type DataType { get; }
+        object GetData();
+        void SetData(object value);
+        void Save();
+        void DeleteAndDispose();
+    }
+
+    /// This provides an easy and efficient way to save data continuously to disk.
+    /// For example, you want to save player progress.
+    /// This feature is written in such a way that it will not allocate memory to write into disk.
+    /// This only work for writing to a single file at a time, if you want to save to different files, use LocalNeuroStorage - but not as efficient
+    public class LocalNeuroContinuousSave<T> : INeuroSavable where T : class
     {
         readonly string _filePath;
         NeuroBytesWriter _bytesWriter;
@@ -13,6 +112,8 @@ namespace Ninjadini.Neuro
 
         T _data;
         Func<T> _createDataFunc;
+
+        public Type DataType => typeof(T);
         
         public LocalNeuroContinuousSave(string filePath, Func<T> createDataFunc = null)
         {
@@ -20,9 +121,9 @@ namespace Ninjadini.Neuro
             _createDataFunc = createDataFunc;
         }
 
-        public static LocalNeuroContinuousSave<T> CreateInPersistedData(string fileName)
+        public static LocalNeuroContinuousSave<T> CreateInPersistedData(string fileName, Func<T> createDataFunc = null)
         {
-            return new LocalNeuroContinuousSave<T>(Application.persistentDataPath + "/" + fileName);
+            return new LocalNeuroContinuousSave<T>(Application.persistentDataPath + "/" + fileName, createDataFunc);
         }
         
         public T GetData()
@@ -54,6 +155,16 @@ namespace Ninjadini.Neuro
                 _data ??= _createDataFunc?.Invoke() ?? Activator.CreateInstance<T>();
             }
             return _data;
+        }
+
+        void INeuroSavable.SetData(object value)
+        {
+            SetData((T)value);
+        }
+
+        object INeuroSavable.GetData()
+        {
+            return GetData();
         }
 
         public void SetData(T value)
