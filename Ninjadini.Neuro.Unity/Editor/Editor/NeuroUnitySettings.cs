@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
-using Ninjadini.Toolkit;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -14,13 +12,15 @@ namespace Ninjadini.Neuro.Editor
     [FilePath("ProjectSettings/NeuroSettings.asset", FilePathAttribute.Location.ProjectFolder)]
     public class NeuroUnityEditorSettings : ScriptableSingleton<NeuroUnityEditorSettings>
     {
-        public const string SETTINGS_MENU_PATH = "Project/Ninjadini: ❖ Neuro";
+        public const string SETTINGS_MENU_PATH = "Project/Ninjadini ❖ Neuro";
         public const string DEFAULT_DATA_PATH = "NeuroData";
 
         public bool ShowDialogOnDataFileChange;
         public bool BakeAutoTypeRegistryForBuild = true;
         public bool BakeDataResourcesForBuild = true;
         public string ResourcesDir = "Assets/Resources/";
+        
+        [Tooltip("WARNING: Require reload after changing this value, for now...")]
         public string PrimaryDataPath;
         
         [Tooltip("Debug.Log() neuro loading timings in case you need to know how long things are taking.")]

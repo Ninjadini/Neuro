@@ -2,9 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Ninjadini.Neuro;
-using Ninjadini.Neuro.Utils;
-using Ninjadini.Toolkit;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -326,14 +323,7 @@ namespace Ninjadini.Neuro.Editor
 
         static string GetTypeName(Type type)
         {
-            var result = type.Name;
-            type = type.DeclaringType;
-            while (type != null)
-            {
-                result = type.Name + "." + result;
-                type = type.DeclaringType;
-            }
-            return result;
+            return NeuroEditorUtils.GetTypeName(type);
         }
 
         void UpdateLiveTest(object obj)

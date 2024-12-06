@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Ninjadini.Neuro;
 using Ninjadini.Neuro.Sync;
@@ -74,10 +75,30 @@ namespace Ninjadini.Neuro
             proto.Set(Array.Empty<byte>());
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T ReadGlobalType<T>(in BytesChunk bytesChunk, in ReaderOptions opts = default) where T : IReferencable
+        /// WARNING: THIS IS SLOW due to needing reflection and allocation
+        public object Read(in BytesChunk bytesChunk, Type type, in ReaderOptions opts = default)
         {
-            return (T)ReadGlobalType(typeof(T), bytesChunk, opts);
+            proto.Set(bytesChunk);
+            options = opts;
+#pragma warning disable CS0162 // Unreachable code detected
+            if (false)
+            {
+                _ReadByReflection<object>();
+                // ^ This is just a cheap way to try preserve the method in Unity.
+            }
+#pragma warning restore CS0162 // Unreachable code detected
+            var method = GetType().GetMethod("_ReadByReflection",  BindingFlags.Instance | BindingFlags.NonPublic);
+            var genericMethod = method.MakeGenericMethod(type);
+            return genericMethod.Invoke(this, Array.Empty<object>());
+        }
+
+        object _ReadByReflection<T>()
+        {
+            var result = default(T);
+            var chunk = proto.GetCurrentBytesChunk();
+            chunk.Length = proto.Available;
+            Read(chunk, ref result, options);
+            return result;
         }
 
         public object ReadGlobalType(Type type, in BytesChunk bytesChunk, in ReaderOptions opts)
@@ -118,7 +139,7 @@ namespace Ninjadini.Neuro
             return result;
         }
         
-        public object ReadGlobalTyped(in BytesChunk bytesChunk,  in ReaderOptions opts = default)
+        public object ReadGlobalTyped(in BytesChunk bytesChunk, in ReaderOptions opts = default)
         {
             object result = null;
             ReadGlobalTyped(bytesChunk, ref result, opts);

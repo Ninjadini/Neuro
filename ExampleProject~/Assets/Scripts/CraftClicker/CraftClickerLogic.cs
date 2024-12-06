@@ -11,16 +11,13 @@ public class CraftClickerLogic : MonoBehaviour
 
     void Start()
     {
-        saves.SetCustomCreationFunction(CreateFreshSaveData);
-        // ^ an example way to create a 'new account'
-    }
-
-    CraftClickerSaveData CreateFreshSaveData()
-    {
-        return new CraftClickerSaveData()
+        //optional...
+        saves.SetCustomCreationFunction(() => new CraftClickerSaveData()
         {
+            Guid = Guid.NewGuid(),
             CreationTime = GetTime()
-        };
+        });
+        // ^ an example way to create a 'new account'
     }
 
     public bool CanCraftItem(CraftItem item)

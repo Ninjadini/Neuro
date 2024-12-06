@@ -1,6 +1,5 @@
 using System;
 using Ninjadini.Neuro.Utils;
-using Ninjadini.Toolkit;
 using UnityEngine.UIElements;
 
 namespace Ninjadini.Neuro.Editor

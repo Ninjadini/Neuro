@@ -11,6 +11,8 @@ namespace Ninjadini.Neuro
         [ThreadStatic] private static NeuroJsonReader _shared;
         public static NeuroJsonReader Shared => _shared ??= new NeuroJsonReader();
         
+        public const string NoGlobalTypeIdFoundErrMsg = "No global type id found in json.";
+        
         private NeuroJsonTokenizer _jsonVisitor = new NeuroJsonTokenizer();
 
         private ReaderOptions options;
@@ -20,9 +22,17 @@ namespace Ninjadini.Neuro
         private NeuroJsonTokenizer.StringRange currentValue;
         private StringBuilder stringBuilder;
         
+        
         static NeuroJsonReader()
         {
             NeuroDefaultJsonSyncTypes.Register();
+        }
+        
+        public object ReadGlobalTyped(string json, ReaderOptions opts = default)
+        {
+            object value = null;
+            Read(json, ref value, opts);
+            return value;
         }
         
         public T Read<T>(string json, ReaderOptions opts = default)
@@ -43,7 +53,15 @@ namespace Ninjadini.Neuro
             object globalResult = null;
             var subTypeNode = FindNode(NeuroJsonWriter.FieldName_ClassTag);
             var tag = GetFirstUintPart(subTypeNode.Value);
-            NeuroGlobalTypes.Sync(typeId, this, tag, ref globalResult);
+            if (typeId == 0)
+            {
+                var typeInfo = NeuroSyncTypes.GetTypeInfo(type);
+                globalResult = typeInfo.Sync(this, null);
+            }
+            else
+            {
+                NeuroGlobalTypes.Sync(typeId, this, tag, ref globalResult);
+            }
             return globalResult;
         }
         
@@ -81,7 +99,7 @@ namespace Ninjadini.Neuro
                 }
                 else
                 {
-                    throw new System.Exception("No type id found in json.");
+                    throw new System.Exception(NoGlobalTypeIdFoundErrMsg);
                 }
             }
             else

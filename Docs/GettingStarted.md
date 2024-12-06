@@ -202,36 +202,28 @@ void LoadIcon(SomeObject obj)
 ```
 
 # Saving player progress
-For a complete example, see [CraftClickerSaveManager.cs](../ExampleProject~/Assets/Scripts/CraftClicker/CraftClickerSaveManager.cs)
+The easiest in Unity is to use LocalNeuroContinuousSave MonoBehaviour.
+See Save() in example [CraftClickerLogic.cs](../ExampleProject~/Assets/Scripts/CraftClicker/CraftClickerLogic.cs)
+
 ```
 public class MyPlayerSaveData
 {
     [Neuro(1)] public int PlayerLevel;
 }
 
-public class MyGameSaveManager : MonoBehaviour
+public class MyGameLogic : MonoBehaviour
 {
-    LocalNeuroContinuousSave<MyPlayerSaveData> _gameSave;
-    
-    void Start()
-    {
-        _gameSave = LocalNeuroContinuousSave<MyPlayerSaveData>.CreateInPersistedData("save");
-    }
+    [SerialisedField] LocalNeuroContinuousSave _gameSave;
+    // ^ You need add LocalNeuroContinuousSave component in the same GameObject and link to this field in Unity.
     
     public MyPlayerSaveData GetData()
     {
-        return _gameSave.GetData();
+        return _gameSave.GetData<MyPlayerSaveData>();
     }
     
     public void SaveData()
     {
         _gameSave.Save();
-    }
-    
-    void OnDestroy()
-    {
-        _gameSave?.Dispose(); 
-        //^ Because we keep the file open for writing very fast, we need to close it when you stop playing.
     }
 }
 ```

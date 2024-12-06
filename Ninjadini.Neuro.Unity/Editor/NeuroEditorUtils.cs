@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reflection;
 using System.Text;
+using Ninjadini.Neuro.Sync;
 using Ninjadini.Neuro.Utils;
 using UnityEngine;
 
@@ -83,6 +85,37 @@ namespace Ninjadini.Neuro.Editor
             {
                 return _uniqueProjectPathHash ??= string.Join("", Encoding.UTF8.GetBytes(Application.dataPath).Select(b => b.ToString("x2")));
             }
+        }
+
+        public static Type[] FindAllNeuroTypes()
+        {
+            return (from domainAssembly in AppDomain.CurrentDomain.GetAssemblies()
+                    where !domainAssembly.IsDynamic && domainAssembly.IsDefined(typeof(NeuroAssemblyAttribute))
+                    where NeuroSyncTypes.TryRegisterAssembly(domainAssembly)
+                    from type in domainAssembly.GetExportedTypes()
+                    where type.IsClass && !type.IsGenericType
+                                       && NeuroSyncTypes.CheckIfTypeRegisteredUsingReflection(type)
+                    select type)
+                .ToArray();
+        }
+
+        static Type[] _allNeuroTypes;
+        public static Type[] FindAllNeuroTypesCached()
+        {
+            _allNeuroTypes ??= FindAllNeuroTypes();
+            return _allNeuroTypes;
+        }
+
+        public static string GetTypeName(Type type)
+        {
+            var result = type.Name;
+            type = type.DeclaringType;
+            while (type != null)
+            {
+                result = type.Name + "." + result;
+                type = type.DeclaringType;
+            }
+            return result;
         }
     }
 }

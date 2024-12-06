@@ -30,16 +30,16 @@ namespace Ninjadini.Neuro
 
         public ReadOnlySpan<byte> Write<T>(T value)
         {
+            if (value == null)
+            {
+                return new Span<byte>();
+            }
             if (typeof(T) == typeof(object))
             {
                 return WriteGlobalType(value);
             }
             proto.Position = 0;
             lastKey = 0;
-            if (value == null)
-            {
-                return new Span<byte>();
-            }
             NeuroSyncTypes<T>.TryAutoRegisterTypeOrThrow();
             if (NeuroSyncTypes<T>.SizeType == NeuroConstants.ChildWithType)
             {
@@ -53,6 +53,29 @@ namespace Ninjadini.Neuro
                 proto.Write(1 << NeuroConstants.HeaderShift | NeuroSyncTypes<T>.SizeType);
                 NeuroSyncTypes<T>.GetOrThrow()(this, ref value);
             }
+            proto.Write(NeuroConstants.EndOfChild);
+            return new ReadOnlySpan<byte>(proto.Buffer, 0, proto.Position);
+        }
+
+        /// This is a bit slower as it needs to use reflection once.
+        public ReadOnlySpan<byte> Write(object value)
+        {
+            if (value == null)
+            {
+                return new Span<byte>();
+            }
+            proto.Position = 0;
+            lastKey = 0;
+            var type = value.GetType();
+            NeuroSyncTypes.TryRegisterAssembly(type.Assembly);
+            var typeInfo = NeuroSyncTypes.GetTypeInfo(type);
+            
+            proto.Write(1 << NeuroConstants.HeaderShift | typeInfo.SizeType);
+            if (typeInfo.SizeType == NeuroConstants.ChildWithType && typeInfo.SubTypeTag != 0)
+            {
+                proto.Write(typeInfo.SubTypeTag);
+            }
+            typeInfo.Sync(this, value);
             proto.Write(NeuroConstants.EndOfChild);
             return new ReadOnlySpan<byte>(proto.Buffer, 0, proto.Position);
         }

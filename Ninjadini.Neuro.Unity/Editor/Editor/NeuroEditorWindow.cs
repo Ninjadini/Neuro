@@ -55,7 +55,7 @@ namespace Ninjadini.Neuro.Editor
         
         void IHasCustomMenu.AddItemsToMenu(GenericMenu menu)
         {
-            menu.AddItem(new GUIContent("Show Debugger Window"), false, NeuroDebuggerWindow.ShowWindow);
+            menu.AddItem(new GUIContent("Show Debugger Window"), false, NeuroTypeMappingDebuggerWindow.ShowWindow);
             menu.AddItem(new GUIContent("Recompile scripts"), false, CompilationPipeline.RequestScriptCompilation);
         }
     }

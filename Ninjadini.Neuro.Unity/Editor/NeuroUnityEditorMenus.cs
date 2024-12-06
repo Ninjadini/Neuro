@@ -14,7 +14,7 @@ namespace Ninjadini.Neuro.Editor
         }
         
         
-        [MenuItem("Tools/Neuro/Save To Resources")]
+        [MenuItem("Tools/Neuro/Save Data To Resources")]
         public static void SaveToResources()
         {
             NeuroEditorDataProvider.Shared.SaveBundledBinaryToResources(null);

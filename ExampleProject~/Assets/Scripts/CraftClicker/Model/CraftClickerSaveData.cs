@@ -6,8 +6,9 @@ using Ninjadini.Neuro;
 public class CraftClickerSaveData
 {
     [Neuro(1)] public DateTime CreationTime;
-    [Neuro(2)] public DateTime LastSaveTime;
-    [Neuro(3)] public readonly Dictionary<Reference<CraftItem>, DateTime> ItemCraftEndTimes = new ();
+    [Neuro(2)] public Guid Guid;
+    [Neuro(3)] public DateTime LastSaveTime;
+    [Neuro(4)] public readonly Dictionary<Reference<CraftItem>, DateTime> ItemCraftEndTimes = new ();
     [Neuro(5)] public readonly Dictionary<Reference<CraftItem>, OwnedCraftItem> OwnedItems = new ();
     
     //[Neuro(6)] public List<ActiveCraftStatusEffect> StatusEffects = new List<ActiveCraftStatusEffect>();

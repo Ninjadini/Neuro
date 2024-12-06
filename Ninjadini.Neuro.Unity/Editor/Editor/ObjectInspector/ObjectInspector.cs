@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
-using Ninjadini.Toolkit;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -68,13 +67,17 @@ namespace Ninjadini.Neuro.Editor
             drawData.Controller ??= SharedController;
             data = drawData;
             
-            if (data.type == null)
-            {
-                throw new ArgumentNullException(nameof(data.type));
-            }
             if (data.getter == null)
             {
                 throw new ArgumentNullException(nameof(data.getter));
+            }
+            if (data.type == null)
+            {
+                data.type = data.getter()?.GetType();
+                if (data.type == null)
+                {
+                    throw new ArgumentNullException(nameof(data.type));
+                }
             }
             
             Clear();
@@ -542,6 +545,11 @@ namespace Ninjadini.Neuro.Editor
                 EditorUtility.DisplayDialog("", $"Could not find any valid sub types of {type}", "OK");
                 return;
             }
+            ShowCreateInstanceWindow(allClasses, fromElement, createdCallback);
+        }
+        
+        public static void ShowCreateInstanceWindow(Type[] allClasses, VisualElement fromElement, Action<object> createdCallback)
+        {
             if (allClasses.Length == 1)
             {
                 CreateInstance(allClasses[0], createdCallback);

@@ -1,5 +1,3 @@
-using Ninjadini.Toolkit;
-using UnityEditor;
 using UnityEngine.UIElements;
 
 namespace Ninjadini.Neuro.Editor

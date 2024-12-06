@@ -45,7 +45,13 @@ namespace Ninjadini.Neuro.Sync
 
         public static IReadOnlyList<Type> GetAllRootTypes()
         {
-            return typeIds.Keys.ToArray();
+            var result = typeIds.Keys.ToArray();
+            if (result.Length == 0)
+            {
+                NeuroSyncTypes.TryRegisterAllAssemblies();
+                result = typeIds.Keys.ToArray();
+            }
+            return result;
         }
 
         public static bool TypeIdExists(uint typeId)

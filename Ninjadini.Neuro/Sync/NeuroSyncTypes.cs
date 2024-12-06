@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace Ninjadini.Neuro.Sync
@@ -12,7 +13,7 @@ namespace Ninjadini.Neuro.Sync
         {
             NeuroDefaultSyncTypes.Register();
         }
-        
+
         public static bool IsEmpty<T>()
         {
             return NeuroSyncTypes<T>.Delegate == null;
@@ -23,7 +24,7 @@ namespace Ninjadini.Neuro.Sync
             return NeuroSyncTypes<T>.Delegate != null;
         }
 
-        public static void Register<T>(NeuroSyncDelegate<T> d, uint globalTypeId = 0) 
+        public static void Register<T>(NeuroSyncDelegate<T> d, uint globalTypeId = 0)
         {
             NeuroSyncTypes<T>.SizeType = (uint)FieldSizeType.Child;
             NeuroSyncTypes<T>.Delegate = d;
@@ -32,7 +33,7 @@ namespace Ninjadini.Neuro.Sync
                 NeuroGlobalTypes.Register<T>(globalTypeId);
             }
         }
-        
+
         public static void RegisterSubClass<TBaseType, TSubType>(uint typeTag, NeuroSyncDelegate<TSubType> d) where TSubType : class, TBaseType
         {
             NeuroSyncTypes<TSubType>.SizeType = (uint)FieldSizeType.ChildWithTag;
@@ -137,6 +138,29 @@ namespace Ninjadini.Neuro.Sync
             var method = subTypesType.GetMethod("GetRootType", BindingFlags.NonPublic | BindingFlags.Static);
             return method.Invoke(null, null) as Type;
         }
+
+        static readonly Dictionary<Type, TypeInfo> _typeInfos = new Dictionary<Type, TypeInfo>();
+
+        /// This is a bit slow because we need to do reflection to get the generic type.
+        public static TypeInfo GetTypeInfo(Type type)
+        {
+            if (_typeInfos.TryGetValue(type, out var result))
+            {
+                return result;
+            }
+            var subTypesType = typeof(NeuroSyncTypes<>).MakeGenericType(type);
+            var method = subTypesType.GetMethod("GetTypeInfo", BindingFlags.NonPublic | BindingFlags.Static);
+            result = (TypeInfo) method.Invoke(null, null);
+            _typeInfos[type] = result;
+            return result;
+        }
+        
+        public struct TypeInfo
+        {
+            public uint SizeType;
+            public uint SubTypeTag;
+            public Func<INeuroSync, object, object> Sync;
+        }
     }
 
     internal static class NeuroSyncTypes<T>
@@ -167,6 +191,39 @@ namespace Ninjadini.Neuro.Sync
         internal static void TryAutoRegisterTypeOrThrow()
         {
             NeuroSyncTypes.TryRegisterAssemblyOf<T>();
+        }
+
+        internal static NeuroSyncTypes.TypeInfo GetTypeInfo()
+        {
+            if (SizeType == NeuroConstants.ChildWithType)
+            {
+                var tag = NeuroSyncSubTypes<T>.GetTag(typeof(T));
+                return new NeuroSyncTypes.TypeInfo()
+                {
+                    SizeType = SizeType,
+                    SubTypeTag = tag,
+                    Sync = (neuro, input) =>
+                    {
+                        var output = (T)input;
+                        NeuroSyncSubTypes<T>.Sync(neuro, tag, ref output);
+                        return output;
+                    }
+                };
+            }
+            if(SizeType == NeuroConstants.Child)
+            {
+                return new NeuroSyncTypes.TypeInfo()
+                {
+                    SizeType = SizeType,
+                    Sync = (neuro, input) =>
+                    {
+                        var output = (T)input;
+                        Delegate(neuro, ref output);
+                        return output;
+                    }
+                };
+            }
+            throw new Exception($"{typeof(T)} is not registered. You might just need to call NeuroTypesRegister.Register()");
         }
     }
 }

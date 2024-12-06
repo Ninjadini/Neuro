@@ -57,9 +57,18 @@ namespace Ninjadini.Neuro
             defaultStringBuilder.Clear();
             return result;
         }
+
+        public string WriteGlobalTyped(object value, NeuroReferences refs = null, Options options = 0)
+        {
+            return Write<object>(value, refs, options);
+        }
         
         public void WriteTo<T>(StringBuilder strBuilder, ref T value, NeuroReferences refs = null, Options options = 0)
         {
+            if (strBuilder == null)
+            {
+                return;
+            }
             if (value == null)
             {
                 stringBuilder.Append("null");
@@ -106,6 +115,60 @@ namespace Ninjadini.Neuro
             {
                 NeuroJsonSyncTypes<T>.GetOrThrow()(this, ref value);
             }
+            if (stringBuilder.Length > posAtStart)
+            {
+                stringBuilder.Length -= 2;
+                stringBuilder.Append("\n");
+            }
+            stringBuilder.Append("}");
+            references = null;
+            stringBuilder = null;
+        }
+        
+        /// This is a bit slower as it needs to use reflection once.
+        public string Write(object value, NeuroReferences refs = null, Options options = 0)
+        {
+            if (defaultStringBuilder == null)
+            {
+                defaultStringBuilder = new StringBuilder();
+            }
+            else
+            {
+                defaultStringBuilder.Length = 0;
+            }
+            WriteTo(defaultStringBuilder, value, refs, options);
+            var result = defaultStringBuilder.ToString();
+            defaultStringBuilder.Clear();
+            return result;
+        }
+        
+        /// This is a bit slower as it needs to use reflection once.
+        public void WriteTo(StringBuilder strBuilder, object value, NeuroReferences refs = null, Options options = 0)
+        {
+            if (strBuilder == null)
+            {
+                return;
+            }
+            if (value == null)
+            {
+                stringBuilder.Append("null");
+                return;
+            }
+            opts = options & ~Options.ExcludeTopLevelGlobalType;
+            references = refs ?? defaultReferences;
+            stringBuilder = strBuilder;
+            stringBuilder.Append("{\n");
+            numIndents = 1;
+            var type = value.GetType();
+            NeuroSyncTypes.TryRegisterAssembly(type.Assembly);
+            
+            var posAtStart = stringBuilder.Length;
+            var typeInfo = NeuroSyncTypes.GetTypeInfo(type);
+            if (typeInfo.SizeType == NeuroConstants.ChildWithType && typeInfo.SubTypeTag != 0)
+            {
+                AppendSubTagAndOrName(FieldName_ClassTag, typeInfo.SubTypeTag, type.Name);
+            }
+            typeInfo.Sync(this, value);
             if (stringBuilder.Length > posAtStart)
             {
                 stringBuilder.Length -= 2;

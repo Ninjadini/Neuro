@@ -10,12 +10,12 @@ using UnityEngine.UIElements;
 
 namespace Ninjadini.Neuro.Editor
 {
-    public class NeuroDebuggerWindow : EditorWindow
+    public class NeuroTypeMappingDebuggerWindow : EditorWindow
     {
-        [MenuItem("Tools/Neuro/Debugger", priority = 105)]
+        [MenuItem("Tools/Neuro/Type Mapping Debugger", priority = 105)]
         public static void ShowWindow()
         {
-            GetWindow<NeuroDebuggerWindow>("Neuro Debugger").Show();
+            GetWindow<NeuroTypeMappingDebuggerWindow>("Neuro Types").Show();
         }
 
         bool fullName;
@@ -111,7 +111,7 @@ namespace Ninjadini.Neuro.Editor
         void RefreshTypesView()
         {
             typesScrollView.Clear();
-            var allTypes = FindAllTypes();
+            var allTypes = NeuroEditorUtils.FindAllNeuroTypesCached();
             var dict = CollectTypesByRootType(allTypes);
             SortLists(dict);
             var dictKeys = dict.Keys.ToList();
@@ -141,18 +141,6 @@ namespace Ninjadini.Neuro.Editor
                     AddType(type, typesScrollView);
                 }
             }
-        }
-
-        Type[] FindAllTypes()
-        {
-            return (from domainAssembly in AppDomain.CurrentDomain.GetAssemblies()
-                    where !domainAssembly.IsDynamic && domainAssembly.IsDefined(typeof(NeuroAssemblyAttribute))
-                    where NeuroSyncTypes.TryRegisterAssembly(domainAssembly)
-                    from type in domainAssembly.GetExportedTypes()
-                    where type.IsClass && !type.IsGenericType
-                                       && NeuroSyncTypes.CheckIfTypeRegisteredUsingReflection(type)
-                    select type)
-                .ToArray();
         }
 
         Dictionary<Type, List<Type>> CollectTypesByRootType(Type[] allTypes)
