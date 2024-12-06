@@ -74,19 +74,12 @@ namespace Ninjadini.Neuro.Editor
 
             public void Save(byte[] bytes)
             {
-                if (!string.IsNullOrEmpty(_window.srcFilePath))
-                {
-                    File.WriteAllBytes(_window.srcFilePath, bytes);
-                }
-                else
-                {
-                    throw new Exception("Invalid file path");
-                }
+                File.WriteAllBytes(_window.srcFilePath, bytes);
             }
 
             public void Delete()
             {
-                
+                File.Delete(_window.srcFilePath);
             }
         }
 
@@ -114,27 +107,42 @@ namespace Ninjadini.Neuro.Editor
 
             void OnRevealClicked()
             {
-                RevealFileOrDirInFinder(Application.persistentDataPath + "/" + _window.persistentDataName);
+                RevealFileOrDirInFinder(GetPath());
             }
 
             public byte[] Load()
             {
                 if (!string.IsNullOrEmpty(_window.persistentDataName))
                 {
-                    return File.ReadAllBytes(Application.persistentDataPath + "/" + _window.persistentDataName);
+                    return File.ReadAllBytes(GetPath());
                 }
                 return null;
             }
 
             public void Save(byte[] bytes)
             {
-                
+                if (!string.IsNullOrEmpty(_window.persistentDataName))
+                {
+                    File.WriteAllBytes(GetPath(), bytes);
+                }
             }
 
             public void Delete()
             {
-                
+                if (!string.IsNullOrEmpty(_window.persistentDataName))
+                {
+                    try
+                    {
+                        File.Delete(GetPath());
+                    }
+                    catch (Exception)
+                    {
+                        // ignored
+                    }
+                }
             }
+
+            string GetPath() => Application.persistentDataPath + "/" + _window.persistentDataName;
         }
 
         class TextFieldSourceProvider : IContentSourceProvider
@@ -150,8 +158,14 @@ namespace Ninjadini.Neuro.Editor
                 _txtField = new TextField();
                 _txtField.multiline = true;
                 _txtField.value = _window.srcTxt;
+                _txtField.RegisterValueChangedCallback(OnValueChanged);
                 
                 container.Add(_txtField);
+            }
+
+            void OnValueChanged(ChangeEvent<string> evt)
+            {
+                _window.srcTxt = evt.newValue;
             }
 
             public byte[] Load()

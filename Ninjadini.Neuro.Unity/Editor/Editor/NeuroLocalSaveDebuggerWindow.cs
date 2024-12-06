@@ -27,7 +27,7 @@ namespace Ninjadini.Neuro.Editor
 
         [SerializeField] string srcType;
         [SerializeField] string srcFilePath;
-        [SerializeField] string persistentDataName;
+        [SerializeField] string persistentDataName = "save";
         [SerializeField] string srcTxt;
         [SerializeField] string typeName;
         [SerializeField] Format srcFormat;
