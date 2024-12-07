@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Ninjadini.Neuro.Sync;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -39,6 +40,9 @@ namespace Ninjadini.Neuro.Editor
 
         VisualElement validityStyleTarget;
         
+        /// will add the global type id where possible
+        public bool PrintAsGlobalType { get; set; }
+        
         public NeuroItemDebugDisplay(NeuroReferences references, Func<object> getObj, Action<object> setObj)
         {
             refs = references;
@@ -72,6 +76,16 @@ namespace Ninjadini.Neuro.Editor
             NeuroUnityEditorSettings.LiveContentValidationTestsEnabled = evt.newValue;
         }
 */
+
+        public void SetReferencesTabEnabled(bool enabled)
+        {
+            referncesToggle.style.display = enabled ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+        public void SetTestsTabEnabled(bool enabled)
+        {
+            testsToggle.style.display = enabled ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+        
         ToolbarToggle AddToolBarToggle(VisualElement parent, string label, EventCallback<ChangeEvent<bool>> callback)
         {
             var jsonToggle = new ToolbarToggle();
@@ -180,10 +194,13 @@ namespace Ninjadini.Neuro.Editor
                 jsonBar = NeuroUiUtils.AddHorizontal(this);
                 jsonBar.style.flexShrink = 0f;
                 jsonBar.PlaceBehind(bottomToolBar);
-                NeuroUiUtils.AddButton(jsonBar, "Apply", OnApplyJson);
-                jsonSizeLbl = NeuroUiUtils.AddLabel(jsonBar, "");
-                jsonSizeLbl.style.unityTextAlign = TextAnchor.MiddleRight;
-                jsonSizeLbl.style.flexGrow = 1f;
+                if (setObjFunc != null)
+                {
+                    NeuroUiUtils.AddButton(jsonBar, "Apply", OnApplyJson);
+                    jsonSizeLbl = NeuroUiUtils.AddLabel(jsonBar, "");
+                    jsonSizeLbl.style.unityTextAlign = TextAnchor.MiddleRight;
+                    jsonSizeLbl.style.flexGrow = 1f;
+                }
             }
             else
             {
@@ -239,17 +256,26 @@ namespace Ninjadini.Neuro.Editor
             {
                 jsonWriter = new NeuroJsonWriter(refs);
             }
-            var json = jsonWriter.Write(obj);
+            var json = ShouldUseGlobalType(obj) ? jsonWriter.WriteGlobalTyped(obj) : jsonWriter.Write(obj);
             debugText.value = json;
-            jsonSizeLbl.text = json.Length + "chars";
+            if (jsonSizeLbl != null)
+            {
+                jsonSizeLbl.text = json.Length + "chars";
+            }
             debugText.isReadOnly = false;
             NeuroUiUtils.SetDisplay(debugText, true);
             NeuroUiUtils.SetDisplay(refsView, false);
         }
 
+        bool ShouldUseGlobalType(object obj)
+        {
+            return obj != null && PrintAsGlobalType && NeuroGlobalTypes.GetIdByType(obj.GetType()) != 0;
+        }
+
         void UpdateBinary(object obj)
         {
-            var bytes = NeuroBytesWriter.Write(obj).ToArray();
+            var globalTyped = ShouldUseGlobalType(obj);
+            var bytes = (globalTyped ? NeuroBytesWriter.WriteGlobalTyped(obj) : NeuroBytesWriter.Write(obj)).ToArray();
             debugText.value = BytesWalker.Walk(bytes);
             debugText.isReadOnly = true;
             NeuroUiUtils.SetDisplay(debugText, true);
@@ -258,7 +284,7 @@ namespace Ninjadini.Neuro.Editor
         
         void UpdateRawBinary(object obj)
         {
-            var bytes = NeuroBytesWriter.Write(obj);
+            var bytes = (ShouldUseGlobalType(obj) ? NeuroBytesWriter.WriteGlobalTyped(obj) : NeuroBytesWriter.Write(obj)).ToArray();
             debugText.value = RawProtoReader.GetDebugString(bytes);
             debugText.isReadOnly = true;
             NeuroUiUtils.SetDisplay(debugText, true);
@@ -340,7 +366,10 @@ namespace Ninjadini.Neuro.Editor
                 };
                 tester = new NeuroContentTester(context);
             }
-            tester.Test(obj);
+            if (NeuroGlobalTypes.GetIdByType(obj.GetType()) != 0)
+            {
+                tester.Test(obj);
+            }
             if (testResults.Count > 0)
             {
                 testsToggle.label = $"Tests <color=red>[{testResults.Count} fail]</color>";

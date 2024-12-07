@@ -5,24 +5,22 @@ using System.Text;
 using Ninjadini.Neuro.Sync;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UIElements;
 
 namespace Ninjadini.Neuro.Editor
 {
-    public partial class NeuroLocalSaveDebuggerWindow : EditorWindow
+    public partial class NeuroDataDebugger : EditorWindow
     {
         [MenuItem("Tools/Neuro/File Content Debugger", priority = 106)]
         public static void ShowWindow()
         {
-            GetWindow<NeuroLocalSaveDebuggerWindow>("Neuro File").Show();
+            GetWindow<NeuroDataDebugger>("Neuro File").Show();
         }
         
         public enum Format
         {
             JSON,
-            Binary,
-            //BinaryAs0XString
+            Binary
         }
 
         [SerializeField] string srcType;
@@ -33,74 +31,88 @@ namespace Ninjadini.Neuro.Editor
         [SerializeField] Format srcFormat;
 
         const string GlobalTypeDropDownName = "object with <u>-globalType</u>";
-        static IContentSourceProvider[] _sourceProviders;
+        static ContentProvider[] _sourceProviders;
 
         VisualElement _srcProviderContent;
-        IContentSourceProvider _srcProvider;
+        ContentProvider _srcProvider;
         NeuroObjectInspector _objectInspector;
         object _drawnObj;
+        EnumField _formatField;
+        SearchablePopupField<string> _typeField;
         Button _newBtn;
+        Button _saveBtn;
+        Button _delBtn;
+        NeuroItemDebugDisplay _debugDisplay;
 
         public void CreateGUI()
         {
-            _sourceProviders ??= NeuroEditorUtils.CreateFromScannableTypes<IContentSourceProvider>().ToArray();
-            
-            var choices = _sourceProviders.Select(p => p.DropDownName).ToList();
-            if (!choices.Contains(srcType)) srcType = choices.First();
-            var sourceDropDown = new DropdownField(choices, srcType);
-            sourceDropDown.label = "Source";
-            sourceDropDown.RegisterValueChangedCallback(OnSourceDropDownChanged);
-            rootVisualElement.Add(sourceDropDown);
+            _sourceProviders ??= GetSourceProviders();
 
-            _srcProviderContent = new VisualElement();
-            _srcProviderContent.style.marginLeft = 10;
+            if (_sourceProviders.Length > 1)
+            {
+                var choices = _sourceProviders.Select(p => p.DropDownName).ToList();
+                if (!choices.Contains(srcType)) srcType = choices.First();
+                var sourceDropDown = new DropdownField(choices, srcType)
+                {
+                    label = "Source"
+                };
+                sourceDropDown.RegisterValueChangedCallback(OnSourceDropDownChanged);
+                rootVisualElement.Add(sourceDropDown);
+            }
+
+            _srcProviderContent = new VisualElement
+            {
+                style =
+                {
+                    marginLeft = 10
+                }
+            };
             rootVisualElement.Add(_srcProviderContent);
-            OnSourceDropDownChanged(ChangeEvent<string>.GetPooled("", srcType));
 
             if (string.IsNullOrEmpty(typeName)) typeName = GlobalTypeDropDownName;
-            var typeDropdown = new SearchablePopupField<string>();
-            typeDropdown.label = "Type";
-            typeDropdown.BeforePopupShown = () => OnBeforeTypesPopupShown(typeDropdown);
-            typeDropdown.value = typeName;
-            typeDropdown.RegisterValueChangedCallback(OnTypeDropDownChanged);
-            rootVisualElement.Add(typeDropdown);
+            _typeField = new SearchablePopupField<string>
+            {
+                label = "Type"
+            };
+            _typeField.BeforePopupShown = () => OnBeforeTypesPopupShown(_typeField);
+            _typeField.value = typeName;
+            _typeField.RegisterValueChangedCallback(OnTypeDropDownChanged);
+            rootVisualElement.Add(_typeField);
 
-            var formatDropDown = new EnumField("Format", srcFormat);
-            formatDropDown.RegisterValueChangedCallback(OnFormatDropDownChanged);
-            rootVisualElement.Add(formatDropDown);
+            _formatField = new EnumField("Format", srcFormat);
+            _formatField.RegisterValueChangedCallback(OnFormatDropDownChanged);
+            rootVisualElement.Add(_formatField);
 
             var horizontal = NeuroUiUtils.AddHorizontal(rootVisualElement);
+            horizontal.style.flexShrink = 0f;
             
             var horizontalLeft = NeuroUiUtils.AddHorizontal(horizontal);
             horizontalLeft.style.backgroundColor = new Color(0f, 0.2f, 0.1f);
-            horizontalLeft.style.flexGrow = 1f;
+            horizontalLeft.style.width = Length.Percent(50f);
             NeuroUiUtils.AddButton(horizontalLeft, "Load v", OnLoadClicked);
             _newBtn = NeuroUiUtils.AddButton(horizontalLeft, "New v", OnNewClicked);
             
             var horizontalRight = NeuroUiUtils.AddHorizontal(horizontal);
             horizontalRight.style.backgroundColor = new Color(0.2f, 0.0f, 0.1f);
-            horizontalRight.style.flexGrow = 1f;
+            horizontalRight.style.width = Length.Percent(50f);
             horizontalRight.style.flexDirection = FlexDirection.RowReverse;
-            NeuroUiUtils.AddButton(horizontalRight, "Save ^", OnSaveClicked);
-            NeuroUiUtils.AddButton(horizontalRight, "Delete X", OnDeleteClicked);
-            rootVisualElement.Add(new VisualElement()
-            {
-                style =
-                {
-                    height = 2f,
-                    marginTop = 5f,
-                    marginBottom = 5f,
-                    backgroundColor = Color.gray
-                }
-            });
+            _saveBtn = NeuroUiUtils.AddButton(horizontalRight, "Save ^", OnSaveClicked);
+            _delBtn = NeuroUiUtils.AddButton(horizontalRight, "Delete X", OnDeleteClicked);
+            
+            OnSourceDropDownChanged(ChangeEvent<string>.GetPooled("", srcType));
+            Show((object)null);
+        }
+
+        protected virtual ContentProvider[] GetSourceProviders()
+        {
+            return NeuroEditorUtils.CreateFromScannableTypes<ContentProvider>().ToArray();
         }
 
         void OnBeforeTypesPopupShown(SearchablePopupField<string> typeDropdown)
         {
             if (typeDropdown.choices == null || typeDropdown.choices.Count == 0)
             {
-                var choices = new List<string>();
-                choices.Add(GlobalTypeDropDownName);
+                var choices = new List<string> { GlobalTypeDropDownName };
                 choices.AddRange(NeuroEditorUtils.FindAllNeuroTypesCached().Select(GetTypeName));
                 typeDropdown.choices = choices;
             }
@@ -115,6 +127,7 @@ namespace Ninjadini.Neuro.Editor
         void OnTypeDropDownChanged(ChangeEvent<string> evt)
         {
             typeName = evt.newValue;
+            Show((object)null);
         }
 
         void OnFormatDropDownChanged(ChangeEvent<Enum> evt)
@@ -130,6 +143,20 @@ namespace Ninjadini.Neuro.Editor
             {
                 _srcProvider = srcProvider;
                 _srcProviderContent.Clear();
+
+                var allowedFormat = srcProvider.GetAllowedFormat();
+                if (allowedFormat != null)
+                {
+                    _formatField.value = srcFormat;
+                }
+                _formatField.style.display = allowedFormat != null ? DisplayStyle.None : DisplayStyle.Flex;
+
+                var allowedType = srcProvider.GetAllowedType();
+                if (allowedType != null)
+                {
+                    _typeField.value = GetTypeName(allowedType);
+                }
+                _typeField.style.display = allowedType != null ? DisplayStyle.None : DisplayStyle.Flex;
                 srcProvider.CreateGUI(_srcProviderContent, this);
             }
         }
@@ -152,10 +179,7 @@ namespace Ninjadini.Neuro.Editor
             try
             {
                 var bytes = _srcProvider?.Load();
-                if (bytes != null)
-                {
-                    Show(bytes);
-                }
+                Show(bytes);
             }
             catch (Exception e)
             {
@@ -173,6 +197,11 @@ namespace Ninjadini.Neuro.Editor
 
         void Show(byte[] bytes)
         {
+            if (bytes == null)
+            {
+                Show((object)null);
+                return;
+            }
             var type = GetSelectedType();
             if (type == null)
             {
@@ -220,19 +249,68 @@ namespace Ninjadini.Neuro.Editor
         {
             if (obj == null)
             {
+                if (_objectInspector != null)
+                {
+                    _objectInspector.style.display = DisplayStyle.None;
+                    _debugDisplay.style.display = DisplayStyle.None;
+                }
+                _saveBtn.style.display = DisplayStyle.None;
+                _delBtn.style.display = DisplayStyle.None;
                 return;
             }
             if (_objectInspector == null)
             {
+                var scrollView = new ScrollView();
+                scrollView.style.flexGrow = 1f;
+                rootVisualElement.Add(scrollView);
                 _objectInspector = new NeuroObjectInspector(NeuroEditorDataProvider.SharedReferences);
-                rootVisualElement.Add(_objectInspector);
+                scrollView.Add(_objectInspector);
+                var border = new Color(0.3f, 0.35f, 0.3f);
+                _objectInspector.style.borderBottomColor = border;
+                _objectInspector.style.borderLeftColor = border;
+                _objectInspector.style.borderRightColor = border;
+                _objectInspector.style.borderTopColor = border;
+                _objectInspector.style.borderBottomWidth = 2f;
+                _objectInspector.style.borderLeftWidth = 2f;
+                _objectInspector.style.borderRightWidth = 2f;
+                _objectInspector.style.borderTopWidth = 2f;
+                _objectInspector.style.borderBottomLeftRadius = 5f;
+                _objectInspector.style.borderBottomRightRadius = 5f;
+                _objectInspector.style.borderTopLeftRadius = 5f;
+                _objectInspector.style.borderTopRightRadius = 5f;
+                _objectInspector.style.paddingTop = 2f;
+                _objectInspector.style.paddingBottom = 2f;
+                _objectInspector.style.marginBottom = 5f;
+                _objectInspector.style.marginLeft = 3f;
+                _objectInspector.style.marginRight = 3f;
+                _objectInspector.style.marginTop = 5f;
+                _objectInspector.AnyValueChanged += OnAnyValueChanged;
+                
+                _debugDisplay = new NeuroItemDebugDisplay(NeuroEditorDataProvider.SharedReferences, () => _drawnObj, null);
+                _debugDisplay.style.bottom = 0;
+                _debugDisplay.style.flexShrink = 0.01f;
+                _debugDisplay.SetReferencesTabEnabled(false);
+                _debugDisplay.SetTestsTabEnabled(false);
+                rootVisualElement.Add(_debugDisplay);
             }
             _drawnObj = obj;
+            _objectInspector.style.display = DisplayStyle.Flex;
+            _debugDisplay.style.display = DisplayStyle.Flex;
+            _saveBtn.style.display = DisplayStyle.Flex;
+            _delBtn.style.display = DisplayStyle.Flex;
             _objectInspector.Draw(new ObjectInspector.Data()
             {
                 getter = ()=>_drawnObj
             });
+            _debugDisplay.PrintAsGlobalType = typeName == GlobalTypeDropDownName;
+            _debugDisplay.Refresh();
         }
+
+        void OnAnyValueChanged()
+        {
+            _debugDisplay?.Refresh();
+        }
+
 
         void OnDeleteClicked()
         {
@@ -276,7 +354,7 @@ namespace Ninjadini.Neuro.Editor
                 {
                     if (type == typeof(object))
                     {
-                        bytes = NeuroBytesWriter.Shared.WriteGlobalType(_drawnObj).ToArray();
+                        bytes = NeuroBytesWriter.Shared.WriteGlobalTyped(_drawnObj).ToArray();
                     }
                     else
                     {

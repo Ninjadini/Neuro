@@ -1,36 +1,41 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using Ninjadini.Neuro.Utils;
 using UnityEditor;
-using UnityEngine.Device;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ninjadini.Neuro.Editor
 {
-    public partial class NeuroLocalSaveDebuggerWindow
+    public partial class NeuroDataDebugger
     {
-        interface IContentSourceProvider : IAssemblyTypeScannable
+        public abstract class ContentProvider : IAssemblyTypeScannable
         {
-            string DropDownName { get; }
-            void CreateGUI(VisualElement container, NeuroLocalSaveDebuggerWindow window);
+            public abstract string DropDownName { get; }
+            public abstract void CreateGUI(VisualElement container, NeuroDataDebugger window);
 
-            byte[] Load();
-            void Save(byte[] bytes);
-            void Delete();
+            /// If your provider only support a specific format, you can declare it here. return null = everything.
+            public virtual Format? GetAllowedFormat() => null;
+            
+            /// If your provider only support a specific type, you can declare it here. return null = everything.
+            public virtual Type GetAllowedType() => null;
+            
+            public abstract byte[] Load();
+            public abstract void Save(byte[] bytes);
+            public abstract void Delete();
         }
 
-        class FileSourceProvider : IContentSourceProvider
+        class FileContentProvider : ContentProvider
         {
-            NeuroLocalSaveDebuggerWindow _window;
-            public string DropDownName => "File";
+            NeuroDataDebugger _window;
+            public override string DropDownName => "File";
 
             TextField _locationLbl;
             string _filePath;
 
-            public void CreateGUI(VisualElement container, NeuroLocalSaveDebuggerWindow window)
+            public override void CreateGUI(VisualElement container, NeuroDataDebugger window)
             {
                 _window = window;
                 var horizontal = NeuroUiUtils.AddHorizontal(container);
@@ -63,7 +68,7 @@ namespace Ninjadini.Neuro.Editor
                 RevealFileOrDirInFinder(_window.srcFilePath);
             }
 
-            public byte[] Load()
+            public override byte[] Load()
             {
                 if (!string.IsNullOrEmpty(_window.srcFilePath))
                 {
@@ -72,24 +77,29 @@ namespace Ninjadini.Neuro.Editor
                 return null;
             }
 
-            public void Save(byte[] bytes)
+            public override void Save(byte[] bytes)
             {
                 File.WriteAllBytes(_window.srcFilePath, bytes);
             }
 
-            public void Delete()
+            public override void Delete()
             {
-                File.Delete(_window.srcFilePath);
+                if (!string.IsNullOrEmpty(_window.srcFilePath) 
+                    && File.Exists(_window.srcFilePath) 
+                    && EditorUtility.DisplayDialog("Delete", _window.srcFilePath, "Delete", "Cancel"))
+                {
+                    File.Delete(_window.srcFilePath);
+                }
             }
         }
 
-        class PersistentDataSourceProvider : IContentSourceProvider
+        class PersistentDataContentProvider : ContentProvider
         {
-            NeuroLocalSaveDebuggerWindow _window;
+            NeuroDataDebugger _window;
             
-            public string DropDownName => "Persistent Data";
+            public override string DropDownName => "Persistent Data";
 
-            public void CreateGUI(VisualElement container, NeuroLocalSaveDebuggerWindow window)
+            public override void CreateGUI(VisualElement container, NeuroDataDebugger window)
             {
                 _window = window;
                 var horizontal = NeuroUiUtils.AddHorizontal(container);
@@ -110,7 +120,7 @@ namespace Ninjadini.Neuro.Editor
                 RevealFileOrDirInFinder(GetPath());
             }
 
-            public byte[] Load()
+            public override byte[] Load()
             {
                 if (!string.IsNullOrEmpty(_window.persistentDataName))
                 {
@@ -119,7 +129,7 @@ namespace Ninjadini.Neuro.Editor
                 return null;
             }
 
-            public void Save(byte[] bytes)
+            public override void Save(byte[] bytes)
             {
                 if (!string.IsNullOrEmpty(_window.persistentDataName))
                 {
@@ -127,13 +137,17 @@ namespace Ninjadini.Neuro.Editor
                 }
             }
 
-            public void Delete()
+            public override void Delete()
             {
-                if (!string.IsNullOrEmpty(_window.persistentDataName))
+                var path = GetPath();
+                if (!string.IsNullOrEmpty(_window.persistentDataName) && File.Exists(path))
                 {
                     try
                     {
-                        File.Delete(GetPath());
+                        if (EditorUtility.DisplayDialog("Delete", path, "Delete", "Cancel"))
+                        {
+                            File.Delete(path);
+                        }
                     }
                     catch (Exception)
                     {
@@ -145,22 +159,25 @@ namespace Ninjadini.Neuro.Editor
             string GetPath() => Application.persistentDataPath + "/" + _window.persistentDataName;
         }
 
-        class TextFieldSourceProvider : IContentSourceProvider
+        class TextFieldContentProvider : ContentProvider
         {
-            public string DropDownName => "TextField";
+            public override string DropDownName => "TextField";
             
-            NeuroLocalSaveDebuggerWindow _window;
+            NeuroDataDebugger _window;
             TextField _txtField;
 
-            public void CreateGUI(VisualElement container, NeuroLocalSaveDebuggerWindow window)
+            public override void CreateGUI(VisualElement container, NeuroDataDebugger window)
             {
                 _window = window;
+                var scrollView = new ScrollView();
+                scrollView.style.maxHeight = 300;
                 _txtField = new TextField();
                 _txtField.multiline = true;
                 _txtField.value = _window.srcTxt;
                 _txtField.RegisterValueChangedCallback(OnValueChanged);
                 
-                container.Add(_txtField);
+                scrollView.Add(_txtField);
+                container.Add(scrollView);
             }
 
             void OnValueChanged(ChangeEvent<string> evt)
@@ -168,7 +185,7 @@ namespace Ninjadini.Neuro.Editor
                 _window.srcTxt = evt.newValue;
             }
 
-            public byte[] Load()
+            public override byte[] Load()
             {
                 var format = _window.GetSelectedFormat();
                 var str = _txtField.value;
@@ -192,7 +209,7 @@ namespace Ninjadini.Neuro.Editor
                 throw new NotSupportedException("Format not supported, " + format);
             }
 
-            public void Save(byte[] bytes)
+            public override void Save(byte[] bytes)
             {
                 var format = _window.GetSelectedFormat();
                 if (format == Format.JSON)
@@ -205,7 +222,7 @@ namespace Ninjadini.Neuro.Editor
                 }
             }
 
-            public void Delete()
+            public override void Delete()
             {
                 _txtField.value = "";
             }

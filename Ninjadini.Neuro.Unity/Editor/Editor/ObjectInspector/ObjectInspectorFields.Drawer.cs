@@ -171,6 +171,7 @@ namespace Ninjadini.Neuro.Editor
             var field = new TextField();
             field.style.marginRight = 0;
             field.style.flexGrow = 1;
+            field.multiline = true;
             field.isDelayed = true;
             field.value = value;
             field.selectAllOnFocus = false;

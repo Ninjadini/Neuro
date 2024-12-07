@@ -379,7 +379,7 @@ namespace Ninjadini.Neuro.Editor
             var src = selectedItem?.Value;
             if (src != null)
             {
-                var bytes = new NeuroBytesWriter().WriteGlobalType(src);
+                var bytes = new NeuroBytesWriter().WriteGlobalTyped(src);
                 var obj = (IReferencable)new NeuroBytesReader().ReadGlobalTyped(bytes.ToArray());
                 obj.RefName = src.RefName + " - Clone";
                 var item = dataProvider.Add(obj);

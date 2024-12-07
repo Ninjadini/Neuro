@@ -36,7 +36,7 @@ namespace Ninjadini.Neuro
             }
             if (typeof(T) == typeof(object))
             {
-                return WriteGlobalType(value);
+                return WriteGlobalTyped(value);
             }
             proto.Position = 0;
             lastKey = 0;
@@ -80,7 +80,7 @@ namespace Ninjadini.Neuro
             return new ReadOnlySpan<byte>(proto.Buffer, 0, proto.Position);
         }
 
-        public ReadOnlySpan<byte> WriteGlobalType(object value)
+        public ReadOnlySpan<byte> WriteGlobalTyped(object value)
         {
             proto.Position = 0;
             lastKey = 0;
@@ -88,10 +88,10 @@ namespace Ninjadini.Neuro
             {
                 return new ReadOnlySpan<byte>();
             }
-            return WriteGlobalType(MemoryMarshal.CreateSpan(ref value, 1));
+            return WriteGlobalTyped(MemoryMarshal.CreateSpan(ref value, 1));
         }
 
-        public ReadOnlySpan<byte> WriteGlobalType(Span<object> values)
+        public ReadOnlySpan<byte> WriteGlobalTyped(Span<object> values)
         {
             proto.Position = 0;
             lastKey = 0;
@@ -130,7 +130,7 @@ namespace Ninjadini.Neuro
                     var subTag = NeuroGlobalTypes.GetSubTypeTagOrThrow(subValue.GetType());
                     proto.Write(subTag);
                     NeuroGlobalTypes.Sync(globalId, this, subTag, ref subValue);
-                    proto.Write(NeuroConstants.Child);
+                    proto.Write(NeuroConstants.EndOfChild);
                     index++;
                 }
                 lastKey = key;
