@@ -11,6 +11,7 @@ namespace Ninjadini.Neuro
     /// If you don't want to use MonoBehaviour, use LocalNeuroContinuousSave<T> directly.
     public class LocalNeuroContinuousSave : MonoBehaviour
     {
+        [Tooltip("Warning: The value you set here may be overridden at runtime by call to `SetSaveFileName()`.")]
         [SerializeField] string saveFileName = "save";
         
         INeuroSavable _gameSave;
@@ -46,6 +47,19 @@ namespace Ninjadini.Neuro
             _gameSave = LocalNeuroContinuousSave<T>.CreateInPersistedData(saveFileName, createDataFunc);
         }
 
+        public void SetSaveFileName(string saveName)
+        {
+            if (_gameSave != null)
+            {
+                throw new Exception($"Game data is already loaded, it is too late to call {nameof(SetSaveFileName)}");
+            }
+            if (string.IsNullOrEmpty(saveName))
+            {
+                throw new ArgumentNullException(nameof(saveName));
+            }
+            saveFileName = saveName;
+        }
+
         public void SetCustomCreationFunction<T>(Func<T> createDataFunc)
         {
             if (_gameSave != null)
@@ -53,6 +67,11 @@ namespace Ninjadini.Neuro
                 throw new Exception($"Game data is already loaded, it is too late to call {nameof(SetCustomCreationFunction)}");
             }
             _createDataFunc = createDataFunc;
+        }
+
+        public bool FileExists()
+        {
+            return File.Exists(GetSavePath(saveFileName));
         }
 
         public void Save()
@@ -89,6 +108,11 @@ namespace Ninjadini.Neuro
             _gameSave?.Dispose();
             _gameSave = null;
         }
+
+        public static string GetSavePath(string saveName)
+        {
+            return Application.persistentDataPath + "/" + saveName;
+        }
     }
         
     public interface INeuroSavable : IDisposable
@@ -123,7 +147,8 @@ namespace Ninjadini.Neuro
 
         public static LocalNeuroContinuousSave<T> CreateInPersistedData(string fileName, Func<T> createDataFunc = null)
         {
-            return new LocalNeuroContinuousSave<T>(Application.persistentDataPath + "/" + fileName, createDataFunc);
+            var path = LocalNeuroContinuousSave.GetSavePath(fileName);
+            return new LocalNeuroContinuousSave<T>(path, createDataFunc);
         }
         
         public T GetData()

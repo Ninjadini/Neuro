@@ -206,5 +206,11 @@ namespace Ninjadini.Neuro
         {
             return Shared.References.Get<T>();
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T GetShared<T>(Reference<T> reference) where T: class,  IReferencable
+        {
+            return Shared.References.Get(reference);
+        }
     }
 }

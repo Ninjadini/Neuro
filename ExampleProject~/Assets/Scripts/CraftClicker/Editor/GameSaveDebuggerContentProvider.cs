@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Ninjadini.Neuro;
 using Ninjadini.Neuro.Editor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -42,6 +43,10 @@ public class GameSaveDebuggerContentProvider : NeuroContentDebugger.ContentProvi
             File.Delete(path);
         }
     }
-    
-    string GetPath() => Application.persistentDataPath + "/save";
+
+    string GetPath()
+    {
+        var saveName = NeuroDataProvider.GetSharedSingleton<CraftClickerSettings>()?.SaveFileName ?? "save";
+        return LocalNeuroContinuousSave.GetSavePath(saveName);
+    }
 }

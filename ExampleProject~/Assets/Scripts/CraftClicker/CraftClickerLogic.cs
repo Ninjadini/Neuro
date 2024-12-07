@@ -12,6 +12,8 @@ public class CraftClickerLogic : MonoBehaviour
     void Start()
     {
         //optional...
+        var settings = NeuroDataProvider.GetSharedSingleton<CraftClickerSettings>();
+        saves.SetSaveFileName(settings.SaveFileName);
         saves.SetCustomCreationFunction(() => new CraftClickerSaveData()
         {
             Guid = Guid.NewGuid(),
