@@ -25,6 +25,17 @@ namespace Ninjadini.Neuro.Editor
             public abstract byte[] Load();
             public abstract void Save(byte[] bytes);
             public abstract void Delete();
+
+            protected void ShowLoadNotFoundDialog(string path = null)
+            {
+                var msg = string.IsNullOrEmpty(path) ? "File not found" : $"File not found @\n{path}";
+                EditorUtility.DisplayDialog("Load", msg, "OK");
+            }
+
+            protected bool ShowDeleteConfirmDialog(string path)
+            {
+                return !string.IsNullOrEmpty(path) && EditorUtility.DisplayDialog("Delete", path, "Delete", "Cancel");
+            }
         }
 
         class FileContentProvider : ContentProvider
@@ -44,6 +55,8 @@ namespace Ninjadini.Neuro.Editor
                 _locationLbl.value = _window.srcFilePath;
                 _locationLbl.style.flexShrink = 1f;
                 _locationLbl.style.flexGrow = 1f;
+                _locationLbl.selectAllOnFocus = false;
+                _locationLbl.selectAllOnMouseUp = false;
                 _locationLbl.RegisterValueChangedCallback(OnLocationTxtChanged);
                 horizontal.Add(_locationLbl);
                 NeuroUiUtils.AddButton(horizontal, "⊙", OnRevealClicked);
@@ -71,10 +84,11 @@ namespace Ninjadini.Neuro.Editor
 
             public override byte[] Load()
             {
-                if (!string.IsNullOrEmpty(_window.srcFilePath))
+                if (!string.IsNullOrEmpty(_window.srcFilePath) && File.Exists(_window.srcFilePath))
                 {
                     return File.ReadAllBytes(_window.srcFilePath);
                 }
+                ShowLoadNotFoundDialog(_window.srcFilePath);
                 return null;
             }
 
@@ -87,7 +101,7 @@ namespace Ninjadini.Neuro.Editor
             {
                 if (!string.IsNullOrEmpty(_window.srcFilePath) 
                     && File.Exists(_window.srcFilePath) 
-                    && EditorUtility.DisplayDialog("Delete", _window.srcFilePath, "Delete", "Cancel"))
+                    && ShowDeleteConfirmDialog(_window.srcFilePath))
                 {
                     File.Delete(_window.srcFilePath);
                 }
@@ -123,10 +137,12 @@ namespace Ninjadini.Neuro.Editor
 
             public override byte[] Load()
             {
-                if (!string.IsNullOrEmpty(_window.persistentDataName))
+                var path = GetPath();
+                if (!string.IsNullOrEmpty(_window.persistentDataName) && File.Exists(path))
                 {
-                    return File.ReadAllBytes(GetPath());
+                    return File.ReadAllBytes(path);
                 }
+                ShowLoadNotFoundDialog(path);
                 return null;
             }
 
@@ -141,19 +157,11 @@ namespace Ninjadini.Neuro.Editor
             public override void Delete()
             {
                 var path = GetPath();
-                if (!string.IsNullOrEmpty(_window.persistentDataName) && File.Exists(path))
+                if (!string.IsNullOrEmpty(_window.persistentDataName) 
+                    && File.Exists(path) 
+                    && ShowDeleteConfirmDialog(path))
                 {
-                    try
-                    {
-                        if (EditorUtility.DisplayDialog("Delete", path, "Delete", "Cancel"))
-                        {
-                            File.Delete(path);
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        // ignored
-                    }
+                    File.Delete(path);
                 }
             }
 

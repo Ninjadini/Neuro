@@ -20,7 +20,12 @@ public class GameSaveDebuggerContentProvider : NeuroContentDebugger.ContentProvi
     public override byte[] Load()
     {
         var path = GetPath();
-        return File.Exists(path) ? File.ReadAllBytes(path) : null;
+        if (File.Exists(path))
+        {
+            return File.ReadAllBytes(path);
+        }
+        ShowLoadNotFoundDialog(path);
+        return null;
     }
 
     public override void Save(byte[] bytes)
@@ -32,7 +37,10 @@ public class GameSaveDebuggerContentProvider : NeuroContentDebugger.ContentProvi
     public override void Delete()
     {
         var path = GetPath();
-        File.Delete(path);
+        if (ShowDeleteConfirmDialog(path))
+        {
+            File.Delete(path);
+        }
     }
     
     string GetPath() => Application.persistentDataPath + "/save";
