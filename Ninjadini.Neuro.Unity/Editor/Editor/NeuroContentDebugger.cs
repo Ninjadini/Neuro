@@ -9,12 +9,13 @@ using UnityEngine.UIElements;
 
 namespace Ninjadini.Neuro.Editor
 {
-    public partial class NeuroDataDebugger : EditorWindow
+    public partial class NeuroContentDebugger : EditorWindow
     {
-        [MenuItem("Tools/Neuro/File Content Debugger", priority = 106)]
+        [MenuItem("Tools/Neuro/Content Debugger", priority = 106)]
         public static void ShowWindow()
         {
-            GetWindow<NeuroDataDebugger>("Neuro File").Show();
+            //GetWindow<NeuroDataDebugger>("NeuroContentDebugger").Show();
+            CreateWindow<NeuroContentDebugger>("NeuroContentDebugger").Show();
         }
         
         public enum Format
@@ -31,7 +32,7 @@ namespace Ninjadini.Neuro.Editor
         [SerializeField] Format srcFormat;
 
         const string GlobalTypeDropDownName = "object with <u>-globalType</u>";
-        static ContentProvider[] _sourceProviders;
+        static ContentProvider[] _contentProviders;
 
         VisualElement _srcProviderContent;
         ContentProvider _srcProvider;
@@ -46,27 +47,22 @@ namespace Ninjadini.Neuro.Editor
 
         public void CreateGUI()
         {
-            _sourceProviders ??= GetSourceProviders();
+            _contentProviders ??= GetContentProviders();
 
-            if (_sourceProviders.Length > 1)
+            if (_contentProviders.Length > 1)
             {
-                var choices = _sourceProviders.Select(p => p.DropDownName).ToList();
+                var choices = _contentProviders.Select(p => p.DropDownName).ToList();
                 if (!choices.Contains(srcType)) srcType = choices.First();
-                var sourceDropDown = new DropdownField(choices, srcType)
+                var providerDropDown = new DropdownField(choices, srcType)
                 {
-                    label = "Source"
+                    label = "Content Provider"
                 };
-                sourceDropDown.RegisterValueChangedCallback(OnSourceDropDownChanged);
-                rootVisualElement.Add(sourceDropDown);
+                providerDropDown.RegisterValueChangedCallback(OnProviderDropDownChanged);
+                rootVisualElement.Add(providerDropDown);
             }
 
-            _srcProviderContent = new VisualElement
-            {
-                style =
-                {
-                    marginLeft = 10
-                }
-            };
+            _srcProviderContent = new VisualElement();
+            SetBorder(_srcProviderContent, new Color(0.3f, 0.3f, 0.2f), 1f, 3f);
             rootVisualElement.Add(_srcProviderContent);
 
             if (string.IsNullOrEmpty(typeName)) typeName = GlobalTypeDropDownName;
@@ -99,11 +95,11 @@ namespace Ninjadini.Neuro.Editor
             _saveBtn = NeuroUiUtils.AddButton(horizontalRight, "Save ^", OnSaveClicked);
             _delBtn = NeuroUiUtils.AddButton(horizontalRight, "Delete X", OnDeleteClicked);
             
-            OnSourceDropDownChanged(ChangeEvent<string>.GetPooled("", srcType));
+            OnProviderDropDownChanged(ChangeEvent<string>.GetPooled("", srcType));
             Show((object)null);
         }
 
-        protected virtual ContentProvider[] GetSourceProviders()
+        protected virtual ContentProvider[] GetContentProviders()
         {
             return NeuroEditorUtils.CreateFromScannableTypes<ContentProvider>().ToArray();
         }
@@ -135,10 +131,10 @@ namespace Ninjadini.Neuro.Editor
             srcFormat = (Format)evt.newValue;
         }
 
-        void OnSourceDropDownChanged(ChangeEvent<string> evt)
+        void OnProviderDropDownChanged(ChangeEvent<string> evt)
         {
             srcType = evt.newValue;
-            var srcProvider = _sourceProviders.FirstOrDefault(t => t.DropDownName == srcType);
+            var srcProvider = _contentProviders.FirstOrDefault(t => t.DropDownName == srcType);
             if (srcProvider != null)
             {
                 _srcProvider = srcProvider;
@@ -147,7 +143,7 @@ namespace Ninjadini.Neuro.Editor
                 var allowedFormat = srcProvider.GetAllowedFormat();
                 if (allowedFormat != null)
                 {
-                    _formatField.value = srcFormat;
+                    _formatField.value = allowedFormat.Value;
                 }
                 _formatField.style.display = allowedFormat != null ? DisplayStyle.None : DisplayStyle.Flex;
 
@@ -158,6 +154,7 @@ namespace Ninjadini.Neuro.Editor
                 }
                 _typeField.style.display = allowedType != null ? DisplayStyle.None : DisplayStyle.Flex;
                 srcProvider.CreateGUI(_srcProviderContent, this);
+                _srcProviderContent.style.display = _srcProviderContent.childCount == 0 ? DisplayStyle.None : DisplayStyle.Flex;
             }
         }
 
@@ -266,24 +263,7 @@ namespace Ninjadini.Neuro.Editor
                 _objectInspector = new NeuroObjectInspector(NeuroEditorDataProvider.SharedReferences);
                 scrollView.Add(_objectInspector);
                 var border = new Color(0.3f, 0.35f, 0.3f);
-                _objectInspector.style.borderBottomColor = border;
-                _objectInspector.style.borderLeftColor = border;
-                _objectInspector.style.borderRightColor = border;
-                _objectInspector.style.borderTopColor = border;
-                _objectInspector.style.borderBottomWidth = 2f;
-                _objectInspector.style.borderLeftWidth = 2f;
-                _objectInspector.style.borderRightWidth = 2f;
-                _objectInspector.style.borderTopWidth = 2f;
-                _objectInspector.style.borderBottomLeftRadius = 5f;
-                _objectInspector.style.borderBottomRightRadius = 5f;
-                _objectInspector.style.borderTopLeftRadius = 5f;
-                _objectInspector.style.borderTopRightRadius = 5f;
-                _objectInspector.style.paddingTop = 2f;
-                _objectInspector.style.paddingBottom = 2f;
-                _objectInspector.style.marginBottom = 5f;
-                _objectInspector.style.marginLeft = 3f;
-                _objectInspector.style.marginRight = 3f;
-                _objectInspector.style.marginTop = 5f;
+                SetBorder(_objectInspector, border, 2f, 5f);
                 _objectInspector.AnyValueChanged += OnAnyValueChanged;
                 
                 _debugDisplay = new NeuroItemDebugDisplay(NeuroEditorDataProvider.SharedReferences, () => _drawnObj, null);
@@ -311,6 +291,27 @@ namespace Ninjadini.Neuro.Editor
             _debugDisplay?.Refresh();
         }
 
+        static void SetBorder(VisualElement element, Color color, float width, float radius)
+        {
+            element.style.borderBottomColor = color;
+            element.style.borderLeftColor = color;
+            element.style.borderRightColor = color;
+            element.style.borderTopColor = color;
+            element.style.borderBottomWidth = width;
+            element.style.borderLeftWidth = width;
+            element.style.borderRightWidth = width;
+            element.style.borderTopWidth = width;
+            element.style.borderBottomLeftRadius = radius;
+            element.style.borderBottomRightRadius = radius;
+            element.style.borderTopLeftRadius = radius;
+            element.style.borderTopRightRadius = radius;
+            element.style.paddingTop = 2f;
+            element.style.paddingBottom = 2f;
+            element.style.marginBottom = 5f;
+            element.style.marginLeft = 3f;
+            element.style.marginRight = 3f;
+            element.style.marginTop = 5f;
+        }
 
         void OnDeleteClicked()
         {

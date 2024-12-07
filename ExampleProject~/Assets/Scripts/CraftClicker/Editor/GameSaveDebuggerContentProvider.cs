@@ -4,15 +4,15 @@ using Ninjadini.Neuro.Editor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-public class GameSaveDebuggerContentProvider : NeuroDataDebugger.ContentProvider
+public class GameSaveDebuggerContentProvider : NeuroContentDebugger.ContentProvider
 {
     public override string DropDownName => "Game Save";
     
-    public override NeuroDataDebugger.Format? GetAllowedFormat() => NeuroDataDebugger.Format.Binary;
+    public override NeuroContentDebugger.Format? GetAllowedFormat() => NeuroContentDebugger.Format.Binary;
             
     public override Type GetAllowedType() => typeof(CraftClickerSaveData);
 
-    public override void CreateGUI(VisualElement container, NeuroDataDebugger window)
+    public override void CreateGUI(VisualElement container, NeuroContentDebugger window)
     {
         
     }

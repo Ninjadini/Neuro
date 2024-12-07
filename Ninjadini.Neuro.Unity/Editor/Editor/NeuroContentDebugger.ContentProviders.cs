@@ -9,12 +9,12 @@ using UnityEngine.UIElements;
 
 namespace Ninjadini.Neuro.Editor
 {
-    public partial class NeuroDataDebugger
+    public partial class NeuroContentDebugger
     {
         public abstract class ContentProvider : IAssemblyTypeScannable
         {
             public abstract string DropDownName { get; }
-            public abstract void CreateGUI(VisualElement container, NeuroDataDebugger window);
+            public abstract void CreateGUI(VisualElement container, NeuroContentDebugger window);
 
             /// If your provider only support a specific format, you can declare it here. return null = everything.
             public virtual Format? GetAllowedFormat() => null;
@@ -29,13 +29,13 @@ namespace Ninjadini.Neuro.Editor
 
         class FileContentProvider : ContentProvider
         {
-            NeuroDataDebugger _window;
+            NeuroContentDebugger _window;
             public override string DropDownName => "File";
 
             TextField _locationLbl;
             string _filePath;
 
-            public override void CreateGUI(VisualElement container, NeuroDataDebugger window)
+            public override void CreateGUI(VisualElement container, NeuroContentDebugger window)
             {
                 _window = window;
                 var horizontal = NeuroUiUtils.AddHorizontal(container);
@@ -43,6 +43,7 @@ namespace Ninjadini.Neuro.Editor
                 _locationLbl = new TextField();
                 _locationLbl.value = _window.srcFilePath;
                 _locationLbl.style.flexShrink = 1f;
+                _locationLbl.style.flexGrow = 1f;
                 _locationLbl.RegisterValueChangedCallback(OnLocationTxtChanged);
                 horizontal.Add(_locationLbl);
                 NeuroUiUtils.AddButton(horizontal, "⊙", OnRevealClicked);
@@ -95,11 +96,11 @@ namespace Ninjadini.Neuro.Editor
 
         class PersistentDataContentProvider : ContentProvider
         {
-            NeuroDataDebugger _window;
+            NeuroContentDebugger _window;
             
             public override string DropDownName => "Persistent Data";
 
-            public override void CreateGUI(VisualElement container, NeuroDataDebugger window)
+            public override void CreateGUI(VisualElement container, NeuroContentDebugger window)
             {
                 _window = window;
                 var horizontal = NeuroUiUtils.AddHorizontal(container);
@@ -163,10 +164,10 @@ namespace Ninjadini.Neuro.Editor
         {
             public override string DropDownName => "TextField";
             
-            NeuroDataDebugger _window;
+            NeuroContentDebugger _window;
             TextField _txtField;
 
-            public override void CreateGUI(VisualElement container, NeuroDataDebugger window)
+            public override void CreateGUI(VisualElement container, NeuroContentDebugger window)
             {
                 _window = window;
                 var scrollView = new ScrollView();
