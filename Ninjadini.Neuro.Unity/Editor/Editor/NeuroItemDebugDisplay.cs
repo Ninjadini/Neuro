@@ -427,7 +427,7 @@ namespace Ninjadini.Neuro.Editor
                 var refId = existingItem.RefId;
                 var refName = existingItem.RefName;
                 obj = existingItem;
-                new NeuroJsonReader().Read(debugText.value, ref obj);
+                new NeuroJsonReader().Read(debugText.value, existingItem.GetType(), ref obj);
                 if (obj is IReferencable newItem)
                 {
                     newItem.RefId = refId;
