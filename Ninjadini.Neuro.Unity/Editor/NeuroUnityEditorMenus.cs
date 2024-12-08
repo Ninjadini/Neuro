@@ -27,13 +27,13 @@ namespace Ninjadini.Neuro.Editor
             NeuroEditorDataProvider.Shared.SaveBakedDataAsJson();
         }
         
-        [MenuItem("Tools/Neuro/Reload")]
+        [MenuItem("Tools/Neuro/Reload", priority = 202)]
         public static void Reload()
         {
             NeuroEditorDataProvider.Shared.Reload();
         }
         
-        [MenuItem("Tools/Neuro/Reload + Read all data")]
+        [MenuItem("Tools/Neuro/Reload + Read all data", priority = 205)]
         public static void ReloadAndReadAll()
         {
             var dataProvider = NeuroEditorDataProvider.Shared;
