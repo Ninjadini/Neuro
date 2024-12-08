@@ -215,6 +215,8 @@ namespace Ninjadini.Neuro.Editor
                 where !domainAssembly.IsDynamic && domainAssembly.IsDefined(typeof(NeuroAssemblyAttribute))
                 from assemblyType in domainAssembly.GetExportedTypes()
                 where assemblyType.IsClass
+                      && !assemblyType.IsAbstract
+                      && !assemblyType.IsInterface
                       && (assemblyType == type || (typeIsClass ? assemblyType.IsSubclassOf(type) : type.IsAssignableFrom(assemblyType)))
                       && !assemblyType.IsDefined(typeof(HideInInspector))
                       && NeuroSyncTypes.CheckIfTypeRegisteredUsingReflection(assemblyType)

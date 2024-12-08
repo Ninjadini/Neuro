@@ -136,6 +136,7 @@ namespace Ninjadini.Neuro.Editor
         {
             _dataProvider.SetRefName(dataFile, evt.newValue);
             UpdateFilePath();
+            AnyValueChanged?.Invoke();
         }
     }
 }
