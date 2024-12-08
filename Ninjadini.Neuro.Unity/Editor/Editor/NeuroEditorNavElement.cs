@@ -182,6 +182,7 @@ namespace Ninjadini.Neuro.Editor
                 "    [Neuro(1)] public string MyString;\n" +
                 "    [Neuro(2)] public int MyNumber;\n" +
                 "    [Neuro(3)] public List<string> MyStrings;\n" +
+                "    [Neuro(4)] public Reference<MyAwesomeNeuroObject> MyRef;\n" +
                 "}";
             txt.isReadOnly = true;
             Add(txt);
