@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -12,12 +13,13 @@ namespace Ninjadini.Neuro.CodeGen
         class CodeWalker : CSharpSyntaxWalker
         {
             Compilation compilation;
-            private Action<Diagnostic> onError;
+            Action<Diagnostic> onError;
             List<string> registryHooks;
             List<string> referencableTypes;
             List<string> enumTypes;
             Dictionary<string, ClassToGenerate> classesToGenerate;
-            Dictionary<uint, string> globalTypeNames;
+            Dictionary<string, List<TagNameLocation>> _baseClasses;
+            List<TagNameLocation> _globalClasses;
 
             public GenerationResult Walk(Compilation compilation_, Action<Diagnostic> onError_ = null)
             {
@@ -27,10 +29,16 @@ namespace Ninjadini.Neuro.CodeGen
                 referencableTypes = new List<string>();
                 enumTypes = new List<string>();
                 classesToGenerate = new Dictionary<string, ClassToGenerate>();
-                globalTypeNames = new Dictionary<uint, string>();
-                foreach (var syntaxTree in this.compilation.SyntaxTrees)
+                _globalClasses = new List<TagNameLocation>();
+                _baseClasses = new Dictionary<string, List<TagNameLocation>>();
+                foreach (var syntaxTree in compilation.SyntaxTrees)
                 {
                     Visit(syntaxTree.GetRoot());
+                }
+
+                if (!ValidateConflicts())
+                {
+                    return new GenerationResult();
                 }
                 return new GenerationResult()
                 {
@@ -39,6 +47,86 @@ namespace Ninjadini.Neuro.CodeGen
                     EnumTypes = enumTypes,
                     RegistryHooks = registryHooks
                 };
+            }
+
+            bool ValidateConflicts()
+            {
+                var allPass = true;
+                foreach (var rootNameAndClasses in _baseClasses)
+                {
+                    var classes = rootNameAndClasses.Value;
+                    allPass &= ValidateConflicts(classes, NeuroSourceAnalyzer.ClassTagConflictRule, NeuroSourceAnalyzer.ClassTagReservedRule);
+                }
+                allPass &= ValidateConflicts(_globalClasses, NeuroSourceAnalyzer.GlobalTypeConflictRule, NeuroSourceAnalyzer.ClassTagConflictRule);
+                return allPass;
+            }
+
+            bool ValidateConflicts(List<TagNameLocation> classes, DiagnosticDescriptor tagConflict, DiagnosticDescriptor tagReserved)
+            {
+                var allPass = true;
+                classes.Sort((a, b) => a.Tag.CompareTo(b.Tag));
+                var numClasses = classes.Count;
+                for (var index1 = 0; index1 < numClasses; index1++)
+                {
+                    var item1 = classes[index1];
+                    if (string.IsNullOrEmpty(item1.Name))
+                    {
+                        continue;
+                    }
+                    for (var index2 = 0; index2 < numClasses; index2++)
+                    {
+                        var item2 = classes[index2];
+                        if (item1.Tag == item2.Tag && item1.Name != item2.Name)
+                        {
+                            if (onError == null)
+                            {
+                                allPass = false;
+                                break;
+                            }
+                            if (string.IsNullOrEmpty(item2.Name))
+                            {
+                                onError(Diagnostic.Create(tagReserved,
+                                    item1.Location, item1.Tag,
+                                    item1.Name, CreateTagsList(classes)));
+                            }
+                            else
+                            {
+                                onError(Diagnostic.Create(tagConflict,
+                                    item1.Location, item1.Tag,
+                                    item1.Name, item2.Name, CreateTagsList(classes)));
+                            }
+                            allPass = false;
+                            break;
+                        }
+                    }
+                }
+                return allPass;
+            }
+
+            string CreateTagsList(List<TagNameLocation> list)
+            {
+                var stringBuilder = new StringBuilder();
+                foreach (var tag in list)
+                {
+                    var classSymbolName = string.IsNullOrEmpty(tag.Name) ? "[Reserved]" : tag.Name;
+                    stringBuilder.Append(classSymbolName).Append("=>").Append(tag.Tag).Append("; ");
+                    //  ^ unity doesn't show multiline errors :(
+                }
+                return stringBuilder.ToString();
+            }
+
+            struct TagNameLocation
+            {
+                public uint Tag;
+                public string Name;
+                public Location Location;
+
+                public TagNameLocation(uint tag, string name, Location location)
+                {
+                    Tag = tag;
+                    Name = name;
+                    Location = location;
+                }
             }
 
             public override void Visit(SyntaxNode node)
@@ -104,14 +192,8 @@ namespace Ninjadini.Neuro.CodeGen
                 {
                     EnsureClassToGenerate(classSymbol, ref classToGenerate);
                     classToGenerate.GlobalTypeId = NeuroCodeGenUtils.GetNeuroGlobalTypeId(globalAttribute);
-
-                    if (onError != null && globalTypeNames.TryGetValue(classToGenerate.GlobalTypeId, out var otherName))
-                    {
-                        onError(Diagnostic.Create(NeuroSourceAnalyzer.GlobalTypeConflictRule,
-                            NeuroCodeGenUtils.GetLocation(globalAttribute), classToGenerate.GlobalTypeId,
-                            classToGenerate.Name, otherName));
-                    }
-                    globalTypeNames[classToGenerate.GlobalTypeId] = classToGenerate.Name;
+                    
+                    _globalClasses.Add(new TagNameLocation(classToGenerate.GlobalTypeId, classToGenerate.Name, NeuroCodeGenUtils.GetLocation(globalAttribute)));
                 }
                 foreach (var fieldSymbol in classSymbol.GetMembers().OfType<IFieldSymbol>())
                 {
@@ -148,7 +230,7 @@ namespace Ninjadini.Neuro.CodeGen
                 }
                 if (classToGenerate != null)
                 {
-                    ProcessNeuroClass(classSymbol, classToGenerate);
+                    ProcessNeuroClass(classSymbol, classToGenerate, classAttribute);
                 }
             }
 
@@ -170,7 +252,7 @@ namespace Ninjadini.Neuro.CodeGen
                 }
             }
             
-            private void ProcessNeuroClass(INamedTypeSymbol classSymbol, ClassToGenerate classToGenerate)
+            private void ProcessNeuroClass(INamedTypeSymbol classSymbol, ClassToGenerate classToGenerate, AttributeData classAttribute)
             {
                 var baseSymbol = classSymbol.BaseType;
                 while (baseSymbol != null)
@@ -201,6 +283,30 @@ namespace Ninjadini.Neuro.CodeGen
                         classToGenerate.RootClassName = baseClass;
                     }
                 }
+                if (!string.IsNullOrEmpty(classToGenerate.RootClassName))
+                {
+                    AddToBaseClass(classToGenerate.RootClassName, 
+                        new TagNameLocation(classToGenerate.Tag, classToGenerate.Name, NeuroCodeGenUtils.GetLocation(classAttribute)));
+                }
+                foreach (var attributeData in classSymbol.GetAttributes())
+                {
+                    if (NeuroCodeGenUtils.IsReservedNeuroTagAttribute(attributeData.AttributeClass))
+                    {
+                        var tag = NeuroCodeGenUtils.GetNeuroTag(attributeData);
+                        AddToBaseClass(string.IsNullOrEmpty(classToGenerate.RootClassName) ? classToGenerate.Name : classToGenerate.RootClassName, 
+                            new TagNameLocation(tag, null, NeuroCodeGenUtils.GetLocation(attributeData)));
+                    }
+                }
+            }
+
+            void AddToBaseClass(string rootClassName, TagNameLocation tagNameLocation)
+            {
+                if (!_baseClasses.TryGetValue(rootClassName, out var list))
+                {
+                    list = new List<TagNameLocation>();
+                    _baseClasses.Add(rootClassName, list);
+                }
+                list.Add(tagNameLocation);
             }
             
             static SymbolDisplayFormat nameFormat = new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes);
@@ -280,6 +386,7 @@ namespace Ninjadini.Neuro.CodeGen
             public bool HasPrivateFields;
             public bool IsPoolable;
             public uint GlobalTypeId;
+            public Location Location;
             public List<FieldToGenerate> Fields = new List<FieldToGenerate>();
         }
             

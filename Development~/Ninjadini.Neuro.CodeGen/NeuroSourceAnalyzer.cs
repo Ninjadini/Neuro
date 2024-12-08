@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -21,18 +23,17 @@ namespace Ninjadini.Neuro.CodeGen
         static readonly DiagnosticDescriptor InvalidDictionaryKeyTypeRule = new DiagnosticDescriptor("Neuro101", "Invalid dictionary key type", "Unsupported dictionary key type `{0}` found @ {1}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor InvalidTagRangeRule = new DiagnosticDescriptor(InvalidTagDiagnosticID, "Invalid field neuro tag", "Neuro field attribute tag must be between 0 and "+int.MaxValue+" @ {1}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor FieldTagConflictRule = new DiagnosticDescriptor(FieldTagConflictDiagnosticID, "Field attribute tag already used", "Neuro field attribute tag {0} of `{1}` is already used by another field `{2}`", "Syntax", DiagnosticSeverity.Error, true);
-        static readonly DiagnosticDescriptor MissingClassAttributeRule = new DiagnosticDescriptor("Neuro404", "Missing neuro class attribute", "`{0}` needs neuro class attribute because it's base class `{1}` is a Neuro class.", "Syntax", DiagnosticSeverity.Error, true);
+        static readonly DiagnosticDescriptor MissingClassAttributeRule = new DiagnosticDescriptor("Neuro404", "Missing neuro class attribute", "`{0}` needs neuro class attribute `[Neuro(#)]` because it's base class `{1}` is a Neuro class.", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor InvalidClassTagRangeRule = new DiagnosticDescriptor("Neuro002", "Invalid class neuro tag",  "Neuro class attribute tag must be between 0 and "+int.MaxValue+" @ {0}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor PartialClassRule = new DiagnosticDescriptor("Neuro101", "Non-partial Neuro class",  "{0} is not a partial class. It is required so Neuro can write to private fields without reflection.", "Syntax", DiagnosticSeverity.Error, true);
-        static readonly DiagnosticDescriptor ClassTagConflictRule = new DiagnosticDescriptor("Neuro303", "Class attribute tag already used", "Neuro class attribute tag {0} of `{1}` is already used by another class `{2}`", "Syntax", DiagnosticSeverity.Error, true);
-        static readonly DiagnosticDescriptor ClassTagReservedRule = new DiagnosticDescriptor("Neuro304", "Class attribute tag reserved", "Neuro class attribute tag {0} of `{1}` is marked as reserved at {2}", "Syntax", DiagnosticSeverity.Error, true);
-        public static readonly DiagnosticDescriptor GlobalTypeConflictRule = new DiagnosticDescriptor("Neuro310", "Global type id already used", "Neuro global type id {0} of `{1}` is already used by another class `{2}`", "Syntax", DiagnosticSeverity.Error, true);
+        public static readonly DiagnosticDescriptor ClassTagConflictRule = new DiagnosticDescriptor("Neuro303", "Class attribute tag already used", "Neuro class attribute tag {0} of `{1}` is already used by another class `{2}`. Full list of tags: {3}", "Syntax", DiagnosticSeverity.Error, true);
+        public static readonly DiagnosticDescriptor ClassTagReservedRule = new DiagnosticDescriptor("Neuro304", "Class attribute tag reserved", "Neuro class attribute tag {0} of `{1}` is marked as reserved `[ReservedNeuroTag({0})]`. Full list of tags: {2}", "Syntax", DiagnosticSeverity.Error, true);
+        public static readonly DiagnosticDescriptor GlobalTypeConflictRule = new DiagnosticDescriptor("Neuro310", "Global type id already used", "Neuro global type id {0} of `{1}` is already used by another class `{2}`. Full list of global ids: {3}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor GlobalTypeRangeRule = new DiagnosticDescriptor("Neuro311", "Invalid global neuro type id",  "Neuro global type id must be between 0 and "+int.MaxValue+" @ {0}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor RefsGlobalTypeRule = new DiagnosticDescriptor("Neuro312", "Global neuro type attribute missing",  "Neuro global type attribute `[NeuroGlobalType(#)]` is required in `{0}` because it is an IReferencable", "Syntax", DiagnosticSeverity.Error, true);
 
-        Dictionary<uint, string> globalTypeNames = new Dictionary<uint, string>();
-        Dictionary<ISymbol, List<SymbolAndTag>> classTags = new Dictionary<ISymbol, List<SymbolAndTag>>();
-        private Dictionary<uint, string> tempTagDict = new Dictionary<uint, string>();
+        [ThreadStatic]
+        static Dictionary<uint, string> tempTagDict;
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(
             UnsupportedTypeRule,
@@ -52,10 +53,9 @@ namespace Ninjadini.Neuro.CodeGen
 
         public override void Initialize(AnalysisContext context)
         {
-            //context.EnableConcurrentExecution();
-            classTags.Clear();
-            globalTypeNames.Clear();
+            context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
+            
             context.RegisterSymbolAction(ProcessClassOrStruct, SymbolKind.NamedType);
         }
 
@@ -72,7 +72,14 @@ namespace Ninjadini.Neuro.CodeGen
 
         private ClassFieldsInfo ProcessFields(INamedTypeSymbol classSymbol, SymbolAnalysisContext context)
         {
-            tempTagDict.Clear();
+            if (tempTagDict == null)
+            {
+                tempTagDict = new Dictionary<uint, string>();
+            }
+            else
+            {
+                tempTagDict.Clear();
+            }
             var result = ClassFieldsInfo.NoNeuro;
             foreach (var fieldSymbol in classSymbol.GetMembers().OfType<IFieldSymbol>())
             {
@@ -87,7 +94,7 @@ namespace Ninjadini.Neuro.CodeGen
                         var tag = NeuroCodeGenUtils.GetNeuroTag(attributeData);
                         if (tempTagDict.TryGetValue(tag, out var otherField))
                         {
-                            context.ReportDiagnostic(Diagnostic.Create(FieldTagConflictRule, NeuroCodeGenUtils.GetLocation(attributeData), tag, fieldSymbol.ToString(), otherField));
+                            //context.ReportDiagnostic(Diagnostic.Create(FieldTagConflictRule, NeuroCodeGenUtils.GetLocation(attributeData), tag, fieldSymbol.ToString(), otherField));
                         }
                         else
                         {
@@ -145,6 +152,8 @@ namespace Ninjadini.Neuro.CodeGen
                     }
                 }
             }
+            
+            tempTagDict.Clear();
             return result;
         }
         
@@ -214,7 +223,6 @@ namespace Ninjadini.Neuro.CodeGen
                 return UnsupportedTypeRule;
             }
             return null;
-
         }
 
         private void ProcessNeuroBaseClass(INamedTypeSymbol classSymbol, ClassFieldsInfo fieldsInfo, SymbolAnalysisContext context)
@@ -249,14 +257,6 @@ namespace Ninjadini.Neuro.CodeGen
                 if (globalId == 0 || globalId >= int.MaxValue)
                 {
                     context.ReportDiagnostic(Diagnostic.Create(GlobalTypeRangeRule, NeuroCodeGenUtils.GetLocation(globalAttribute), classSymbol.ToString()));
-                }
-                else if (globalTypeNames.TryGetValue(globalId, out var otherName))
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(GlobalTypeConflictRule, NeuroCodeGenUtils.GetLocation(globalAttribute), globalId, classSymbol.ToString(), otherName));
-                }
-                else
-                {
-                    globalTypeNames[globalId] = classSymbol.ToString();
                 }
             }
             else if (NeuroCodeGenUtils.IsReferencableType(classSymbol))
@@ -296,99 +296,57 @@ namespace Ninjadini.Neuro.CodeGen
 
         void ValidateBaseClass(ISymbol classSymbol, AttributeData classAttribute, uint tag, ISymbol baseSymbol, SymbolAnalysisContext context)
         {
-            if (!classTags.TryGetValue(baseSymbol, out var subList))
-            {
-                subList = new List<SymbolAndTag>();
-                classTags[baseSymbol] = subList;
-            }
-            foreach (var attributeData in classSymbol.GetAttributes())
-            {
-                if (NeuroCodeGenUtils.IsReservedNeuroTagAttribute(attributeData.AttributeClass))
-                {
-                    var reservedTag = NeuroCodeGenUtils.GetNeuroTag(attributeData);
-                    foreach (var symbolAndTag in subList)
-                    {
-                        if (symbolAndTag.Tag == reservedTag && symbolAndTag.Symbol != null)
-                        {
-                            ReportClassTagConflict(null, attributeData, symbolAndTag, context);
-                            break;
-                        }
-                    }
-                    subList.Add(new SymbolAndTag()
-                    {
-                        Attribute = attributeData,
-                        Tag = reservedTag
-                    });
-                }
-            }
-            
-            var selfIndex = -1;
-            for (int index = 0, l = subList.Count; index < l; index++)
-            {
-                var symbolAndTag = subList[index];
-                if (symbolAndTag.Tag == tag && !SymbolEqualityComparer.Default.Equals(symbolAndTag.Symbol, classSymbol))
-                {
-                    ReportClassTagConflict(classSymbol, classAttribute, symbolAndTag, context);
-                }
-                if (SymbolEqualityComparer.Default.Equals(symbolAndTag.Symbol, classSymbol))
-                {
-                    selfIndex = index;
-                }
-            }
+        }
 
-            if(selfIndex < 0)
+        void ReportTagConflicts(List<SymbolAndTag> tags, CompilationAnalysisContext context, DiagnosticDescriptor tagConflict, DiagnosticDescriptor tagReserved)
+        {
+            for (var indexA = tags.Count - 1; indexA >= 0; indexA--)
             {
-                subList.Add(new SymbolAndTag()
+                var tagA = tags[indexA];
+                for (var indexB = tags.Count - 1; indexB >= 0; indexB--)
                 {
-                    Symbol = classSymbol,
-                    Attribute = classAttribute,
-                    Tag = tag
-                });
+                    var tagB = tags[indexB];
+                    if (tagA.Tag == tagB.Tag && !SymbolEqualityComparer.Default.Equals(tagA.Symbol, tagB.Symbol))
+                    {
+                        ReportTagConflict(tagA, tagB, tags, context, tagConflict, tagReserved);
+                        break;
+                    }
+                }
+            }
+        }
+        
+        void ReportTagConflict(SymbolAndTag symbolAndTag1, SymbolAndTag symbolAndTag2, List<SymbolAndTag> tags, CompilationAnalysisContext context, DiagnosticDescriptor tagConflict, DiagnosticDescriptor tagReserved)
+        {
+            var classSymbol = symbolAndTag1.Symbol;
+            if (classSymbol == null)
+            {
+                return;
+            }
+            var otherSymbol = symbolAndTag2.Symbol;
+            if (otherSymbol != null)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(tagConflict,
+                    NeuroCodeGenUtils.GetLocation(symbolAndTag1.Attribute), symbolAndTag2.Tag,
+                    classSymbol.Name, otherSymbol.Name, CreateTagsList(tags)));
             }
             else
             {
-                var existing = subList[selfIndex];
-                existing.Tag = tag;
-                subList[selfIndex] = existing;
+                context.ReportDiagnostic(Diagnostic.Create(tagReserved,
+                    NeuroCodeGenUtils.GetLocation(symbolAndTag1.Attribute), symbolAndTag2.Tag,
+                    classSymbol.Name, NeuroCodeGenUtils.GetLocation(symbolAndTag2.Attribute), CreateTagsList(tags)));
             }
         }
 
-        void ReportClassTagConflict(ISymbol classSymbol, AttributeData classAttribute, SymbolAndTag symbolAndTag, SymbolAnalysisContext context)
+        string CreateTagsList(List<SymbolAndTag> tags)
         {
-            var otherSymbol = symbolAndTag.Symbol;
-            var classSymbolName = classSymbol != null ? classSymbol.Name : "[ReservedTag]";
-            var otherSymbolName = otherSymbol != null ? otherSymbol.Name : "[ReservedTag]";
-
-            if (classSymbol != null)
+            var stringBuilder = new StringBuilder();
+            foreach (var tag in tags)
             {
-                if (otherSymbol != null)
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(ClassTagConflictRule,
-                        NeuroCodeGenUtils.GetLocation(classAttribute), symbolAndTag.Tag,
-                        classSymbolName, otherSymbolName));
-                }
-                else
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(ClassTagReservedRule,
-                        NeuroCodeGenUtils.GetLocation(classAttribute), symbolAndTag.Tag,
-                        classSymbolName, NeuroCodeGenUtils.GetLocation(symbolAndTag.Attribute)));
-                }
+                var classSymbol = tag.Symbol;
+                var classSymbolName = classSymbol != null ? classSymbol.Name : "[ReservedTag]";
+                stringBuilder.Append(tag.Tag).Append(": ").AppendLine(classSymbolName);
             }
-            if (otherSymbol != null)
-            {
-                if (classSymbol != null)
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(ClassTagConflictRule,
-                        NeuroCodeGenUtils.GetLocation(symbolAndTag.Attribute), symbolAndTag.Tag,
-                        otherSymbolName, classSymbolName));
-                }
-                else
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(ClassTagReservedRule,
-                        NeuroCodeGenUtils.GetLocation(classAttribute), symbolAndTag.Tag,
-                        otherSymbolName, NeuroCodeGenUtils.GetLocation(classAttribute)));
-                }
-            }
+            return stringBuilder.ToString();
         }
 
         struct SymbolAndTag

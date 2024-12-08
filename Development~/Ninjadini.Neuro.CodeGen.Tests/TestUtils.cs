@@ -42,12 +42,22 @@ namespace Ninjadini.Neuro.CodeGen.Tests
             var walker = new AnalyzerWrappedCodeWalker();
             walker.Walk(compilation, new NeuroSourceAnalyzer());
             var errors = walker.GetErrorsString();
-            Console.WriteLine("ERROR: " + errors);
+            
             if (string.IsNullOrEmpty(errors))
             {
-                Assert.Fail("Error is expected");
+                var visitor = new NeuroSourceGenerator();
+                errors = "";
+                visitor.Generate(compilation, diagnostic =>
+                {
+                    errors += diagnostic.GetMessage() + "\n";
+                });
+                if (string.IsNullOrEmpty(errors))
+                {
+                    Assert.Fail("Error is expected");
+                }
             }
-            else if (!string.IsNullOrEmpty(expectedPartialErrorString) && !errors.Contains(expectedPartialErrorString))
+            Console.WriteLine("ERROR: " + errors);
+            if (!string.IsNullOrEmpty(expectedPartialErrorString) && !errors.Contains(expectedPartialErrorString))
             {
                 Assert.Fail($"Expected error string `{expectedPartialErrorString}` not found. Resulting error: {errors}");
             }
@@ -173,7 +183,6 @@ namespace Ninjadini.Neuro
                 {
                     var ctx = new CompilationAnalysisContext(compilation, options, ReportDiagnostic,
                         IsSupportedDiagnostic, new CancellationToken());
-                    analyzer.OnCompilationAction(ctx);
                 }
             }
 
