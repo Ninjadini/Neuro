@@ -4,13 +4,9 @@
 
 Empowering developers to build fully data-driven games with ease.
 
-Unlike hardcoded systems, this toolset allows you to structure your game around dynamic data.
-
-Enjoy the flexibility to update content, balance gameplay, and scale features—without rewriting code.
+Enjoy flexibility to update content, balance gameplay, and scale features — without rewriting code.
 
 Inspired by Protobuf, but fully-integrated into Unity to streamline your data management workflow.
-
-[But why tho? I am not convinced...](Docs/ConvinceMe.md)
 
 ## [Getting Started >](Docs/GettingStarted.md)
 

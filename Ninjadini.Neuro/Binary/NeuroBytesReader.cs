@@ -101,7 +101,7 @@ namespace Ninjadini.Neuro
             return result;
         }
 
-        public object ReadGlobalType(Type type, in BytesChunk bytesChunk, in ReaderOptions opts)
+        public object ReadGlobalTyped(Type type, in BytesChunk bytesChunk, in ReaderOptions opts)
         {
             var typeId = NeuroGlobalTypes.GetIdByType(type);
             if (typeId == 0)
@@ -273,7 +273,7 @@ namespace Ninjadini.Neuro
                 {
                     return data;
                 }
-                var obj = (IReferencable)reader.ReadGlobalType(type, contentByteChunk, reader.Options);
+                var obj = (IReferencable)reader.ReadGlobalTyped(type, contentByteChunk, reader.Options);
                 obj.RefId = refId;
                 obj.RefName = GetRefName(refId);
                 contentByteChunk.Bytes = null;

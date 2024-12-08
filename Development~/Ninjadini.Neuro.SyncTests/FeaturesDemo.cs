@@ -275,7 +275,7 @@ namespace Ninjadini.Neuro.SyncTests
         IReferencable INeuroReferencedItemLoader.Load(uint refId)
         {
             var someBytes = new byte[0];
-            return NeuroBytesReader.Shared.ReadGlobalType<MyReferencableObj>(someBytes);
+            return (MyReferencableObj)NeuroBytesReader.Shared.ReadGlobalTyped(someBytes, default);
         }
 
         string INeuroReferencedItemLoader.GetRefName(uint refId)

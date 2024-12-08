@@ -13,7 +13,6 @@ namespace Ninjadini.Neuro.Editor
     {
         public abstract class ContentProvider : IAssemblyTypeScannable
         {
-            public abstract string DropDownName { get; }
             public abstract void CreateGUI(VisualElement container, NeuroContentDebugger window);
 
             /// If your provider only support a specific format, you can declare it here. return null = everything.
@@ -38,29 +37,36 @@ namespace Ninjadini.Neuro.Editor
             }
         }
 
-        class FileContentProvider : ContentProvider
+        public class FileContentProvider : ContentProvider
         {
             NeuroContentDebugger _window;
-            public override string DropDownName => "File";
-
+            
             TextField _locationLbl;
-            string _filePath;
 
             public override void CreateGUI(VisualElement container, NeuroContentDebugger window)
             {
                 _window = window;
+
+                var fixedPath = GetFixedFilePath();
                 var horizontal = NeuroUiUtils.AddHorizontal(container);
-                NeuroUiUtils.AddButton(horizontal, "Locate File", OnLocateFileClicked);
+                if (string.IsNullOrEmpty(fixedPath))
+                {
+                    NeuroUiUtils.AddButton(horizontal, "Locate File", OnLocateFileClicked);
+                }
                 _locationLbl = new TextField();
-                _locationLbl.value = _window.srcFilePath;
-                _locationLbl.style.flexShrink = 1f;
-                _locationLbl.style.flexGrow = 1f;
+                _locationLbl.value = string.IsNullOrEmpty(fixedPath) ? _window.srcFilePath : fixedPath;
+                _locationLbl.isReadOnly = !string.IsNullOrEmpty(fixedPath);
                 _locationLbl.selectAllOnFocus = false;
                 _locationLbl.selectAllOnMouseUp = false;
+                _locationLbl.style.flexShrink = 1f;
+                _locationLbl.style.flexGrow = 1f;
                 _locationLbl.RegisterValueChangedCallback(OnLocationTxtChanged);
                 horizontal.Add(_locationLbl);
                 NeuroUiUtils.AddButton(horizontal, "⊙", OnRevealClicked);
             }
+
+            /// Override me for your custom FileContentProvider with fixed path
+            protected virtual string GetFixedFilePath() => null;
 
             void OnLocationTxtChanged(ChangeEvent<string> evt)
             {
@@ -79,66 +85,14 @@ namespace Ninjadini.Neuro.Editor
 
             void OnRevealClicked()
             {
-                RevealFileOrDirInFinder(_window.srcFilePath);
-            }
-
-            public override byte[] Load()
-            {
-                if (!string.IsNullOrEmpty(_window.srcFilePath) && File.Exists(_window.srcFilePath))
-                {
-                    return File.ReadAllBytes(_window.srcFilePath);
-                }
-                ShowLoadNotFoundDialog(_window.srcFilePath);
-                return null;
-            }
-
-            public override void Save(byte[] bytes)
-            {
-                File.WriteAllBytes(_window.srcFilePath, bytes);
-            }
-
-            public override void Delete()
-            {
-                if (!string.IsNullOrEmpty(_window.srcFilePath) 
-                    && File.Exists(_window.srcFilePath) 
-                    && ShowDeleteConfirmDialog(_window.srcFilePath))
-                {
-                    File.Delete(_window.srcFilePath);
-                }
-            }
-        }
-
-        class PersistentDataContentProvider : ContentProvider
-        {
-            NeuroContentDebugger _window;
-            
-            public override string DropDownName => "Persistent Data";
-
-            public override void CreateGUI(VisualElement container, NeuroContentDebugger window)
-            {
-                _window = window;
-                var horizontal = NeuroUiUtils.AddHorizontal(container);
-                var textField = new TextField("FileName");
-                textField.value = window.persistentDataName;
-                textField.RegisterValueChangedCallback(OnTextFieldChanged);
-                horizontal.Add(textField);
-                NeuroUiUtils.AddButton(horizontal, "⊙", OnRevealClicked);
-            }
-
-            void OnTextFieldChanged(ChangeEvent<string> evt)
-            {
-                _window.persistentDataName = evt.newValue;
-            }
-
-            void OnRevealClicked()
-            {
-                RevealFileOrDirInFinder(GetPath());
+                var path = GetPath();
+                RevealFileOrDirInFinder(path);
             }
 
             public override byte[] Load()
             {
                 var path = GetPath();
-                if (!string.IsNullOrEmpty(_window.persistentDataName) && File.Exists(path))
+                if (!string.IsNullOrEmpty(path) && File.Exists(path))
                 {
                     return File.ReadAllBytes(path);
                 }
@@ -148,16 +102,14 @@ namespace Ninjadini.Neuro.Editor
 
             public override void Save(byte[] bytes)
             {
-                if (!string.IsNullOrEmpty(_window.persistentDataName))
-                {
-                    File.WriteAllBytes(GetPath(), bytes);
-                }
+                var path = GetPath();
+                File.WriteAllBytes(path, bytes);
             }
 
             public override void Delete()
             {
                 var path = GetPath();
-                if (!string.IsNullOrEmpty(_window.persistentDataName) 
+                if (!string.IsNullOrEmpty(path) 
                     && File.Exists(path) 
                     && ShowDeleteConfirmDialog(path))
                 {
@@ -165,13 +117,86 @@ namespace Ninjadini.Neuro.Editor
                 }
             }
 
-            string GetPath() => Application.persistentDataPath + "/" + _window.persistentDataName;
+            string GetPath() => _locationLbl.value;
+        }
+
+        public class PersistentDataContentProvider : ContentProvider
+        {
+            NeuroContentDebugger _window;
+            TextField _nameField;
+
+            public override void CreateGUI(VisualElement container, NeuroContentDebugger window)
+            {
+                _window = window;
+                var fixedName = GetFixedFileName();
+                var horizontal = NeuroUiUtils.AddHorizontal(container);
+                _nameField = new TextField("FileName");
+                _nameField.value = string.IsNullOrEmpty(fixedName) ? window.persistentDataName : fixedName;
+                _nameField.isReadOnly = !string.IsNullOrEmpty(fixedName);
+                _nameField.selectAllOnFocus = false;
+                _nameField.selectAllOnMouseUp = false;
+                _nameField.RegisterValueChangedCallback(OnTextFieldChanged);
+                horizontal.Add(_nameField);
+                NeuroUiUtils.AddButton(horizontal, "⊙", OnRevealClicked);
+            }
+
+            /// Override me for your custom PersistentDataContentProvider with fixed path
+            protected virtual string GetFixedFileName() => null;
+
+            void OnTextFieldChanged(ChangeEvent<string> evt)
+            {
+                _window.persistentDataName = evt.newValue;
+            }
+
+            void OnRevealClicked()
+            {
+                RevealFileOrDirInFinder(GetPath(GetFileName()));
+            }
+
+            public override byte[] Load()
+            {
+                var path = GetPath(GetFileName());
+                if (!string.IsNullOrEmpty(path) && File.Exists(path))
+                {
+                    return File.ReadAllBytes(path);
+                }
+                ShowLoadNotFoundDialog(path);
+                return null;
+            }
+
+            public override void Save(byte[] bytes)
+            {
+                var path = GetPath(GetFileName());
+                if (!string.IsNullOrEmpty(path))
+                {
+                    File.WriteAllBytes(path, bytes);
+                }
+            }
+
+            public override void Delete()
+            {
+                var path = GetPath(GetFileName());
+                if (!string.IsNullOrEmpty(path) 
+                    && File.Exists(path) 
+                    && ShowDeleteConfirmDialog(path))
+                {
+                    File.Delete(path);
+                }
+            }
+
+            public string GetFileName()
+            {
+                return _nameField.value;
+            }
+
+            public static string GetPath(string fileName)
+            {
+                return string.IsNullOrEmpty(fileName) ? null : Path.Combine(Application.persistentDataPath, fileName);
+            }
         }
 
         class TextFieldContentProvider : ContentProvider
         {
-            public override string DropDownName => "TextField";
-            
             NeuroContentDebugger _window;
             TextField _txtField;
 
@@ -237,7 +262,7 @@ namespace Ninjadini.Neuro.Editor
             }
         }
 
-        static void RevealFileOrDirInFinder(string file)
+        public static void RevealFileOrDirInFinder(string file)
         {
             if (File.Exists(file))
             {

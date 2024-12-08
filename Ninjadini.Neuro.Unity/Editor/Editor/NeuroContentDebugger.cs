@@ -11,7 +11,7 @@ namespace Ninjadini.Neuro.Editor
 {
     public partial class NeuroContentDebugger : EditorWindow
     {
-        [MenuItem("Tools/Neuro/Content Debugger", priority = 106)]
+        [MenuItem("Tools/Neuro/Content Debugger", priority = 104)]
         public static void ShowWindow()
         {
             //GetWindow<NeuroDataDebugger>("NeuroContentDebugger").Show();
@@ -49,11 +49,19 @@ namespace Ninjadini.Neuro.Editor
         {
             _contentProviders ??= GetContentProviders();
 
+            var initialProvider = _contentProviders.FirstOrDefault();
             if (_contentProviders.Length > 1)
             {
-                var choices = _contentProviders.Select(p => p.DropDownName).ToList();
-                if (!choices.Contains(srcType)) srcType = choices.First();
-                var providerDropDown = new DropdownField(choices, srcType)
+                var choices = _contentProviders.ToList();
+                if (!string.IsNullOrEmpty(srcType))
+                {
+                    var t = choices.Find(t => t.GetType().FullName == srcType);
+                    if (t != null)
+                    {
+                        initialProvider = t;
+                    }
+                }
+                var providerDropDown = new PopupField<ContentProvider>(choices, initialProvider, CreateFriendlyName, CreateFriendlyName)
                 {
                     label = "Content Provider"
                 };
@@ -85,18 +93,29 @@ namespace Ninjadini.Neuro.Editor
             var horizontalLeft = NeuroUiUtils.AddHorizontal(horizontal);
             horizontalLeft.style.backgroundColor = new Color(0f, 0.2f, 0.1f);
             horizontalLeft.style.width = Length.Percent(50f);
-            NeuroUiUtils.AddButton(horizontalLeft, "Load v", OnLoadClicked);
-            _newBtn = NeuroUiUtils.AddButton(horizontalLeft, "New v", OnNewClicked);
+            NeuroUiUtils.AddButton(horizontalLeft, "Load ↴", OnLoadClicked);
+            _newBtn = NeuroUiUtils.AddButton(horizontalLeft, "New ↴", OnNewClicked);
             
             var horizontalRight = NeuroUiUtils.AddHorizontal(horizontal);
             horizontalRight.style.backgroundColor = new Color(0.2f, 0.0f, 0.1f);
             horizontalRight.style.width = Length.Percent(50f);
             horizontalRight.style.flexDirection = FlexDirection.RowReverse;
-            _saveBtn = NeuroUiUtils.AddButton(horizontalRight, "Save ^", OnSaveClicked);
-            _delBtn = NeuroUiUtils.AddButton(horizontalRight, "Delete X", OnDeleteClicked);
+            _saveBtn = NeuroUiUtils.AddButton(horizontalRight, "Save ⤴", OnSaveClicked);
+            _delBtn = NeuroUiUtils.AddButton(horizontalRight, "Delete ✕", OnDeleteClicked);
             
-            OnProviderDropDownChanged(ChangeEvent<string>.GetPooled("", srcType));
+            OnProviderDropDownChanged(ChangeEvent<ContentProvider>.GetPooled(null, initialProvider));
             Show((object)null);
+        }
+
+        string CreateFriendlyName(ContentProvider provider)
+        {
+            var result = provider.GetType().Name;
+            var baseName = nameof(ContentProvider);
+            if (result.EndsWith(baseName) && result.Length > baseName.Length)
+            {
+                result = result.Substring(0, result.Length - baseName.Length);
+            }
+            return ObjectNames.NicifyVariableName(result);
         }
 
         protected virtual ContentProvider[] GetContentProviders()
@@ -131,12 +150,12 @@ namespace Ninjadini.Neuro.Editor
             srcFormat = (Format)evt.newValue;
         }
 
-        void OnProviderDropDownChanged(ChangeEvent<string> evt)
+        void OnProviderDropDownChanged(ChangeEvent<ContentProvider> evt)
         {
-            srcType = evt.newValue;
-            var srcProvider = _contentProviders.FirstOrDefault(t => t.DropDownName == srcType);
+            var srcProvider = evt.newValue;
             if (srcProvider != null)
             {
+                srcType = srcProvider.GetType().FullName;
                 _srcProvider = srcProvider;
                 _srcProviderContent.Clear();
 

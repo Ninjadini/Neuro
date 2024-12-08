@@ -59,10 +59,7 @@ public class CraftClickerLogic : MonoBehaviour
     void Save()
     {
         Data.LastSaveTime = DateTime.Now;
-        saves.Save(); 
-        // ^ in the real world, you probably don't want to save on evey data change
-        // maybe delay the save for 5 seconds so that if you did like 3 actions within 5 seconds it's all
-        // rolled into just 1 save call.
+        saves.DelayedSave(2f);
     }
 
     void AddOwnedCount(Reference<CraftItem> item, int amount)

@@ -42,6 +42,7 @@ namespace Ninjadini.Neuro.CodeGen.Tests
             var walker = new AnalyzerWrappedCodeWalker();
             walker.Walk(compilation, new NeuroSourceAnalyzer());
             var errors = walker.GetErrorsString();
+            Console.WriteLine("ERROR: " + errors);
             if (string.IsNullOrEmpty(errors))
             {
                 Assert.Fail("Error is expected");
@@ -167,6 +168,12 @@ namespace Ninjadini.Neuro
                 foreach (var syntaxTree in this.compilation.SyntaxTrees)
                 {
                     Visit(syntaxTree.GetRoot());
+                }
+                if (errors.Count == 0)
+                {
+                    var ctx = new CompilationAnalysisContext(compilation, options, ReportDiagnostic,
+                        IsSupportedDiagnostic, new CancellationToken());
+                    analyzer.OnCompilationAction(ctx);
                 }
             }
 

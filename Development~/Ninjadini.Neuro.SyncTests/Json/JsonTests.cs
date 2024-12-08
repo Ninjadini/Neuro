@@ -106,7 +106,7 @@ namespace Ninjadini.Neuro.SyncTests
             {
             };
             object globalTyped = obj;
-            var json = NeuroJsonWriter.Shared.Write(globalTyped, options:NeuroJsonWriter.Options.IncludeGlobalType);
+            var json = NeuroJsonWriter.Shared.WriteGlobalTyped(globalTyped);
             Console.WriteLine(json);
 
             Assert.AreEqual("{\n    \"-globalType\": \"11:ReferencableClass\",\n}", json);
@@ -120,7 +120,7 @@ namespace Ninjadini.Neuro.SyncTests
                 Name = "HELLO"
             };
             object globalTyped = obj;
-            var json = NeuroJsonWriter.Shared.Write(globalTyped, options:NeuroJsonWriter.Options.IncludeGlobalType);
+            var json = NeuroJsonWriter.Shared.WriteGlobalTyped(globalTyped);
             Console.WriteLine(json);
 
             Assert.AreEqual("{\n    \"-globalType\": \"11:ReferencableClass\",\n    \"Name\": \"HELLO\"\n}", json);
@@ -139,7 +139,7 @@ namespace Ninjadini.Neuro.SyncTests
                 NumValue = 234
             }; 
             object globalTyped = obj;
-            var json = NeuroJsonWriter.Shared.Write(globalTyped, options:NeuroJsonWriter.Options.IncludeGlobalType);
+            var json = NeuroJsonWriter.Shared.WriteGlobalTyped(globalTyped);
             Console.WriteLine(json);
 
             var copy = NeuroJsonReader.Shared.Read<object>(json, new ReaderOptions()) as SubTestClass1;

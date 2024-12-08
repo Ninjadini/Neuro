@@ -12,7 +12,7 @@ namespace Ninjadini.Neuro.Editor
 {
     public class NeuroTypeMappingDebuggerWindow : EditorWindow
     {
-        [MenuItem("Tools/Neuro/Type Mapping Debugger", priority = 105)]
+        [MenuItem("Tools/Neuro/Type Mapping Debugger", priority = 102)]
         public static void ShowWindow()
         {
             GetWindow<NeuroTypeMappingDebuggerWindow>("Neuro Types").Show();

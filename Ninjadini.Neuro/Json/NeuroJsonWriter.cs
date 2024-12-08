@@ -28,7 +28,6 @@ namespace Ninjadini.Neuro
         public enum Options
         {
             TagValuesOnly = 1 << 0, // don't write the ref id name or type name;
-            IncludeGlobalType = 1 << 1,
             ExcludeTopLevelGlobalType = 1 << 2,
         }
 
@@ -85,7 +84,7 @@ namespace Ninjadini.Neuro
             var type = value.GetType();
             var isGlobalType = typeof(T) == typeof(object);
             uint globalId = 0;
-            if (!excludeTopLevelGlobalType && ((options & Options.IncludeGlobalType) != 0 || isGlobalType))
+            if (!excludeTopLevelGlobalType && isGlobalType)
             {
                 globalId = NeuroGlobalTypes.GetTypeIdOrThrow(type, out var rootType);
                 AppendSubTagAndOrName(FieldName_GlobalType, globalId, rootType.Name);

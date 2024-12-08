@@ -280,7 +280,6 @@ using Ninjadini.Neuro;
     }
 
     [Test]
-    [Ignore("Doesn't work yet")]
     public void TestReadOnlyList()
     {
         NeuroSourceGenerator.Verbose = true;

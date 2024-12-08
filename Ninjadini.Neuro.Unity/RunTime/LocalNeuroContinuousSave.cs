@@ -16,6 +16,7 @@ namespace Ninjadini.Neuro
         
         INeuroSavable _gameSave;
         Delegate _createDataFunc;
+        float _targetSaveTime;
 
         public T GetData<T>() where T : class
         {
@@ -77,17 +78,37 @@ namespace Ninjadini.Neuro
         public void Save()
         {
             _gameSave?.Save();
+            _targetSaveTime = 0f;
+        }
+
+        /// Instead of saving all the time on every user interaction, lets only save at max every 2 seconds
+        public void DelayedSave(float seconds)
+        {
+            if (_targetSaveTime <= 0f)
+            {
+                _targetSaveTime = Time.unscaledTime + Math.Max(0f, seconds);
+            }
+        }
+
+        void Update()
+        {
+            if (_targetSaveTime > 0f && Time.unscaledTime >= _targetSaveTime)
+            {
+                Save();
+            }
         }
 
         public void DeleteAndDispose()
         {
+            _targetSaveTime = 0f;
             if (_gameSave != null)
             {
                 _gameSave.DeleteAndDispose();
+                _gameSave = null;
             }
             else
             {
-                var path = Application.persistentDataPath + "/" + saveFileName;
+                var path = GetSavePath(saveFileName);
                 try
                 {
                     if (File.Exists(path))
@@ -105,6 +126,10 @@ namespace Ninjadini.Neuro
 
         void OnDestroy()
         {
+            if (_targetSaveTime > 0f)
+            {
+                Save();
+            }
             _gameSave?.Dispose();
             _gameSave = null;
         }

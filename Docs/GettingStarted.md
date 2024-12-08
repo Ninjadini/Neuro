@@ -6,7 +6,7 @@
 - Enter `https://github.com/Ninjadini/Neuro.git` for latest.
 > [!TIP]
 > No versioning yet. If you prefer a specific commit, to be safe from surprise API changes, you can use this format:
-`https://github.com/Ninjadini/Neuro/commit/<COMMIT HASH HERE>`
+`https://github.com/Ninjadini/Neuro.git#<TAG OR COMMIT HASH HERE>`
 
 ### Your first Neuro reference type
 They are essentially your ScriptableObjects that hold some config data
