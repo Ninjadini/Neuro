@@ -5,8 +5,8 @@
 - `Window` > `Package Manager` > `Add` > `Install package from git URL...`
 - Enter `https://github.com/Ninjadini/Neuro.git` for latest.
 > [!TIP]
-> No versioning yet. If you prefer a specific commit, to be safe from surprise API changes, you can use this format:
-`https://github.com/Ninjadini/Neuro.git#<TAG OR COMMIT HASH HERE>`
+> To target a specific tag / release - to be safe from surprise API changes, use this format:  
+`https://github.com/Ninjadini/Neuro.git#v0.1.0`
 
 ### Your first Neuro reference type
 They are essentially your ScriptableObjects that hold some config data

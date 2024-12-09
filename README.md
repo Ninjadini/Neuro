@@ -2,7 +2,7 @@
 
 **Your Essential Data Management Toolset for Unity**
 
-*The problem:*
+The problem:
 - In Unity, you might use prefabs or scriptable objects to hold some config data, like what types of troops and how much health-points a troop type have.   
 You learned some tricks and workarounds to get it close to how you want it. But we all know it has never been great…
 - To save your player progress in game, you use a different mechanism, such as json - with different constraints that you learn to work around also.
@@ -26,6 +26,8 @@ JSON is custom written so that it is superfast, with no type reflections and all
 In fact for both binary and JSON, if you pre allocate buffer caches ahead, there are zero allocations from neuro, apart from the new objects that are returned per your request.
 
 It leverages C# roslyn code analysis APIs to generate highly optimised and minimal code so serialisation methods do not need reflection methods.
+
+Let's get started ⤵️
 
 ## [Getting Started >](Docs/GettingStarted.md)
 
