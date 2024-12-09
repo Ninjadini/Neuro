@@ -10,3 +10,11 @@ Located in [ExampleProject~](../ExampleProject~/) folder.
   * The logic code to load previous data... Modify+save data when the user perform interactions.
 - [Scripts/CraftClicker/CraftClickerUI.cs](../ExampleProject~/Assets/Scripts/CraftClicker/CraftClickerUI.cs)
   * UI code to display the state of the 'game'
+
+
+
+# What's next ?
+
+[Advanced usages >](AdvancedUsages.md)
+
+[Editor Customisation >](EditorCustomisation.md)
