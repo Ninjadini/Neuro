@@ -1,7 +1,6 @@
 # Getting started
 
-
-See quick demo video here:  
+See walkthrough video here:  
 https://www.youtube.com/watch?v=tftZfd2boDQ
 
 ### Import to your Unity project

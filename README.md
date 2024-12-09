@@ -30,7 +30,7 @@ It leverages C# roslyn code analysis APIs to generate highly optimised and minim
 Let's get started ⤵️
 
 ## [Getting Started >](Docs/GettingStarted.md)
-Or watch youtube https://www.youtube.com/watch?v=tftZfd2boDQ
+> Or watch walkthrough video https://www.youtube.com/watch?v=tftZfd2boDQ
 
 ## [Demo Project >](Docs/DemoProject.md)
 
