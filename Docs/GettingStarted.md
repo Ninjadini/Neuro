@@ -1,7 +1,7 @@
 # Getting started
 
 See walkthrough video here:  
-https://www.youtube.com/watch?v=tftZfd2boDQ
+https://youtu.be/Q1vYjQ9l3rQ
 
 ### Import to your Unity project
 - Requires Unity 2022 or higher
@@ -237,5 +237,7 @@ public class MyGameLogic : MonoBehaviour
 [Demo Project >](DemoProject.md)
 
 [Advanced usages >](AdvancedUsages.md)
+
+[BackwardCompatibility >](BackwardCompatibility.md)
 
 [Editor Customisation >](EditorCustomisation.md)
