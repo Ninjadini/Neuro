@@ -52,6 +52,8 @@ namespace Ninjadini.Neuro.Editor
             var initialProvider = _contentProviders.FirstOrDefault();
             if (_contentProviders.Length > 1)
             {
+                var line = NeuroUiUtils.AddHorizontal(rootVisualElement);
+                
                 var choices = _contentProviders.ToList();
                 if (!string.IsNullOrEmpty(srcType))
                 {
@@ -65,8 +67,17 @@ namespace Ninjadini.Neuro.Editor
                 {
                     label = "Content Provider"
                 };
+                providerDropDown.style.flexGrow = 1f;
                 providerDropDown.RegisterValueChangedCallback(OnProviderDropDownChanged);
-                rootVisualElement.Add(providerDropDown);
+                line.Add(providerDropDown);
+                NeuroUiUtils.AddButton(line, "!", () =>
+                {
+                    EditorUtility.DisplayDialog(
+                        "ContentProvider", 
+                        "You can create your own content provider by extending `NeuroContentDebugger.ContentProvider`.\n\nYou may want to look at `NeuroContentDebugger.PersistentDataContentProvider` or `NeuroContentDebugger.FileContentProvider` as base class examples too.", 
+                        "OK");
+                });
+                rootVisualElement.Add(line);
             }
 
             _srcProviderContent = new VisualElement();
