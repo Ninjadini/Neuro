@@ -17,7 +17,7 @@ At its core, Neuro is a C# binary and JSON serializer.
 For Unity, it integrates very powerful, yet flexible, editor tools to let you manipulate your data.  
 Provides toolsets to store, retrieve, content test and debug your data with ease.
 
-For binary, it is inspired by Google’s Protocol Buffers where it is superfast, compact and backwards comparable.  
+For binary, it is inspired by Google’s Protocol Buffers where it is superfast, compact and backwards+forwards compatible.  
 Neuro is C# focused. It supports structs, dictionary, nullable primitives, inheritance, interfaces.  
 You also don’t need schema files.
 
