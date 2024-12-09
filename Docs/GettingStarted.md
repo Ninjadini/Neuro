@@ -1,5 +1,9 @@
 # Getting started
 
+
+See quick demo video here:  
+https://www.youtube.com/watch?v=tftZfd2boDQ
+
 ### Import to your Unity project
 - Requires Unity 2022 or higher
 - `Window` > `Package Manager` > `Add` > `Install package from git URL...`
