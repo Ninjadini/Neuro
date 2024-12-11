@@ -249,7 +249,7 @@ namespace Ninjadini.Neuro.Editor
                        + typeId
                        +json.Substring(subTypeNode.Value.End);
             }
-            new NeuroJsonReader().Read(json, ref newObj);
+            new NeuroJsonReader().Read(json, newType, ref newObj);
             return newObj;
         }
 
