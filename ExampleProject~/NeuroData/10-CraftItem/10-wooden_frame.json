@@ -1,0 +1,15 @@
+{
+    "Name": "Wooden Frame",
+    "CraftOutputCount": 2,
+    "RequiredItems": [
+        {
+            "Item": "5:wood_plank",
+            "Amount": 2
+        },
+        {
+            "Item": "8:nails",
+            "Amount": 1
+        }
+    ],
+    "CraftDuration": 50000
+}

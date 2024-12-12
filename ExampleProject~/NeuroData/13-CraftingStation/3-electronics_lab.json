@@ -1,0 +1,10 @@
+{
+    "Name": "Electronics Lab",
+    "CraftItems": [
+        "11:circuit_board",
+        "12:wiring",
+        "13:battery",
+        "14:control_panel",
+        "15:engine"
+    ]
+}

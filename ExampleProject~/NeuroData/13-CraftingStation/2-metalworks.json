@@ -1,0 +1,11 @@
+{
+    "Name": "Metalworks",
+    "CraftItems": [
+        "6:metal_ore",
+        "7:metal_bar",
+        "8:nails",
+        "9:stone_axe",
+        "10:wooden_frame"
+    ],
+    "Icon": "7bdb5414937e94e5384d40656b3d48ad"
+}

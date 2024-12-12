@@ -6,9 +6,10 @@ using UnityEngine;
 
 [NeuroGlobalType(10)]
 [DisplayName("CraftClicker: Items []")]
-public class CraftItem : Referencable, INeuroRefDropDownCustomizable
+public class CraftItem : Referencable, INeuroRefDropDownIconCustomizable
 {
-    [Neuro(1)] public string Name;
+    [Neuro(1)]
+    public string Name;
     
     [Neuro(2)] [AssetType(typeof(Sprite))] 
     public AssetAddress Icon; // < The icon sprite to show in UI
@@ -22,27 +23,35 @@ public class CraftItem : Referencable, INeuroRefDropDownCustomizable
     public TimeSpan CraftDuration;
     
     [Neuro(4)] [Tooltip("Required items to produce this item")]
-    public readonly List<CraftRecipeRequiredItem> RequiredItems = new List<CraftRecipeRequiredItem>();
+    public readonly List<CraftRecipeRequiredItem> RequiredItems = new ();
     
+    [Header(">")] // end the fold out for 'crating the item'
     [Neuro(5)] [Tooltip("After crafting this item, any post craft status effects?")] [InspectorStyle(spaceBefore:10)]
     public PostCraftStatusEffectApplication PostCraftEffect;
 
-    
     string INeuroRefDropDownCustomizable.GetRefDropdownText(NeuroReferences references)
     {
         // this is so that we don't need to assign the RefName in editor and it'll still show the name.
         return string.IsNullOrEmpty(RefName) ? $"{RefId} : {Name}" : null;
     }
+
+    AssetAddress INeuroRefDropDownIconCustomizable.RefDropdownIcon => Icon;
 }
 
 public struct CraftRecipeRequiredItem
 {
-    [Neuro(1)] public Reference<CraftItem> Item;
-    [Neuro(2)] public int Amount;
+    [Neuro(1)] 
+    public Reference<CraftItem> Item;
+    
+    [Neuro(2)] 
+    public int Amount;
 }
 
 public class PostCraftStatusEffectApplication
 {
-    [Neuro(1)] public Reference<PostCraftStatusEffect> Effect;
-    [Neuro(2)] public float Chance;
+    [Neuro(1)] 
+    public Reference<PostCraftStatusEffect> Effect;
+    
+    [Neuro(2)] 
+    public float Chance;
 }

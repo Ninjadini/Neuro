@@ -256,7 +256,7 @@ namespace Ninjadini.Neuro.Editor
             {
                 jsonWriter = new NeuroJsonWriter(refs);
             }
-            var json = ShouldUseGlobalType(obj) ? jsonWriter.WriteGlobalTyped(obj) : jsonWriter.Write(obj);
+            var json = ShouldUseGlobalType(obj) ? jsonWriter.WriteGlobalTyped(obj) : jsonWriter.WriteObject(obj);
             debugText.value = json;
             if (jsonSizeLbl != null)
             {
@@ -275,7 +275,7 @@ namespace Ninjadini.Neuro.Editor
         void UpdateBinary(object obj)
         {
             var globalTyped = ShouldUseGlobalType(obj);
-            var bytes = (globalTyped ? NeuroBytesWriter.WriteGlobalTyped(obj) : NeuroBytesWriter.Write(obj)).ToArray();
+            var bytes = (globalTyped ? NeuroBytesWriter.WriteGlobalTyped(obj) : NeuroBytesWriter.WriteObject(obj)).ToArray();
             debugText.value = BytesWalker.Walk(bytes);
             debugText.isReadOnly = true;
             NeuroUiUtils.SetDisplay(debugText, true);
@@ -284,7 +284,7 @@ namespace Ninjadini.Neuro.Editor
         
         void UpdateRawBinary(object obj)
         {
-            var bytes = (ShouldUseGlobalType(obj) ? NeuroBytesWriter.WriteGlobalTyped(obj) : NeuroBytesWriter.Write(obj)).ToArray();
+            var bytes = (ShouldUseGlobalType(obj) ? NeuroBytesWriter.WriteGlobalTyped(obj) : NeuroBytesWriter.WriteObject(obj)).ToArray();
             debugText.value = RawProtoReader.GetDebugString(bytes);
             debugText.isReadOnly = true;
             NeuroUiUtils.SetDisplay(debugText, true);
@@ -427,7 +427,7 @@ namespace Ninjadini.Neuro.Editor
                 var refId = existingItem.RefId;
                 var refName = existingItem.RefName;
                 obj = existingItem;
-                new NeuroJsonReader().Read(debugText.value, existingItem.GetType(), ref obj);
+                new NeuroJsonReader().ReadObject(debugText.value, existingItem.GetType(), ref obj);
                 if (obj is IReferencable newItem)
                 {
                     newItem.RefId = refId;

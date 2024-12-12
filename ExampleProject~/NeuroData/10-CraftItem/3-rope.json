@@ -1,0 +1,12 @@
+{
+    "Name": "Rope",
+    "Icon": "ad629778dfb8b438faac85f32f7f41ac",
+    "CraftOutputCount": 3,
+    "RequiredItems": [
+        {
+            "Item": "1:wood",
+            "Amount": 2
+        }
+    ],
+    "CraftDuration": 2000
+}

@@ -1,0 +1,11 @@
+{
+    "Name": "Basic Workshop",
+    "CraftItems": [
+        "1:wood",
+        "2:stone",
+        "3:rope",
+        "4:sharpened_stone",
+        "5:wood_plank"
+    ],
+    "Icon": "1c6a90b661fd245a9a0e7559b23a274d"
+}

@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Ninjadini.Neuro.Editor
@@ -21,6 +22,11 @@ namespace Ninjadini.Neuro.Editor
             bool CanEdit(Type type, object value) => true;
             bool CanSetToNull(Type type, object value) => true;
             bool CanCreateObject(Type type) => true;
+
+            bool ShouldBeMultilineText(Data data)
+            {
+                return data.MemberInfo?.IsDefined(typeof(MultilineAttribute)) ?? false;
+            }
             
             /// Custom header of class types
             VisualElement CreateCustomHeader(Data data, object value) => null;

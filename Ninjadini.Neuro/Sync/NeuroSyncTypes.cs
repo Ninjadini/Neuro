@@ -159,7 +159,7 @@ namespace Ninjadini.Neuro.Sync
         {
             public uint SizeType;
             public uint SubTypeTag;
-            public Func<INeuroSync, object, object> Sync;
+            public Func<INeuroSync, uint, object, object> Sync;
         }
     }
 
@@ -193,16 +193,21 @@ namespace Ninjadini.Neuro.Sync
             NeuroSyncTypes.TryRegisterAssemblyOf<T>();
         }
 
+        // this is called via reflection
         internal static NeuroSyncTypes.TypeInfo GetTypeInfo()
         {
-            if (SizeType == NeuroConstants.ChildWithType)
+            if (!NeuroSyncTypes.Exists<T>())
             {
-                var tag = NeuroSyncSubTypes<T>.GetTag(typeof(T));
+                NeuroSyncTypes.TryRegisterAssemblyOf<T>();
+            }
+            if (SizeType == NeuroConstants.ChildWithType || NeuroSyncSubTypes<T>.Exists())
+            {
+                var thisTag = NeuroSyncSubTypes<T>.GetTag(typeof(T));
                 return new NeuroSyncTypes.TypeInfo()
                 {
                     SizeType = SizeType,
-                    SubTypeTag = tag,
-                    Sync = (neuro, input) =>
+                    SubTypeTag = thisTag,
+                    Sync = (neuro, tag, input) =>
                     {
                         var output = (T)input;
                         NeuroSyncSubTypes<T>.Sync(neuro, tag, ref output);
@@ -215,7 +220,7 @@ namespace Ninjadini.Neuro.Sync
                 return new NeuroSyncTypes.TypeInfo()
                 {
                     SizeType = SizeType,
-                    Sync = (neuro, input) =>
+                    Sync = (neuro, tag, input) =>
                     {
                         var output = (T)input;
                         Delegate(neuro, ref output);

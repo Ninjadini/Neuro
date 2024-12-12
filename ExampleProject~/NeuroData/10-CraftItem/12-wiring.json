@@ -1,0 +1,11 @@
+{
+    "Name": "Wiring",
+    "CraftOutputCount": 2,
+    "RequiredItems": [
+        {
+            "Item": "6:metal_ore",
+            "Amount": 1
+        }
+    ],
+    "CraftDuration": 180000
+}

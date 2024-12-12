@@ -3,7 +3,7 @@ using Ninjadini.Neuro;
 using UnityEngine;
 
 [NeuroGlobalType(302)]
-[DisplayName("MyTestRef (custom name via attribute)")]
+[DisplayName("MassiveTable: MyTestRef (custom name via attribute)")]
 public class MyTestRef : Referencable
 {
     [Neuro(6)] public Vector3 UnityVector3;

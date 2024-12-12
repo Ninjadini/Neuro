@@ -22,6 +22,6 @@ namespace Ninjadini.Neuro
             Test((T)valueToTest, context);
         }
         
-        void Test(T referencable, NeuroContentValidatorContext context);
+        void Test(T valueToTest, NeuroContentValidatorContext context);
     }
 }

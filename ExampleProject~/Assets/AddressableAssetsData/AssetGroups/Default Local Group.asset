@@ -15,8 +15,53 @@ MonoBehaviour:
   m_GroupName: Default Local Group
   m_GUID: ee9d1fa142d974227ad06c9cee5ad27c
   m_SerializeEntries:
-  - m_GUID: 8000c945380784ed3beca01fcea1ce25
-    m_Address: Assets/Textures/station-basicresources.jpg
+  - m_GUID: 0787edcbf5e554a9baec99b479929c42
+    m_Address: Assets/Textures/stones.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 14a2ec5fd0da0480f838a8923072ec69
+    m_Address: Assets/Textures/woodlog.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1c6a90b661fd245a9a0e7559b23a274d
+    m_Address: Assets/Textures/woodstone.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 33eca15f6ac034baab2f31e343408122
+    m_Address: Assets/Textures/bricks.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6b67265dc08cf4ebfb5a41af93f49b8e
+    m_Address: Assets/Textures/blankslot.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7bdb5414937e94e5384d40656b3d48ad
+    m_Address: Assets/Textures/smelting.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ad629778dfb8b438faac85f32f7f41ac
+    m_Address: Assets/Textures/rope.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cc0cafc43373240ce92ca3791c27b635
+    m_Address: Assets/Textures/spaceship.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: db44826af436f4521953961e5622c220
+    m_Address: Assets/Textures/fiber.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e7e7b2ef7fa2e402d97f2c94b50e9b7f
+    m_Address: Assets/Textures/stonemason.png
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

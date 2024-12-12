@@ -1,0 +1,14 @@
+{
+    "Name": "Control Panel",
+    "RequiredItems": [
+        {
+            "Item": "13:battery",
+            "Amount": 1
+        },
+        {
+            "Item": "8:nails",
+            "Amount": 2
+        }
+    ],
+    "CraftDuration": 300000
+}

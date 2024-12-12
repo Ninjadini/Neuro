@@ -79,7 +79,6 @@ namespace Ninjadini.Neuro.Editor
             
             var reloadBtn = NeuroUiUtils.AddButton(topBar, "↻", () =>
             {
-                //EditorUtility.RequestScriptReload();
                 dataProvider_.Reload();
                 OnUpdate();
             });
@@ -135,10 +134,10 @@ namespace Ninjadini.Neuro.Editor
             reloadPanel.style.justifyContent = Justify.Center;
             reloadPanel.style.backgroundColor = new Color(0.5f, 0.1f, 0.05f, 1f);
             reloadPanel.style.display = DisplayStyle.None;
+            reloadPanel.style.flexShrink = 0f;
             NeuroUiUtils.AddLabel(reloadPanel, "File changes or problems detected");
             NeuroUiUtils.AddButton(reloadPanel, "Reload", () =>
             {
-                //EditorUtility.RequestScriptReload();
                 dataProvider_.Reload();
                 UpdateSelectedItem();
             });

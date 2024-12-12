@@ -31,23 +31,13 @@ namespace Ninjadini.Neuro
 
         public void Read<T>(in BytesChunk bytesChunk, ref T result,  in ReaderOptions opts = default)
         {
+            if (typeof(T) == typeof(object))
+            {
+                throw NeuroJsonReader.GetErrorAboutGlobalTypes("bytes");
+            }
             if (bytesChunk.Length == 0)
             {
                 result = default;
-                return;
-            }
-            if (typeof(T) == typeof(object))
-            {
-                object obj = result;
-                ReadGlobalTyped(bytesChunk, ref obj, opts);
-                if (obj != null)
-                {
-                    result = (T)obj;
-                }
-                else
-                {
-                    result = default;
-                }
                 return;
             }
             proto.Set(bytesChunk);
@@ -75,68 +65,43 @@ namespace Ninjadini.Neuro
             proto.Set(Array.Empty<byte>());
         }
 
-        /// WARNING: THIS IS SLOW due to needing reflection and allocation
-        public object Read(in BytesChunk bytesChunk, Type type, in ReaderOptions opts = default)
+        /// This is a bit slower as it needs to use reflection once.
+        public object ReadObject(in BytesChunk bytesChunk, Type type, in ReaderOptions opts = default)
         {
-            proto.Set(bytesChunk);
-            options = opts;
-#pragma warning disable CS0162 // Unreachable code detected
-            if (false)
-            {
-                _ReadByReflection<object>();
-                // ^ This is just a cheap way to try preserve the method in Unity.
-            }
-#pragma warning restore CS0162 // Unreachable code detected
-            var method = GetType().GetMethod("_ReadByReflection",  BindingFlags.Instance | BindingFlags.NonPublic);
-            var genericMethod = method.MakeGenericMethod(type);
-            return genericMethod.Invoke(this, Array.Empty<object>());
-        }
-
-        object _ReadByReflection<T>()
-        {
-            var result = default(T);
-            var chunk = proto.GetCurrentBytesChunk();
-            chunk.Length = proto.Available;
-            Read(chunk, ref result, options);
+            object result = null;
+            ReadObject(bytesChunk, type, ref result, opts);
             return result;
         }
-
-        public object ReadGlobalTyped(Type type, in BytesChunk bytesChunk, in ReaderOptions opts)
+        
+        /// This is a bit slower as it needs to use reflection once.
+        public void ReadObject(in BytesChunk bytesChunk, Type type, ref object resultTarget, in ReaderOptions opts = default)
         {
-            var typeId = NeuroGlobalTypes.GetIdByType(type);
-            if (typeId == 0)
-            {
-                if (type.IsDefined(typeof(NeuroGlobalTypeAttribute), true))
-                {
-                    throw new Exception($"Type {type} is not registered yet.");
-                }
-                else
-                {
-                    throw new Exception($"Type {type.FullName} does not have NeuroGlobalType attribute. it can not be read via non generic Read method. Use Read<T>() instead.");
-                }
-            }
-            
-            object result = null;
             proto.Set(bytesChunk);
             options = opts;
             nextKey = 0;
             
+            NeuroSyncTypes.TryRegisterAssembly(type.Assembly);
+            
+            var typeInfo = NeuroSyncTypes.GetTypeInfo(type);
             var sizeType = proto.ReadUint() & NeuroConstants.HeaderMask;
             if (sizeType == NeuroConstants.ChildWithType)
             {
                 var tag = proto.ReadUint();
-                NeuroGlobalTypes.Sync(typeId, this, tag, ref result);
+                resultTarget = typeInfo.Sync(this, tag, resultTarget);
             }
             else if (sizeType == NeuroConstants.Child)
             {
-                NeuroGlobalTypes.Sync(typeId, this, 0, ref result);
+                resultTarget = typeInfo.Sync(this, 0, resultTarget);
             }
-            if (proto.Available > 1) // 1 byte left is fine, thats the group end tag.
+            else
+            {
+                throw new Exception("Invalid type " + sizeType);
+            }
+            if (proto.Available > 1) // 1 byte left is fine, that's the group end tag.
             {
                 throw new System.Exception($"Did not reach end of stream, {proto.Available} bytes left.");
             }
             proto.Set(Array.Empty<byte>());
-            return result;
         }
         
         public object ReadGlobalTyped(in BytesChunk bytesChunk, in ReaderOptions opts = default)
@@ -173,46 +138,39 @@ namespace Ninjadini.Neuro
             proto.Set(Array.Empty<byte>());
         }
 
-        public List<object> ReadGlobalTypedList(BytesChunk bytesChunk, ReaderOptions opts)
+        public object ReadGlobalTypeChild(Type type, in BytesChunk bytesChunk, in ReaderOptions opts)
         {
+            var typeId = NeuroGlobalTypes.GetIdByType(type);
+            if (typeId == 0)
+            {
+                if (type.IsDefined(typeof(NeuroGlobalTypeAttribute), true))
+                {
+                    throw new Exception($"Type {type} is not registered yet.");
+                }
+                else
+                {
+                    throw new Exception($"Type {type.FullName} does not have NeuroGlobalType attribute. it can not be read via non generic Read method. Use Read<T>() instead.");
+                }
+            }
+            
+            object result = null;
             proto.Set(bytesChunk);
             options = opts;
             nextKey = 0;
-            var result = new List<object>();
-
-            while (proto.Available > 1)
+            
+            var sizeType = proto.ReadUint() & NeuroConstants.HeaderMask;
+            if (sizeType == NeuroConstants.ChildWithType)
             {
-                nextHeader = proto.ReadUint();
-                if ((nextHeader & NeuroConstants.HeaderMask) != NeuroConstants.VarInt)
-                {
-                    throw new Exception("Invalid header " + nextHeader);
-                }
-                var globalId = proto.ReadUint();
-                if (!NeuroGlobalTypes.TypeIdExists(globalId))
-                {
-                    throw new NotImplementedException( $"Global id {globalId} isn't registered (this could be due to code stripping). Need ability to skip + report problems");
-                    //continue;
-                }
-                nextHeader = proto.ReadUint();
-                if ((nextHeader & NeuroConstants.HeaderMask) != NeuroConstants.ChildWithType)
-                {
-                    throw new Exception("Invalid header " + nextHeader);
-                }
-                var countLeft = 1u;
-                if ((nextHeader & NeuroConstants.HeaderMask) != 0)
-                {
-                    countLeft = proto.ReadUint();
-                }
-                while (countLeft > 0)
-                {
-                    countLeft--;
-                    nextKey = 0;
-                    var tag = proto.ReadUint();
-                    object item = null;
-                    NeuroGlobalTypes.Sync(globalId, this, tag, ref item);
-                    SeekKey(uint.MaxValue);
-                    result.Add(item);
-                }
+                var tag = proto.ReadUint();
+                NeuroGlobalTypes.Sync(typeId, this, tag, ref result);
+            }
+            else if (sizeType == NeuroConstants.Child)
+            {
+                NeuroGlobalTypes.Sync(typeId, this, 0, ref result);
+            }
+            if (proto.Available > 1) // 1 byte left is fine, thats the group end tag.
+            {
+                throw new System.Exception($"Did not reach end of stream, {proto.Available} bytes left.");
             }
             proto.Set(Array.Empty<byte>());
             return result;
@@ -273,7 +231,7 @@ namespace Ninjadini.Neuro
                 {
                     return data;
                 }
-                var obj = (IReferencable)reader.ReadGlobalTyped(type, contentByteChunk, reader.Options);
+                var obj = (IReferencable)reader.ReadGlobalTypeChild(type, contentByteChunk, reader.Options);
                 obj.RefId = refId;
                 obj.RefName = GetRefName(refId);
                 contentByteChunk.Bytes = null;
@@ -296,7 +254,6 @@ namespace Ninjadini.Neuro
                 return _refName;
             }
         }
-        
 
         T INeuroSync.GetPooled<T>()
         {

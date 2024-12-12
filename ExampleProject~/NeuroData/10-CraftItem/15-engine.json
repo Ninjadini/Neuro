@@ -1,0 +1,10 @@
+{
+    "Name": "Engine",
+    "RequiredItems": [
+        {
+            "Item": "7:metal_bar",
+            "Amount": 3
+        }
+    ],
+    "CraftDuration": 360000
+}

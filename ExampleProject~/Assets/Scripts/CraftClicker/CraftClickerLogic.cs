@@ -3,18 +3,23 @@ using System.Collections.Generic;
 using Ninjadini.Neuro;
 using UnityEngine;
 
+[RequireComponent(typeof(LocalNeuroContinuousSave))]
 public class CraftClickerLogic : MonoBehaviour
 {
-    [SerializeField] LocalNeuroContinuousSave saves;
+    LocalNeuroContinuousSave _saves;
     
-    CraftClickerSaveData Data => saves.GetData<CraftClickerSaveData>();
+    CraftClickerSaveData Data => _saves.GetData<CraftClickerSaveData>();
+
+    public DateTime LastSaveTime => Data.LastSaveTime;
 
     void Start()
     {
+        _saves = GetComponent<LocalNeuroContinuousSave>();
+        
         //optional...
         var settings = NeuroDataProvider.GetSharedSingleton<CraftClickerSettings>();
-        saves.SetSaveFileName(settings.SaveFileName);
-        saves.SetCustomCreationFunction(() => new CraftClickerSaveData()
+        _saves.SetSaveFileName(settings.SaveFileName);
+        _saves.SetCustomCreationFunction(() => new CraftClickerSaveData()
         {
             Guid = Guid.NewGuid(),
             CreationTime = GetTime()
@@ -58,8 +63,8 @@ public class CraftClickerLogic : MonoBehaviour
 
     void Save()
     {
-        Data.LastSaveTime = DateTime.Now;
-        saves.DelayedSave(2f);
+        Data.LastSaveTime = GetTime();
+        _saves.DelayedSave(2f);
     }
 
     void AddOwnedCount(Reference<CraftItem> item, int amount)
@@ -121,7 +126,8 @@ public class CraftClickerLogic : MonoBehaviour
     
     DateTime GetTime()
     {
-        return DateTime.UtcNow;
+        return DateTime.UtcNow
+            .StripMicroSeconds(); // the micro second is dropped by neuro so just to be consistent we strip at logic too.
     }
 
     public int GetOwnedCount(Reference<CraftItem> item)
@@ -129,7 +135,7 @@ public class CraftClickerLogic : MonoBehaviour
         return GetOwned(item)?.Amount ?? 0;
     }
 
-    public OwnedCraftItem GetOwned(Reference<CraftItem> item)
+    OwnedCraftItem GetOwned(Reference<CraftItem> item)
     {
         Data.OwnedItems.TryGetValue(item, out var result);
         return result;

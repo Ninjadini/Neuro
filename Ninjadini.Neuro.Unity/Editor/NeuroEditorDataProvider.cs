@@ -73,6 +73,11 @@ namespace Ninjadini.Neuro.Editor
             }
         }
 
+        public void FullScriptReload()
+        {
+            EditorUtility.RequestScriptReload();
+        }
+
         void LoadFromProject()
         {
             HadProblemsLoading = false;
@@ -228,6 +233,11 @@ namespace Ninjadini.Neuro.Editor
             }
         }
 
+        public NeuroDataFile Find(IReferencable referencable)
+        {
+            return referencable == null ? null : Find(referencable.GetType(), referencable.RefId);
+        }
+
         public NeuroDataFile Find(Type type, uint id)
         {
             type = NeuroReferences.GetRootReferencable(type);
@@ -363,7 +373,7 @@ namespace Ninjadini.Neuro.Editor
                 {
                     Directory.CreateDirectory(dir);
                 }
-                var json = jsonWriter.Write(value, refs:References, options:NeuroJsonWriter.Options.ExcludeTopLevelGlobalType);
+                var json = jsonWriter.WriteObject(value, refs:References, options:NeuroJsonWriter.Options.ExcludeTopLevelGlobalType);
                 AddTempIgnoreFile(dataFile.FilePath);
                 File.WriteAllText(dataFile.FilePath, json);
             }
@@ -485,8 +495,7 @@ namespace Ninjadini.Neuro.Editor
                 {
                     stringBuilder.Append(",\n");
                 }
-                var localRef = (object)referencable;
-                jsonWriter.WriteTo(stringBuilder, ref localRef, References);
+                jsonWriter.WriteGlobalTypedTo(stringBuilder, referencable, References);
             }
             stringBuilder.Append("\n]");
 

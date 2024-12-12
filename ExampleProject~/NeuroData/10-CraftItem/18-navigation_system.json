@@ -1,0 +1,10 @@
+{
+    "Name": "Navigation System",
+    "RequiredItems": [
+        {
+            "Item": "14:control_panel",
+            "Amount": 1
+        }
+    ],
+    "CraftDuration": 1800000
+}

@@ -1,0 +1,11 @@
+{
+    "Name": "Metal Bar",
+    "CraftOutputCount": 2,
+    "RequiredItems": [
+        {
+            "Item": "6:metal_ore",
+            "Amount": 2
+        }
+    ],
+    "CraftDuration": 20000
+}

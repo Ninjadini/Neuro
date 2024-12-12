@@ -5,7 +5,6 @@ namespace Ninjadini.Neuro.Sync
     public static class NeuroConstants
     {
         // skipType: [varInt, length+body, groupStart/End, typedGroupStart]
-        // isRepeated: [false, true]
         
         // int =     varInt, false, 1
         // string =     length, false, 1
@@ -15,8 +14,6 @@ namespace Ninjadini.Neuro.Sync
         public const int CollectionTypeHeaderMask = 1 | 1 << 1 | 1 << 2;
         public const int CollectionHasNullMask = 1 << 3;
         public const uint HeaderMask = 0xF;//1 | 1 << 1 | 1 << 2 | 1 << 3; // binary: 0000 1111
-
-        public static uint RepeatedMask => throw new Exception();
 
         public const uint VarInt = (uint)FieldSizeType.VarInt; 
         public const uint Fixed32 = (uint)FieldSizeType.Fixed32;

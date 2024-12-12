@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 09d92b446faf4990a154dace0ad771aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ShowDialogOnDataFileChange: 0
-  BakeAutoTypeRegistryForBuild: 1
+  PrimaryDataPath: NeuroData
   BakeDataResourcesForBuild: 1
   ResourcesDir: Assets/Resources/
-  PrimaryDataPath: NeuroData
   LogTimings: 0
+  ShowDialogOnDataFileChange: 0
   UndoRedosEnabled: 0
+  BakeAutoTypeRegistryForBuild: 1
   ClassSettings: []

@@ -1,0 +1,10 @@
+{
+    "Name": "Advanced Workshop",
+    "CraftItems": [
+        "16:steel_plate",
+        "17:glass",
+        "18:navigation_system",
+        "19:fuel_tank",
+        "20:spaceship_frame"
+    ]
+}

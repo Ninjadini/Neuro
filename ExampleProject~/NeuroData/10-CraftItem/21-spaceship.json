@@ -1,0 +1,19 @@
+{
+    "Name": "Spaceship",
+    "Icon": "cc0cafc43373240ce92ca3791c27b635",
+    "RequiredItems": [
+        {
+            "Item": "18:navigation_system",
+            "Amount": 1
+        },
+        {
+            "Item": "19:fuel_tank",
+            "Amount": 1
+        },
+        {
+            "Item": "20:spaceship_frame",
+            "Amount": 1
+        }
+    ],
+    "CraftDuration": 3600000
+}

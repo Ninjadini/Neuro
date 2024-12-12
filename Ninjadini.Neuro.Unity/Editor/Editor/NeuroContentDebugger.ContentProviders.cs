@@ -86,7 +86,7 @@ namespace Ninjadini.Neuro.Editor
             void OnRevealClicked()
             {
                 var path = GetPath();
-                RevealFileOrDirInFinder(path);
+                NeuroUiUtils.RevealFileOrDirInFinder(path);
             }
 
             public override byte[] Load()
@@ -150,7 +150,7 @@ namespace Ninjadini.Neuro.Editor
 
             void OnRevealClicked()
             {
-                RevealFileOrDirInFinder(GetPath(GetFileName()));
+                NeuroUiUtils.RevealFileOrDirInFinder(GetPath(GetFileName()));
             }
 
             public override byte[] Load()
@@ -259,32 +259,6 @@ namespace Ninjadini.Neuro.Editor
             public override void Delete()
             {
                 _txtField.value = "";
-            }
-        }
-
-        public static void RevealFileOrDirInFinder(string file)
-        {
-            if (File.Exists(file))
-            {
-                EditorUtility.RevealInFinder(file);
-            }
-            else
-            {
-                var dir = Path.GetDirectoryName(file);
-                var attempts = 0;
-                while (!string.IsNullOrEmpty(dir) && attempts < 10)
-                {
-                    attempts++;
-                    if (Directory.Exists(dir))
-                    {
-                        EditorUtility.OpenWithDefaultApp(dir);
-                        break;
-                    }
-                    else
-                    {
-                        dir = Path.GetDirectoryName(dir);
-                    }
-                }
             }
         }
     }

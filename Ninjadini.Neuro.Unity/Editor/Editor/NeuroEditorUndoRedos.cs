@@ -49,7 +49,7 @@ namespace Ninjadini.Neuro.Editor
             }
             
             var type = dataFile.Value.GetType();
-            var json = NeuroEditorDataProvider.Shared.jsonWriter.Write((object)dataFile.Value, refs:NeuroEditorDataProvider.SharedReferences, options:NeuroJsonWriter.Options.ExcludeTopLevelGlobalType);
+            var json = NeuroEditorDataProvider.Shared.jsonWriter.WriteObject((object)dataFile.Value, refs:NeuroEditorDataProvider.SharedReferences, options:NeuroJsonWriter.Options.ExcludeTopLevelGlobalType);
 
             var instance = Instance;
             
@@ -81,13 +81,13 @@ namespace Ninjadini.Neuro.Editor
                     if (item != null)
                     {
                         var value = (object)item.Value;
-                        NeuroEditorDataProvider.Shared.jsonReader.Read(undoData.json, type, ref value);
+                        NeuroEditorDataProvider.Shared.jsonReader.ReadObject(undoData.json, type, ref value);
                         SelectWindowAfterUndo(type);
 
                     }
                     else if (undoData.type == UndoType.Delete)
                     {
-                        if (NeuroEditorDataProvider.Shared.jsonReader.Read(undoData.json, type) is IReferencable value)
+                        if (NeuroEditorDataProvider.Shared.jsonReader.ReadObject(undoData.json, type) is IReferencable value)
                         {
                             NeuroEditorDataProvider.Shared.Add(value);
                             SelectWindowAfterUndo(type);

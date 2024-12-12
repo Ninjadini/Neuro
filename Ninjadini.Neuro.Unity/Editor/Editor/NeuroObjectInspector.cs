@@ -48,7 +48,7 @@ namespace Ninjadini.Neuro.Editor
                 idBefore = referencable.RefId;
                 try
                 {
-                    writer.Write((object)drawnObj);
+                    writer.WriteObject((object)drawnObj);
                 }
                 catch (Exception e)
                 {
@@ -177,7 +177,7 @@ namespace Ninjadini.Neuro.Editor
                 }
                 try
                 {
-                    writer.Write(drawnObj);
+                    writer.WriteObject(drawnObj);
                 }
                 catch (Exception e)
                 {
@@ -235,7 +235,7 @@ namespace Ninjadini.Neuro.Editor
             {
                 return newObj;
             }
-            var json = new NeuroJsonWriter().Write(originalObject, references, NeuroJsonWriter.Options.TagValuesOnly);
+            var json = new NeuroJsonWriter().WriteObject(originalObject, references, NeuroJsonWriter.Options.TagValuesOnly);
             var jsonVisitor = new NeuroJsonTokenizer();
             var nodes = jsonVisitor.Visit(json);
             var currentParent = nodes.Array[0].Parent;
@@ -249,7 +249,7 @@ namespace Ninjadini.Neuro.Editor
                        + typeId
                        +json.Substring(subTypeNode.Value.End);
             }
-            new NeuroJsonReader().Read(json, newType, ref newObj);
+            new NeuroJsonReader().ReadObject(json, newObj.GetType(), ref newObj);
             return newObj;
         }
 

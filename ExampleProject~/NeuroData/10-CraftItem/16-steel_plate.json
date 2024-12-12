@@ -1,0 +1,11 @@
+{
+    "Name": "Steel Plate",
+    "CraftOutputCount": 2,
+    "RequiredItems": [
+        {
+            "Item": "7:metal_bar",
+            "Amount": 2
+        }
+    ],
+    "CraftDuration": 720000
+}

@@ -1,0 +1,11 @@
+{
+    "Name": "Nails",
+    "CraftOutputCount": 3,
+    "RequiredItems": [
+        {
+            "Item": "7:metal_bar",
+            "Amount": 1
+        }
+    ],
+    "CraftDuration": 30000
+}

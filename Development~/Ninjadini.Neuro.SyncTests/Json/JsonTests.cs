@@ -125,7 +125,7 @@ namespace Ninjadini.Neuro.SyncTests
 
             Assert.AreEqual("{\n    \"-globalType\": \"11:ReferencableClass\",\n    \"Name\": \"HELLO\"\n}", json);
             
-            var copy = NeuroJsonReader.Shared.Read<object>(json, new ReaderOptions()) as ReferencableClass;
+            var copy = NeuroJsonReader.Shared.ReadGlobalTyped(json, new ReaderOptions()) as ReferencableClass;
             Assert.AreEqual(obj.Name, copy.Name);
         }
         
@@ -142,7 +142,7 @@ namespace Ninjadini.Neuro.SyncTests
             var json = NeuroJsonWriter.Shared.WriteGlobalTyped(globalTyped);
             Console.WriteLine(json);
 
-            var copy = NeuroJsonReader.Shared.Read<object>(json, new ReaderOptions()) as SubTestClass1;
+            var copy = NeuroJsonReader.Shared.ReadGlobalTyped(json, new ReaderOptions()) as SubTestClass1;
             Assert.AreEqual(obj.Id, copy.Id);
             Assert.AreEqual(obj.Name, copy.Name);
             Assert.AreEqual(obj.NumValue, copy.NumValue);

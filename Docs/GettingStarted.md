@@ -1,7 +1,7 @@
 # Getting started
 
 See walkthrough video here:  
-https://youtu.be/Q1vYjQ9l3rQ
+https://youtu.be/mW4FcFQ-ui8
 
 ### Import to your Unity project
 - Requires Unity 2022 or higher
@@ -9,10 +9,13 @@ https://youtu.be/Q1vYjQ9l3rQ
 - Enter `https://github.com/Ninjadini/Neuro.git` for latest.
 > [!TIP]
 > To target a specific tag / release - to be safe from surprise API changes, use this format:  
-`https://github.com/Ninjadini/Neuro.git#v0.1.0`
+`https://github.com/Ninjadini/Neuro.git#v0.1.1`
 
 ### Your first Neuro reference type
-They are essentially your ScriptableObjects that hold some config data
+They are essentially your ScriptableObjects that hold some config data.  
+You can reference these items from other places via Reference<T> type - similar to linking objects in Unity, e.g. linking a Material to a Renderer's material field.  
+Each reference has a RefId (uint) which is unique, and a RefName (string) which does not need to be unique.  
+RefId number is what's used to link to the references.
 ```
 using Ninjadini.Neuro;
 using System.Collections.Generic;

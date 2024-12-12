@@ -36,7 +36,7 @@ namespace Ninjadini.Neuro
             }
             if (typeof(T) == typeof(object))
             {
-                return WriteGlobalTyped(value);
+                throw NeuroJsonWriter.GetErrorAboutGlobalTypes(value.GetType());
             }
             proto.Position = 0;
             lastKey = 0;
@@ -58,7 +58,7 @@ namespace Ninjadini.Neuro
         }
 
         /// This is a bit slower as it needs to use reflection once.
-        public ReadOnlySpan<byte> Write(object value)
+        public ReadOnlySpan<byte> WriteObject(object value)
         {
             if (value == null)
             {
@@ -71,11 +71,11 @@ namespace Ninjadini.Neuro
             var typeInfo = NeuroSyncTypes.GetTypeInfo(type);
             
             proto.Write(1 << NeuroConstants.HeaderShift | typeInfo.SizeType);
-            if (typeInfo.SizeType == NeuroConstants.ChildWithType && typeInfo.SubTypeTag != 0)
+            if (typeInfo.SizeType == NeuroConstants.ChildWithType)
             {
                 proto.Write(typeInfo.SubTypeTag);
             }
-            typeInfo.Sync(this, value);
+            typeInfo.Sync(this, typeInfo.SubTypeTag, value);
             proto.Write(NeuroConstants.EndOfChild);
             return new ReadOnlySpan<byte>(proto.Buffer, 0, proto.Position);
         }
@@ -88,54 +88,18 @@ namespace Ninjadini.Neuro
             {
                 return new ReadOnlySpan<byte>();
             }
-            return WriteGlobalTyped(MemoryMarshal.CreateSpan(ref value, 1));
-        }
-
-        public ReadOnlySpan<byte> WriteGlobalTyped(Span<object> values)
-        {
-            proto.Position = 0;
+            var type = value.GetType();
+            var globalId = NeuroGlobalTypes.GetTypeIdOrThrow(type, out _);
+            WriteHeader(lastKey + 1, NeuroConstants.VarInt);
+            proto.Write(globalId);
+            WriteHeader(lastKey + 1, NeuroConstants.ChildWithType);
+            var key = lastKey;
             lastKey = 0;
-            var length = values != null ? values.Length : 0;
-            if (length == 0)
-            {
-                return new ReadOnlySpan<byte>();
-            }
-            for (var index = 0; index < length; index++)
-            {
-                var type = values[index].GetType();
-                var count = 1;
-                var globalId = NeuroGlobalTypes.GetTypeIdOrThrow(type, out _);
-                for (var i = index + 1; i < length; i++)
-                {
-                    if (NeuroGlobalTypes.GetTypeIdOrThrow(values[i].GetType(), out _) != globalId)
-                    {
-                        break;
-                    }
-                    count++;
-                }
-                WriteHeader(lastKey + 1, NeuroConstants.VarInt);
-                proto.Write(globalId);
-                var repeatedMask = count > 1 ? NeuroConstants.RepeatedMask : 0u;
-                WriteHeader(lastKey + 1, NeuroConstants.ChildWithType | repeatedMask);
-                if (repeatedMask != 0)
-                {
-                    proto.Write((uint)count);
-                }
-                var key = lastKey;
-                var endIndex = index + count;
-                while(index < endIndex)
-                {
-                    lastKey = 0;
-                    var subValue = values[index];
-                    var subTag = NeuroGlobalTypes.GetSubTypeTagOrThrow(subValue.GetType());
-                    proto.Write(subTag);
-                    NeuroGlobalTypes.Sync(globalId, this, subTag, ref subValue);
-                    proto.Write(NeuroConstants.EndOfChild);
-                    index++;
-                }
-                lastKey = key;
-            }
-
+            var subTag = NeuroGlobalTypes.GetSubTypeTagOrThrow(type);
+            proto.Write(subTag);
+            NeuroGlobalTypes.Sync(globalId, this, subTag, ref value);
+            proto.Write(NeuroConstants.EndOfChild);
+            lastKey = key;
             return new ReadOnlySpan<byte>(proto.Buffer, 0, proto.Position);
         }
 

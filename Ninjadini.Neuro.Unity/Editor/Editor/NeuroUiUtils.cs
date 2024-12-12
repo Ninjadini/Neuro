@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -86,6 +87,33 @@ namespace Ninjadini.Neuro.Editor
             EditorUtility.DisplayDialog("", "Couldn't find MonoScript file for " + typeToSearch.Name+ "\nThis can happen if the name of the file does not match the name or there are multiple classes in the cs file.", "OK");
             return false;
         }
+
+        public static void RevealFileOrDirInFinder(string file)
+        {
+            if (File.Exists(file))
+            {
+                EditorUtility.RevealInFinder(file);
+            }
+            else
+            {
+                var dir = file;
+                var attempts = 0;
+                while (!string.IsNullOrEmpty(dir) && attempts < 10)
+                {
+                    attempts++;
+                    if (Directory.Exists(dir))
+                    {
+                        EditorUtility.OpenWithDefaultApp(dir);
+                        return;
+                    }
+                    else
+                    {
+                        dir = Path.GetDirectoryName(dir);
+                    }
+                }
+                EditorUtility.OpenWithDefaultApp("./");
+            }
+        }
         
         public static void SetPlaceholderText(TextField textField, string placeholder)
         {
@@ -124,6 +152,31 @@ namespace Ninjadini.Neuro.Editor
             if (lbl != null)
             {
                 lbl.style.display = string.IsNullOrEmpty(textField.text) ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+        }
+
+        public static void SetBorder(VisualElement element, Color color, float width = 1f, float radius = 3f, bool addPadding = true)
+        {
+            element.style.borderBottomColor = color;
+            element.style.borderLeftColor = color;
+            element.style.borderRightColor = color;
+            element.style.borderTopColor = color;
+            element.style.borderBottomWidth = width;
+            element.style.borderLeftWidth = width;
+            element.style.borderRightWidth = width;
+            element.style.borderTopWidth = width;
+            element.style.borderBottomLeftRadius = radius;
+            element.style.borderBottomRightRadius = radius;
+            element.style.borderTopLeftRadius = radius;
+            element.style.borderTopRightRadius = radius;
+            if (addPadding)
+            {
+                element.style.paddingTop = 2f;
+                element.style.paddingBottom = 2f;
+                element.style.marginBottom = 5f;
+                element.style.marginLeft = 3f;
+                element.style.marginRight = 3f;
+                element.style.marginTop = 5f;
             }
         }
     }

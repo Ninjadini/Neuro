@@ -122,6 +122,24 @@ namespace Ninjadini.Neuro.Sync
 
         public static uint GetTypeIdOrThrow(Type type, out Type rootType)
         {
+            var result = GetTypeId(type, out rootType);
+            if (rootType != null)
+            {
+                return result;
+            }
+            if (NeuroSyncTypes.TryRegisterAssembly(type.Assembly))
+            {
+                result = GetTypeId(type, out rootType);
+                if (rootType != null)
+                {
+                    return result;
+                }
+            }
+            throw new Exception($"{type.FullName} is not registered to {nameof(NeuroGlobalTypes)}");
+        }
+        
+        static uint GetTypeId(Type type, out Type rootType)
+        {
             var baseType = type;
             while (baseType != null)
             {
@@ -132,7 +150,8 @@ namespace Ninjadini.Neuro.Sync
                 }
                 baseType = baseType.BaseType;
             }
-            throw new Exception($"{type.FullName} is not registered to {nameof(NeuroGlobalTypes)}");
+            rootType = null;
+            return 0u;
         }
 
         public static bool IsPossiblyGlobalType<T>()

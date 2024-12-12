@@ -1,0 +1,10 @@
+{
+    "Name": "Circuit Board",
+    "RequiredItems": [
+        {
+            "Item": "7:metal_bar",
+            "Amount": 1
+        }
+    ],
+    "CraftDuration": 120000
+}

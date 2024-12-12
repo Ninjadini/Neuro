@@ -28,54 +28,11 @@ namespace Ninjadini.Neuro
             NeuroDefaultJsonSyncTypes.Register();
         }
         
-        public object ReadGlobalTyped(string json, ReaderOptions opts = default)
-        {
-            object value = null;
-            Read(json, ref value, opts);
-            return value;
-        }
-        
         public T Read<T>(string json, ReaderOptions opts = default)
         {
             T value = default;
             Read(json, ref value, opts);
             return value;
-        }
-        
-        public object Read(string json, Type type, ReaderOptions opts = default)
-        {
-            options = opts;
-            jsonStr = json;
-            nodes = _jsonVisitor.Visit(json);
-            currentParent = nodes.Array[0].Parent;
-            NeuroSyncTypes.TryRegisterAssembly(type.Assembly);
-            var typeId = NeuroGlobalTypes.GetIdByType(type);
-            object globalResult = null;
-            var subTypeNode = FindNode(NeuroJsonWriter.FieldName_ClassTag);
-            var tag = GetFirstUintPart(subTypeNode.Value);
-            if (typeId == 0)
-            {
-                var typeInfo = NeuroSyncTypes.GetTypeInfo(type);
-                globalResult = typeInfo.Sync(this, null);
-            }
-            else
-            {
-                NeuroGlobalTypes.Sync(typeId, this, tag, ref globalResult);
-            }
-            return globalResult;
-        }
-        
-        public void Read(string json, Type type, ref object resultTarget, ReaderOptions opts = default)
-        {
-            options = opts;
-            jsonStr = json;
-            nodes = _jsonVisitor.Visit(json);
-            currentParent = nodes.Array[0].Parent;
-            NeuroSyncTypes.TryRegisterAssembly(type.Assembly);
-            var typeId = NeuroGlobalTypes.GetIdByType(type);
-            var subTypeNode = FindNode(NeuroJsonWriter.FieldName_ClassTag);
-            var tag = GetFirstUintPart(subTypeNode.Value);
-            NeuroGlobalTypes.Sync(typeId, this, tag, ref resultTarget);
         }
 
         public void Read<T>(string json, ref T result, ReaderOptions opts = default)
@@ -88,32 +45,62 @@ namespace Ninjadini.Neuro
             var subTypeNode = FindNode(NeuroJsonWriter.FieldName_ClassTag);
             if (typeof(T) == typeof(object))
             {
-                var globalTypeNode = FindNode(NeuroJsonWriter.FieldName_GlobalType);
-                if (globalTypeNode.Type != NeuroJsonTokenizer.NodeType.Unknown)
-                {
-                    var typeId = GetFirstUintPart(globalTypeNode.Value);
-                    object globalResult = result;
-                    var tag = GetFirstUintPart(subTypeNode.Value);
-                    NeuroGlobalTypes.Sync(typeId, this, tag, ref globalResult);
-                    result = (T)globalResult;
-                }
-                else
-                {
-                    throw new System.Exception(NoGlobalTypeIdFoundErrMsg);
-                }
+                throw GetErrorAboutGlobalTypes("json");
+            }
+            if (subTypeNode.Type != NeuroJsonTokenizer.NodeType.Unknown)
+            {
+                var tag = GetFirstUintPart(subTypeNode.Value);
+                NeuroSyncSubTypes<T>.Sync(this, tag, ref result);
             }
             else
             {
-                if (subTypeNode.Type != NeuroJsonTokenizer.NodeType.Unknown)
-                {
-                    var tag = GetFirstUintPart(subTypeNode.Value);
-                    NeuroSyncSubTypes<T>.Sync(this, tag, ref result);
-                }
-                else
-                {
-                    NeuroJsonSyncTypes<T>.GetOrThrow()(this, ref result);
-                }
+                NeuroJsonSyncTypes<T>.GetOrThrow()(this, ref result);
             }
+        }
+        
+        /// This is a bit slower as it needs to use reflection once.
+        public object ReadObject(string json, Type type, ReaderOptions opts = default)
+        {
+            object result = null;
+            ReadObject(json, type, ref result, opts);
+            return result;
+        }
+        
+        /// This is a bit slower as it needs to use reflection once.
+        public void ReadObject(string json, Type type, ref object resultTarget, ReaderOptions opts = default)
+        {
+            options = opts;
+            jsonStr = json;
+            nodes = _jsonVisitor.Visit(json);
+            currentParent = nodes.Array[0].Parent;
+            NeuroSyncTypes.TryRegisterAssembly(type.Assembly);
+            var subTypeNode = FindNode(NeuroJsonWriter.FieldName_ClassTag);
+            var tag = GetFirstUintPart(subTypeNode.Value);
+            var typeInfo = NeuroSyncTypes.GetTypeInfo(type);
+            resultTarget = typeInfo.Sync(this, tag, resultTarget);
+        }
+        
+        public object ReadGlobalTyped(string json, ReaderOptions opts = default)
+        {
+            object result = null;
+            options = opts;
+            jsonStr = json;
+            nodes = _jsonVisitor.Visit(json);
+            currentParent = nodes.Array[0].Parent;
+            NeuroSyncTypes.TryRegisterAllAssemblies();
+            var subTypeNode = FindNode(NeuroJsonWriter.FieldName_ClassTag);
+            var globalTypeNode = FindNode(NeuroJsonWriter.FieldName_GlobalType);
+            if (globalTypeNode.Type != NeuroJsonTokenizer.NodeType.Unknown)
+            {
+                var typeId = GetFirstUintPart(globalTypeNode.Value);
+                var tag = GetFirstUintPart(subTypeNode.Value);
+                NeuroGlobalTypes.Sync(typeId, this, tag, ref result);
+            }
+            else
+            {
+                throw new Exception(NoGlobalTypeIdFoundErrMsg);
+            }
+            return result;
         }
 
         T INeuroSync.GetPooled<T>()
@@ -528,6 +515,20 @@ namespace Ninjadini.Neuro
             }
             var endIndex = jsonStr.IndexOf(':', stringRange.Start, len);
             return uint.Parse(jsonStr.AsSpan(stringRange.Start, (endIndex > 0 ? endIndex : stringRange.End) - stringRange.Start));
+        }
+
+
+        internal static Exception GetErrorAboutGlobalTypes(string inputName)
+        {
+            var str = $"Read<object>({inputName}) call is ambiguous. Here are 3 alternative paths:";
+            
+            str += $"\n1. Try use the correct generic parameter for best efficiency, such as `Read<MyClassType>({inputName})`";
+            
+            str += $"\n2. If passing generic parameter is not possible, use `ReadObject({inputName}, <type>)` instead.";
+            
+            str += $"\n3. If you want to read global typed value, use `ReadGlobalTyped({inputName})`.";
+            
+            return new Exception(str);
         }
     }
 }

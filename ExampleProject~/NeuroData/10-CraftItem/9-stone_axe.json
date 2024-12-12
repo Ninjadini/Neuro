@@ -1,0 +1,15 @@
+{
+    "Name": "Stone Axe",
+    "CraftOutputCount": 2,
+    "RequiredItems": [
+        {
+            "Item": "3:rope",
+            "Amount": 1
+        },
+        {
+            "Item": "4:sharpened_stone",
+            "Amount": 2
+        }
+    ],
+    "CraftDuration": 40000
+}

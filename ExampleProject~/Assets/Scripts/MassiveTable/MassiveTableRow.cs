@@ -6,7 +6,8 @@ using UnityEngine;
 
 
 [NeuroGlobalType(300)]
-[DisplayName("MassiveTableRow[] Generate via Tools/Populate Massive Table")]
+[DisplayName("MassiveTable: items[] Generate via Tools/Populate Massive Table")]
+[Tooltip("This is an example of a reference item with lots of data. You can generate the test random data via Tools > Populate Massive Table.")]
 public partial class MassiveTableRow : IReferencable
 {
     [Neuro(1)] public int Int;

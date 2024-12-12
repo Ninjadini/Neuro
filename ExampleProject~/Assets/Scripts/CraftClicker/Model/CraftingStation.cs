@@ -5,14 +5,16 @@ using UnityEngine;
 
 [NeuroGlobalType(13)]
 [DisplayName("CraftClicker: Stations []")]
-public class CraftingStation : Referencable
+public class CraftingStation : Referencable, INeuroRefDropDownIconCustomizable
 {
-    [Neuro(1)] public string Name;
+    [Neuro(1)]
+    public string Name;
     
-    [AssetType(typeof(Texture2D))]
-    [Neuro(3)] public AssetAddress Icon;
+    [Neuro(3)] [AssetType(typeof(Texture2D))]
+    public AssetAddress Icon;
     
-    [Neuro(2)] public List<Reference<CraftItem>> CraftItems = new List<Reference<CraftItem>>();
+    [Neuro(2)] 
+    public readonly List<Reference<CraftItem>> CraftItems = new ();
     
     class Validator : INeuroContentValidator<CraftingStation>
     {
@@ -26,4 +28,11 @@ public class CraftingStation : Referencable
             }
         }
     }
+
+    string INeuroRefDropDownCustomizable.GetRefDropdownText(NeuroReferences references)
+    {
+        // this is so that we don't need to assign the RefName in editor and it'll still show the name.
+        return string.IsNullOrEmpty(RefName) ? $"{RefId} : {Name}" : null;
+    }
+    AssetAddress INeuroRefDropDownIconCustomizable.RefDropdownIcon => Icon;
 }

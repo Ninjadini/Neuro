@@ -81,7 +81,7 @@ namespace Ninjadini.Neuro.Editor
             }
 
             _srcProviderContent = new VisualElement();
-            SetBorder(_srcProviderContent, new Color(0.3f, 0.3f, 0.2f), 1f, 3f);
+            NeuroUiUtils.SetBorder(_srcProviderContent, new Color(0.3f, 0.3f, 0.2f));
             rootVisualElement.Add(_srcProviderContent);
 
             if (string.IsNullOrEmpty(typeName)) typeName = GlobalTypeDropDownName;
@@ -245,7 +245,7 @@ namespace Ninjadini.Neuro.Editor
                 }
                 else
                 {
-                    Show(NeuroEditorDataProvider.Shared.jsonReader.Read(json, type));
+                    Show(NeuroEditorDataProvider.Shared.jsonReader.ReadObject(json, type));
                 }
             }
             else if (srcFormat == Format.Binary)
@@ -256,7 +256,7 @@ namespace Ninjadini.Neuro.Editor
                 }
                 else
                 {
-                    Show(NeuroBytesReader.Shared.Read(bytes, type));
+                    Show(NeuroBytesReader.Shared.ReadObject(bytes, type));
                 }
             }
         }
@@ -282,7 +282,6 @@ namespace Ninjadini.Neuro.Editor
                     _debugDisplay.style.display = DisplayStyle.None;
                 }
                 _saveBtn.style.display = DisplayStyle.None;
-                _delBtn.style.display = DisplayStyle.None;
                 return;
             }
             if (_objectInspector == null)
@@ -293,7 +292,7 @@ namespace Ninjadini.Neuro.Editor
                 _objectInspector = new NeuroObjectInspector(NeuroEditorDataProvider.SharedReferences);
                 scrollView.Add(_objectInspector);
                 var border = new Color(0.3f, 0.35f, 0.3f);
-                SetBorder(_objectInspector, border, 2f, 5f);
+                NeuroUiUtils.SetBorder(_objectInspector, border, 2f, 5f);
                 _objectInspector.AnyValueChanged += OnAnyValueChanged;
                 
                 _debugDisplay = new NeuroItemDebugDisplay(NeuroEditorDataProvider.SharedReferences, () => _drawnObj, null);
@@ -307,7 +306,6 @@ namespace Ninjadini.Neuro.Editor
             _objectInspector.style.display = DisplayStyle.Flex;
             _debugDisplay.style.display = DisplayStyle.Flex;
             _saveBtn.style.display = DisplayStyle.Flex;
-            _delBtn.style.display = DisplayStyle.Flex;
             _objectInspector.Draw(new ObjectInspector.Data()
             {
                 getter = ()=>_drawnObj
@@ -319,28 +317,6 @@ namespace Ninjadini.Neuro.Editor
         void OnAnyValueChanged()
         {
             _debugDisplay?.Refresh();
-        }
-
-        static void SetBorder(VisualElement element, Color color, float width, float radius)
-        {
-            element.style.borderBottomColor = color;
-            element.style.borderLeftColor = color;
-            element.style.borderRightColor = color;
-            element.style.borderTopColor = color;
-            element.style.borderBottomWidth = width;
-            element.style.borderLeftWidth = width;
-            element.style.borderRightWidth = width;
-            element.style.borderTopWidth = width;
-            element.style.borderBottomLeftRadius = radius;
-            element.style.borderBottomRightRadius = radius;
-            element.style.borderTopLeftRadius = radius;
-            element.style.borderTopRightRadius = radius;
-            element.style.paddingTop = 2f;
-            element.style.paddingBottom = 2f;
-            element.style.marginBottom = 5f;
-            element.style.marginLeft = 3f;
-            element.style.marginRight = 3f;
-            element.style.marginTop = 5f;
         }
 
         void OnDeleteClicked()
@@ -377,7 +353,7 @@ namespace Ninjadini.Neuro.Editor
                     }
                     else
                     {
-                        json = NeuroEditorDataProvider.Shared.jsonWriter.Write(_drawnObj);
+                        json = NeuroEditorDataProvider.Shared.jsonWriter.WriteObject(_drawnObj);
                     }
                     bytes = Encoding.UTF8.GetBytes(json);
                 }
@@ -389,7 +365,7 @@ namespace Ninjadini.Neuro.Editor
                     }
                     else
                     {
-                        bytes = NeuroBytesWriter.Shared.Write(_drawnObj).ToArray();
+                        bytes = NeuroBytesWriter.Shared.WriteObject(_drawnObj).ToArray();
                     }
                 }
                 if (bytes != null)

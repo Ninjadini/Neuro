@@ -1,0 +1,11 @@
+{
+    "Name": "Wood Plank",
+    "CraftOutputCount": 3,
+    "RequiredItems": [
+        {
+            "Item": "1:wood",
+            "Amount": 3
+        }
+    ],
+    "CraftDuration": 5000
+}

@@ -56,11 +56,6 @@ namespace Ninjadini.Neuro
             defaultStringBuilder.Clear();
             return result;
         }
-
-        public string WriteGlobalTyped(object value, NeuroReferences refs = null, Options options = 0)
-        {
-            return Write<object>(value, refs, options);
-        }
         
         public void WriteTo<T>(StringBuilder strBuilder, ref T value, NeuroReferences refs = null, Options options = 0)
         {
@@ -73,7 +68,10 @@ namespace Ninjadini.Neuro
                 stringBuilder.Append("null");
                 return;
             }
-            var excludeTopLevelGlobalType = (options & Options.ExcludeTopLevelGlobalType) != 0;
+            if (typeof(T) == typeof(object))
+            {
+                throw GetErrorAboutGlobalTypes(value.GetType());
+            }
             opts = options & ~Options.ExcludeTopLevelGlobalType;
             references = refs ?? defaultReferences;
             stringBuilder = strBuilder;
@@ -82,29 +80,8 @@ namespace Ninjadini.Neuro
             NeuroSyncTypes<T>.TryAutoRegisterTypeOrThrow();
             
             var type = value.GetType();
-            var isGlobalType = typeof(T) == typeof(object);
-            uint globalId = 0;
-            if (!excludeTopLevelGlobalType && isGlobalType)
-            {
-                globalId = NeuroGlobalTypes.GetTypeIdOrThrow(type, out var rootType);
-                AppendSubTagAndOrName(FieldName_GlobalType, globalId, rootType.Name);
-            }
             var posAtStart = stringBuilder.Length;
-            if (isGlobalType)
-            {
-                if (globalId == 0)
-                {
-                    globalId = NeuroGlobalTypes.GetTypeIdOrThrow(type, out _);
-                }
-                var typedValue = (object)value;
-                var subTag = NeuroGlobalTypes.GetSubTypeTagOrThrow(type);
-                if (subTag > 0)
-                {
-                    AppendSubTagAndOrName(FieldName_ClassTag, subTag, type.Name);
-                }
-                NeuroGlobalTypes.Sync(globalId, this, subTag, ref typedValue);
-            }
-            else if (NeuroJsonSyncTypes<T>.SizeType == NeuroConstants.ChildWithType)
+            if (NeuroJsonSyncTypes<T>.SizeType == NeuroConstants.ChildWithType)
             {
                 var subTag = NeuroSyncSubTypes<T>.GetTag(type);
                 AppendSubTagAndOrName(FieldName_ClassTag, subTag, type.Name);
@@ -125,7 +102,7 @@ namespace Ninjadini.Neuro
         }
         
         /// This is a bit slower as it needs to use reflection once.
-        public string Write(object value, NeuroReferences refs = null, Options options = 0)
+        public string WriteObject(object value, NeuroReferences refs = null, Options options = 0)
         {
             if (defaultStringBuilder == null)
             {
@@ -135,14 +112,14 @@ namespace Ninjadini.Neuro
             {
                 defaultStringBuilder.Length = 0;
             }
-            WriteTo(defaultStringBuilder, value, refs, options);
+            WriteObjectTo(defaultStringBuilder, value, refs, options);
             var result = defaultStringBuilder.ToString();
             defaultStringBuilder.Clear();
             return result;
         }
         
         /// This is a bit slower as it needs to use reflection once.
-        public void WriteTo(StringBuilder strBuilder, object value, NeuroReferences refs = null, Options options = 0)
+        public void WriteObjectTo(StringBuilder strBuilder, object value, NeuroReferences refs = null, Options options = 0)
         {
             if (strBuilder == null)
             {
@@ -167,7 +144,64 @@ namespace Ninjadini.Neuro
             {
                 AppendSubTagAndOrName(FieldName_ClassTag, typeInfo.SubTypeTag, type.Name);
             }
-            typeInfo.Sync(this, value);
+            typeInfo.Sync(this, typeInfo.SubTypeTag, value);
+            if (stringBuilder.Length > posAtStart)
+            {
+                stringBuilder.Length -= 2;
+                stringBuilder.Append("\n");
+            }
+            stringBuilder.Append("}");
+            references = null;
+            stringBuilder = null;
+        }
+
+        public string WriteGlobalTyped(object value, NeuroReferences refs = null, Options options = 0)
+        {
+            if (defaultStringBuilder == null)
+            {
+                defaultStringBuilder = new StringBuilder();
+            }
+            else
+            {
+                defaultStringBuilder.Length = 0;
+            }
+            WriteGlobalTypedTo(defaultStringBuilder, value, refs, options);
+            var result = defaultStringBuilder.ToString();
+            defaultStringBuilder.Clear();
+            return result;
+        }
+
+        public void WriteGlobalTypedTo(StringBuilder strBuilder, object value, NeuroReferences refs = null, Options options = 0)
+        {
+            if (strBuilder == null)
+            {
+                return;
+            }
+            if (value == null)
+            {
+                strBuilder.Append("null");
+                return;
+            }
+            opts = options & ~Options.ExcludeTopLevelGlobalType;
+            references = refs ?? defaultReferences;
+            stringBuilder = strBuilder;
+            stringBuilder.Append("{\n");
+            numIndents = 1;
+            NeuroSyncTypes.TryRegisterAllAssemblies();
+            
+            var type = value.GetType();
+            var globalId = NeuroGlobalTypes.GetTypeIdOrThrow(type, out var rootType);
+            if ((options & Options.ExcludeTopLevelGlobalType) == 0)
+            {
+                AppendSubTagAndOrName(FieldName_GlobalType, globalId, rootType.Name);
+            }
+            var posAtStart = stringBuilder.Length;
+            var subTag = NeuroGlobalTypes.GetSubTypeTagOrThrow(type);
+            if (subTag > 0)
+            {
+                AppendSubTagAndOrName(FieldName_ClassTag, subTag, type.Name);
+            }
+            NeuroGlobalTypes.Sync(globalId, this, subTag, ref value);
             if (stringBuilder.Length > posAtStart)
             {
                 stringBuilder.Length -= 2;
@@ -538,6 +572,20 @@ namespace Ninjadini.Neuro
                 stringBuilder.Length--;
                 stringBuilder.AppendLine("},");
             }
+        }
+
+        internal static Exception GetErrorAboutGlobalTypes(Type typeHint)
+        {
+            var str = $"Write<object>(...) call is ambiguous. Here are 3 alternative paths:";
+            
+            var typeName = typeHint != null && typeHint != typeof(object) ? typeHint.Name : "MyClassType";
+            str += $"\n1. Try use the correct generic parameter for best efficiency, such as `Write<{typeName}>(value)`.";
+            
+            str += $"\n2. If passing generic parameter is not possible, use `WriteObject(value)` instead.";
+            
+            str += $"\n3. If you want to write global typed value, use `WriteGlobalTyped(value)`.";
+            
+            return new Exception(str);
         }
     }
 }

@@ -44,7 +44,7 @@ namespace Ninjadini.Neuro.Editor
                     try
                     {
                         var json = File.ReadAllText(FilePath);
-                        _value = (IReferencable)dataProvider.JsonReader.Read(json, RootType);
+                        _value = (IReferencable)dataProvider.JsonReader.ReadObject(json, RootType);
                     }
                     catch (Exception e)
                     {

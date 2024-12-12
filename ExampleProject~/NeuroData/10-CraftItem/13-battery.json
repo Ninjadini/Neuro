@@ -1,0 +1,14 @@
+{
+    "Name": "Battery",
+    "RequiredItems": [
+        {
+            "Item": "11:circuit_board",
+            "Amount": 1
+        },
+        {
+            "Item": "12:wiring",
+            "Amount": 2
+        }
+    ],
+    "CraftDuration": 240000
+}
