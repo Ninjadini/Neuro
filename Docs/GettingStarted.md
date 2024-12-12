@@ -1,7 +1,7 @@
 # Getting started
 
 See walkthrough video here:  
-https://youtu.be/mW4FcFQ-ui8
+https://youtu.be/AZOHbK-prHo
 
 ### Import to your Unity project
 - Requires Unity 2022 or higher
