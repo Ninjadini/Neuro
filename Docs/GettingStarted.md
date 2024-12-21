@@ -16,6 +16,7 @@ They are essentially your ScriptableObjects that hold some config data.
 You can reference these items from other places via Reference<T> type - similar to linking objects in Unity, e.g. linking a Material to a Renderer's material field.  
 Each reference has a RefId (uint) which is unique, and a RefName (string) which does not need to be unique.  
 RefId number is what's used to link to the references.
+RefName is used for easy identification of the item.
 ```
 using Ninjadini.Neuro;
 using System.Collections.Generic;
