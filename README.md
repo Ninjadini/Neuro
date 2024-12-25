@@ -30,7 +30,7 @@ It leverages C# roslyn code analysis APIs to generate highly optimised and minim
 Let's get started ⤵️
 
 ## [Getting Started >](Docs/GettingStarted.md)
-> Or watch walkthrough video https://youtu.be/AZOHbK-prHo
+> Or watch walkthrough video, Unity 2022.2+ at https://youtu.be/AZOHbK-prHo
 
 ## [Demo Project >](Docs/DemoProject.md)
 

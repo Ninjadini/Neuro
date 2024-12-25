@@ -1,10 +1,10 @@
 # Getting started
 
-See walkthrough video here:  
+See walkthrough video, Unity 2022.2 or higher:  
 https://youtu.be/AZOHbK-prHo
 
 ### Import to your Unity project
-- Requires Unity 2022 or higher
+- Requires Unity 2022.2 or higher
 - `Window` > `Package Manager` > `Add` > `Install package from git URL...`
 - Enter `https://github.com/Ninjadini/Neuro.git` for latest.
 > [!TIP]
