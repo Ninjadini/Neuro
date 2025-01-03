@@ -235,6 +235,41 @@ namespace Ninjadini.Neuro.Editor
             return field;
         }
 
+        public static VisualElement CreateDrawer<T, V>(ObjectInspector.Data data, BaseField<T> field, Func<V, T> toFieldEditor = null, Func<T, V> fromFieldEditor = null)
+        {
+            var value = data.getter();
+
+            var canEdit = data.Controller.CanEdit(data.type, value);
+            
+            field.label = data.GetDisplayName();
+            field.style.flexGrow = 1;
+            if (field is TextInputBaseField<T> textInputBaseField)
+            {
+                textInputBaseField.isDelayed = true;
+            }
+            var vObj = value ?? Activator.CreateInstance<T>();
+            field.value = (T)(toFieldEditor != null ? toFieldEditor((V)vObj) : vObj);
+            field.RegisterValueChangedCallback(delegate(ChangeEvent<T> evt)
+            {
+                if (evt.currentTarget == evt.target)
+                {
+                    value = fromFieldEditor != null ? fromFieldEditor(evt.newValue) : evt.newValue;
+                    data.SetValue(value);
+                }
+            });
+            field.SetEnabled(data.setter != null && canEdit);
+            field.schedule.Execute(() =>
+            {
+                var newValue = data.getter();
+                if (value != newValue && !NeuroUiUtils.IsFocused(field))
+                {
+                    value = newValue;
+                    field.SetValueWithoutNotify(newValue != null ? (T)(toFieldEditor != null ? toFieldEditor((V)newValue) : newValue) : default(T));
+                }
+            }).Every(RefreshRate);
+            return field;
+        }
+
         public static VisualElement CreateDateTimeDrawer(ObjectInspector.Data data)
         {
             var value = (DateTime) (data.getter() ?? new DateTime());
