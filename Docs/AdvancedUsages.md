@@ -59,21 +59,47 @@ Say you want to use an object in Neuro world, but you can not modify the code, e
 You can write the 'sync' code manually. This is how Unity's build in data types such as Vector3 are registered.
 See full example of Unity ones in this class: [NeuroDefaultUnityTypesHook.cs](Ninjadini.Neuro.Unity/RunTime/NeuroDefaultUnityTypesHook.cs)
 
-Short example using FloatABC:
+Short example using Unity.Mathematics.int2:
 ```
     // This is auto picked up by code gen to be registered because it extends from INeuroCustomTypesRegistryHook
-    public struct MyCustomTypeRegistryHook : INeuroCustomTypesRegistryHook
+    public struct NeuroMathematicsTypeHooks : INeuroCustomTypesRegistryHook
     {
         public void Register()
         {
-            NeuroSyncTypes.Register((INeuroSync neuro, ref FloatABC value) => {
-                    neuro.Sync(1, "a", ref value.a);
-                    neuro.Sync(2, "b", ref value.b);
-                    neuro.Sync(3, "c", ref value.c);
+            NeuroSyncTypes.Register((INeuroSync neuro, ref int2 value) =>
+            {
+                neuro.Sync(1, nameof(value.x), ref value.x);
+                neuro.Sync(2, nameof(value.y), ref value.y);
+            });
             // number is used for binary, name string is used for json, ref value is used for actual data read/write.
+            
+            NeuroSyncTypes.Register((INeuroSync neuro, ref int3 value) => 
+            ...etc...
         }
     }
 ```
+Unfortunately, ^ this only makes the serialisation to work, but Neuro editor still may not know how to render this item...  
+We will need to also register custom editor drawer for neuro.
+
+```
+    public class NeuroMathematicsEditors : ICustomNeuroEditorProvider
+    {
+        VisualElement ICustomNeuroEditorProvider.CreateCustomDrawer(NeuroObjectInspector inspector, ObjectInspector.Data data)
+        {
+            if (data.type == typeof(int2))
+            {
+                return ObjectInspectorFields.CreateDrawer<Vector2Int, int2>(data, new Vector2IntField(), 
+                    (c) => new Vector2Int(c.x, c.y),
+                    vector2 => new int2(vector2.x, vector2.y));
+            }
+            if (data.type == typeof(int3))
+            ...etc...
+                
+            return null;
+        }
+    }
+```
+
 
 # Saving neuro reference changes in editor scripts 
 For example, maybe you got some scripts to modify some data in editor.
