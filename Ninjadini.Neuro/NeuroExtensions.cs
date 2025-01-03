@@ -40,12 +40,6 @@ namespace Ninjadini.Neuro
         
         
 #if !NEURO_DISABLE_STATIC_REFERENCES
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T GetValue<T>(this Reference<T> reference) where T : class, IReferencable
-        {
-            return NeuroReferences.Default?.Get(reference);
-        }
-        
         public static string TryGetIdAndName<T>(this Reference<T> reference) where T : class, IReferencable
         {
             var value = reference.GetValue();

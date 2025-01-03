@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Ninjadini.Neuro.Sync;
 
 namespace Ninjadini.Neuro
@@ -22,6 +23,15 @@ namespace Ninjadini.Neuro
         {
             return table?.Get(RefId);
         }
+        
+#if !NEURO_DISABLE_STATIC_REFERENCES
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T GetValue()
+        {
+            return NeuroReferences.Default?.Get<T>(RefId);
+        }
+#endif
+        
         public static implicit operator uint(Reference<T> obj) => obj.RefId;
         public static implicit operator Reference<T>(uint id) => new Reference<T>()
         {
