@@ -108,7 +108,7 @@ namespace Ninjadini.Neuro.Editor
             {
                 var window = EditorWindow.GetWindow<NeuroEditorWindow>();
                 window.Show();
-                var id = table.SelectAll().ElementAt(newIndex - 1).RefId;
+                var id = newIndex > 0 ? table.SelectAll().ElementAt(newIndex - 1).RefId : 0u;
                 window.EditorElement.SetSelectedItem(type, id);
             }
         }
