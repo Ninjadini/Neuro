@@ -55,14 +55,14 @@ namespace Ninjadini.Neuro.Sync
             
             if(NeuroSyncTypes.IsEmpty<Vector3>())
                 NeuroSyncTypes.Register((INeuroSync neuro, ref Vector3 value) => {
-                    neuro.Sync(1, nameof(value.x), ref value.x);
-                    neuro.Sync(2, nameof(value.y), ref value.y);
-                    neuro.Sync(3, nameof(value.z), ref value.z);
+                    neuro.Sync(1, nameof(value.x), ref value.x, 0f);
+                    neuro.Sync(2, nameof(value.y), ref value.y, 0f);
+                    neuro.Sync(3, nameof(value.z), ref value.z, 0f);
                 });
             if(NeuroSyncTypes.IsEmpty<Vector2>())
                 NeuroSyncTypes.Register((INeuroSync neuro, ref Vector2 value) => {
-                    neuro.Sync(1, nameof(value.x), ref value.x);
-                    neuro.Sync(2, nameof(value.y), ref value.y);
+                    neuro.Sync(1, nameof(value.x), ref value.x, 0f);
+                    neuro.Sync(2, nameof(value.y), ref value.y, 0f);
                 });
             if(NeuroSyncTypes.IsEmpty<Vector2Int>())
                 NeuroSyncTypes.Register((INeuroSync neuro, ref Vector2Int value) =>
@@ -70,8 +70,8 @@ namespace Ninjadini.Neuro.Sync
                     // they are properties so this is a long winded way :(
                     var x = value.x;
                     var y = value.y;
-                    neuro.Sync(1, nameof(value.x), ref x);
-                    neuro.Sync(2, nameof(value.y), ref y);
+                    neuro.Sync(1, nameof(value.x), ref x, 0);
+                    neuro.Sync(2, nameof(value.y), ref y, 0);
                     value.x = x;
                     value.y = y;
                 });
@@ -82,8 +82,8 @@ namespace Ninjadini.Neuro.Sync
                     var x = value.x;
                     var y = value.y;
                     var z = value.z;
-                    neuro.Sync(1, nameof(value.x), ref x);
-                    neuro.Sync(2, nameof(value.y), ref y);
+                    neuro.Sync(1, nameof(value.x), ref x, 0);
+                    neuro.Sync(2, nameof(value.y), ref y, 0);
                     neuro.Sync(3, nameof(value.z), ref z);
                     value.x = x;
                     value.y = y;
@@ -96,10 +96,10 @@ namespace Ninjadini.Neuro.Sync
                 {
                     var pos = value.position;
                     var size = value.size;
-                    neuro.Sync(1, "posX", ref pos.x);
-                    neuro.Sync(2, "posY", ref pos.y);
-                    neuro.Sync(3, "sizeX", ref size.x);
-                    neuro.Sync(4, "sizeY", ref size.y);
+                    neuro.Sync(1, "posX", ref pos.x, 0f);
+                    neuro.Sync(2, "posY", ref pos.y, 0f);
+                    neuro.Sync(3, "sizeX", ref size.x, 0f);
+                    neuro.Sync(4, "sizeY", ref size.y, 0f);
                     value.position = pos;
                     value.size = size;
                 });
@@ -111,10 +111,10 @@ namespace Ninjadini.Neuro.Sync
                     var y = value.y;
                     var width = value.width;
                     var height = value.height;
-                    neuro.Sync(1, nameof(value.x), ref x);
-                    neuro.Sync(2, nameof(value.y), ref y);
-                    neuro.Sync(3, nameof(value.width), ref width);
-                    neuro.Sync(4, nameof(value.height), ref height);
+                    neuro.Sync(1, nameof(value.x), ref x, 0);
+                    neuro.Sync(2, nameof(value.y), ref y, 0);
+                    neuro.Sync(3, nameof(value.width), ref width, 0);
+                    neuro.Sync(4, nameof(value.height), ref height, 0);
                     value.x = x;
                     value.y = y;
                     value.width = width;
@@ -126,14 +126,25 @@ namespace Ninjadini.Neuro.Sync
                     // they are properties so this is a long winded way :(
                     var pos = value.center;
                     var extents = value.extents;
-                    neuro.Sync(1, "posX", ref pos.x);
-                    neuro.Sync(2, "posY", ref pos.y);
-                    neuro.Sync(3, "posZ", ref pos.z);
-                    neuro.Sync(4, "extX", ref extents.x);
-                    neuro.Sync(5, "extY", ref extents.y);
-                    neuro.Sync(6, "extZ", ref extents.z);
+                    neuro.Sync(1, "posX", ref pos.x, 0f);
+                    neuro.Sync(2, "posY", ref pos.y, 0f);
+                    neuro.Sync(3, "posZ", ref pos.z, 0f);
+                    neuro.Sync(4, "extX", ref extents.x, 0f);
+                    neuro.Sync(5, "extY", ref extents.y, 0f);
+                    neuro.Sync(6, "extZ", ref extents.z, 0f);
                     value.center = pos;
                     value.extents = extents;
+                });
+            if(NeuroSyncTypes.IsEmpty<BoundsInt>())
+                NeuroSyncTypes.Register((INeuroSync neuro, ref BoundsInt value) =>
+                {
+                    // they are properties so this is a long winded way :(
+                    var pos = value.position;
+                    var size = value.size;
+                    neuro.Sync(1, "pos", ref pos);
+                    neuro.Sync(2, "size", ref size);
+                    value.position = pos;
+                    value.size = size;
                 });
         }
     }
