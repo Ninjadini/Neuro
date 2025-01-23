@@ -103,6 +103,23 @@ namespace Ninjadini.Neuro.Sync
                     value.position = pos;
                     value.size = size;
                 });
+            if(NeuroSyncTypes.IsEmpty<RectInt>())
+                NeuroSyncTypes.Register((INeuroSync neuro, ref RectInt value) =>
+                {
+                    // they are properties so this is a long winded way :(
+                    var x = value.x;
+                    var y = value.y;
+                    var width = value.width;
+                    var height = value.height;
+                    neuro.Sync(1, nameof(value.x), ref x);
+                    neuro.Sync(2, nameof(value.y), ref y);
+                    neuro.Sync(3, nameof(value.width), ref width);
+                    neuro.Sync(4, nameof(value.height), ref height);
+                    value.x = x;
+                    value.y = y;
+                    value.width = width;
+                    value.height = height;
+                });
             if(NeuroSyncTypes.IsEmpty<Bounds>())
                 NeuroSyncTypes.Register((INeuroSync neuro, ref Bounds value) =>
                 {
