@@ -84,7 +84,7 @@ namespace Ninjadini.Neuro.Sync
                     var z = value.z;
                     neuro.Sync(1, nameof(value.x), ref x);
                     neuro.Sync(2, nameof(value.y), ref y);
-                    neuro.Sync(3, nameof(value.z), ref x);
+                    neuro.Sync(3, nameof(value.z), ref z);
                     value.x = x;
                     value.y = y;
                     value.z = z;
