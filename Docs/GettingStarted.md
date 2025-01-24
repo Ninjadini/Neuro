@@ -9,7 +9,7 @@ https://youtu.be/AZOHbK-prHo
 - Enter `https://github.com/Ninjadini/Neuro.git` for latest.
 > [!TIP]
 > To target a specific tag / release - to be safe from surprise API changes, use this format:  
-`https://github.com/Ninjadini/Neuro.git#v0.1.1`
+`https://github.com/Ninjadini/Neuro.git#v0.1.2`
 
 ### Your first Neuro reference type
 They are essentially your ScriptableObjects that hold some config data.  
