@@ -24,6 +24,7 @@ namespace Ninjadini.Neuro.CodeGen
         static readonly DiagnosticDescriptor InvalidTagRangeRule = new DiagnosticDescriptor(InvalidTagDiagnosticID, "Invalid field neuro tag", "Neuro field attribute tag must be between 0 and "+int.MaxValue+" @ {1}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor FieldTagConflictRule = new DiagnosticDescriptor(FieldTagConflictDiagnosticID, "Field attribute tag already used", "Neuro field attribute tag {0} of `{1}` is already used by another field `{2}`", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor MissingClassAttributeRule = new DiagnosticDescriptor("Neuro404", "Missing neuro class attribute", "`{0}` needs neuro class attribute `[Neuro(#)]` because it's base class `{1}` is a Neuro class.", "Syntax", DiagnosticSeverity.Error, true);
+        static readonly DiagnosticDescriptor MultipleBaseClassRootsRule = new DiagnosticDescriptor("Neuro405", "Multiple inheritance paths not supported", "`{0}` extends from multiple inheritance paths: `{1}` and `{2}`. This is not supported for now.", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor InvalidClassTagRangeRule = new DiagnosticDescriptor("Neuro002", "Invalid class neuro tag",  "Neuro class attribute tag must be between 0 and "+int.MaxValue+" @ {0}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor PartialClassRule = new DiagnosticDescriptor("Neuro101", "Non-partial Neuro class",  "{0} is not a partial class. It is required so Neuro can write to private fields without reflection.", "Syntax", DiagnosticSeverity.Error, true);
         public static readonly DiagnosticDescriptor ClassTagConflictRule = new DiagnosticDescriptor("Neuro303", "Class attribute tag already used", "Neuro class attribute tag {0} of `{1}` is already used by another class `{2}`. Full list of tags: {3}", "Syntax", DiagnosticSeverity.Error, true);
@@ -31,7 +32,7 @@ namespace Ninjadini.Neuro.CodeGen
         public static readonly DiagnosticDescriptor GlobalTypeConflictRule = new DiagnosticDescriptor("Neuro310", "Global type id already used", "Neuro global type id {0} of `{1}` is already used by another class `{2}`. Full list of global ids: {3}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor GlobalTypeRangeRule = new DiagnosticDescriptor("Neuro311", "Invalid global neuro type id",  "Neuro global type id must be between 0 and "+int.MaxValue+" @ {0}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor RefsGlobalTypeRule = new DiagnosticDescriptor("Neuro312", "Global neuro type attribute missing",  "Neuro global type attribute `[NeuroGlobalType(#)]` is required in `{0}` because it is an IReferencable", "Syntax", DiagnosticSeverity.Error, true);
-
+        
         [ThreadStatic]
         static Dictionary<uint, string> tempTagDict;
 
@@ -42,7 +43,8 @@ namespace Ninjadini.Neuro.CodeGen
             ReadOnlyWithoutInitializerFieldRule,
             InvalidTagRangeRule, 
             FieldTagConflictRule, 
-            MissingClassAttributeRule, 
+            MissingClassAttributeRule,
+            MultipleBaseClassRootsRule,
             InvalidClassTagRangeRule, 
             PartialClassRule, 
             ClassTagConflictRule,
@@ -277,11 +279,25 @@ namespace Ninjadini.Neuro.CodeGen
                 }
                 baseSymbol = baseSymbol.BaseType;
             }
+            foreach (var interfaceSymbol in  classSymbol.AllInterfaces)
+            {
+                if (NeuroCodeGenUtils.FindNeuroAttribute(interfaceSymbol) != null)
+                {
+                    if (baseClassSymbol != null)
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(MultipleBaseClassRootsRule, classSymbol.Locations.FirstOrDefault(), classSymbol.ToString(), baseClassSymbol.ToString(), interfaceSymbol.ToString()));
+                    }
+                    else
+                    {
+                        baseClassSymbol = interfaceSymbol;
+                    }
+                }
+            }
             if (baseClassSymbol != null)
             {
                 if (classAttribute == null)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(MissingClassAttributeRule, classSymbol.Locations.FirstOrDefault(), classSymbol.ToString(), baseSymbol.ToString()));
+                    context.ReportDiagnostic(Diagnostic.Create(MissingClassAttributeRule, classSymbol.Locations.FirstOrDefault(), classSymbol.ToString(), baseClassSymbol.ToString()));
                 }
                 else
                 {

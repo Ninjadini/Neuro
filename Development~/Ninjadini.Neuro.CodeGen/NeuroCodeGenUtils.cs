@@ -25,7 +25,7 @@ namespace Ninjadini.Neuro.CodeGen
 
         public static Location GetLocation(AttributeData attributeData)
         {
-            return attributeData.ApplicationSyntaxReference.GetSyntax().GetLocation();
+            return attributeData?.ApplicationSyntaxReference.GetSyntax().GetLocation();
         }
         
         public static AttributeData FindNeuroAttribute(ISymbol symbol)

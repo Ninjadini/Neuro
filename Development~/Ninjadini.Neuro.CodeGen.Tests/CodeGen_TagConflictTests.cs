@@ -22,6 +22,45 @@ using Ninjadini.Neuro;
     }
     
     [Test]
+    public void NeedsClassTagFromInterface()
+    {
+        var src = @"
+using Ninjadini.Neuro;
+        [Neuro(1)]
+        partial interface IBaseInterface
+        {
+        }
+        partial class SubClass1 : IBaseInterface
+        {
+            [Neuro(1)] public int num;
+        }
+";
+        TestUtils.GenerateSourceExpectingError(src, "needs neuro class attribute");
+    }
+    
+    [Test]
+    public void FailOnMultipleInheritancePaths()
+    {
+        var src = @"
+using Ninjadini.Neuro;
+        [Neuro(1)]
+        partial interface IBaseInterface1
+        {
+        }
+        [Neuro(1)]
+        partial interface IBaseInterface2
+        {
+        }
+        [Neuro(2)]
+        partial class SubClass1 : IBaseInterface1, IBaseInterface2
+        {
+            [Neuro(1)] public int num;
+        }
+";
+        TestUtils.GenerateSourceExpectingError(src, "extends from multiple inheritance paths");
+    }
+    
+    [Test]
     public void ClassTagConflictReporting()
     {
         var src = @"
