@@ -516,9 +516,10 @@ namespace Ninjadini.Neuro.Editor
 
             var horizontal = new VisualElement();
 
+            var name = data.GetDisplayName();
             var foldout = new Foldout();
             foldout.style.flexGrow = 1f;
-            foldout.text = data.GetDisplayName();
+            foldout.text = name;
             foldout.value = false;
             if (!string.IsNullOrEmpty(data.path))
             {
@@ -555,7 +556,7 @@ namespace Ninjadini.Neuro.Editor
                 }
             });
             field.SetEnabled(data.setter != null && canEdit);
-            AddToggleToFoldOut(foldout, field, true);
+            AddToggleToFoldOut(foldout, field, !string.IsNullOrEmpty(name));
             field.style.right = 0;
 
             horizontal.schedule.Execute(() =>
