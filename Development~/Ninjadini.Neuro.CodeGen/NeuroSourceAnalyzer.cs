@@ -32,7 +32,8 @@ namespace Ninjadini.Neuro.CodeGen
         public static readonly DiagnosticDescriptor GlobalTypeConflictRule = new DiagnosticDescriptor("Neuro310", "Global type id already used", "Neuro global type id {0} of `{1}` is already used by another class `{2}`. Full list of global ids: {3}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor GlobalTypeRangeRule = new DiagnosticDescriptor("Neuro311", "Invalid global neuro type id",  "Neuro global type id must be between 0 and "+int.MaxValue+" @ {0}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor RefsGlobalTypeRule = new DiagnosticDescriptor("Neuro312", "Global neuro type attribute missing",  "Neuro global type attribute `[NeuroGlobalType(#)]` is required in `{0}` because it is an IReferencable", "Syntax", DiagnosticSeverity.Error, true);
-        
+        public static readonly DiagnosticDescriptor ExceptionThrown = new DiagnosticDescriptor("Neuro911", "Exception was thrown while generating Neuro source", "Neuro codegen exception: {0}", "Syntax", DiagnosticSeverity.Error, true);
+
         [ThreadStatic]
         static Dictionary<uint, string> tempTagDict;
 
@@ -51,7 +52,8 @@ namespace Ninjadini.Neuro.CodeGen
             ClassTagReservedRule,
             GlobalTypeConflictRule,
             GlobalTypeRangeRule,
-            RefsGlobalTypeRule);
+            RefsGlobalTypeRule,
+            ExceptionThrown);
 
         public override void Initialize(AnalysisContext context)
         {

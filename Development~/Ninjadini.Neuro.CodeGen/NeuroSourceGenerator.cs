@@ -14,10 +14,32 @@ namespace Ninjadini.Neuro.CodeGen
         
         public void Execute(GeneratorExecutionContext context)
         {
-            var src = Generate(context.Compilation, context.ReportDiagnostic);
-            if (!string.IsNullOrEmpty(src))
+            try
             {
-                context.AddSource("NeuroTypesRegister", SourceText.From(src, Encoding.UTF8));
+                var src = Generate(context.Compilation, context.ReportDiagnostic);
+                if (!string.IsNullOrEmpty(src))
+                {
+                    context.AddSource("NeuroTypesRegister", SourceText.From(src, Encoding.UTF8));
+                }
+            }
+            catch (Exception e)
+            {
+                context.ReportDiagnostic(
+                    Diagnostic.Create(NeuroSourceAnalyzer.ExceptionThrown, null, e.ToString())
+                    );
+                
+                // This is a unity specific problem where it doesn't show an error for ReportDiagnostic() during the 'generation' step.
+                // For now, we'll just write the error to the file so that you can tell its happening.
+
+                //throw;
+                context.AddSource("NeuroTypesRegister", SourceText.From(
+                    $"using ThereWasAnExceptionWhileGeneratingForNeuro_SeeGeneratedFile_NeuroTypesRegister_InYourIDEForDetails;" +
+                    $"\n/*" +
+                    $"\nSorry, there seems to be a bug in Unity where errors during code generate step doesn't show up." +
+                    $"\nHere is the exception thrown:" +
+                    $"\n/*{e}" +
+                    $"\n*/", 
+                    Encoding.UTF8));
             }
         }
 
