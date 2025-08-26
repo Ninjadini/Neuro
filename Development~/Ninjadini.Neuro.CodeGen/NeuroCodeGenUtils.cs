@@ -5,6 +5,7 @@ namespace Ninjadini.Neuro.CodeGen
 {
     internal static class NeuroCodeGenUtils
     {
+        public const string DefineSymbol_SelectiveAssemblies = "NEURO_SELECTIVE_ASSEMBLIES";
         public const string Name_NeuroAttribute = "NeuroAttribute";
         public const string Name_NeuroAttribute_Tag = "Tag";
         public const string Name_INeuroCustomTypesRegistryHook = "INeuroCustomTypesRegistryHook";
@@ -17,6 +18,21 @@ namespace Ninjadini.Neuro.CodeGen
         public const string Name_ISingletonReferencable = "ISingletonReferencable";
         
         static readonly SymbolDisplayFormat fullNameFormat = new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces);
+
+        public static bool CanScanAssembly(Compilation compilation)
+        {
+            var parseOptions = compilation.SyntaxTrees.FirstOrDefault()?.Options;
+            if (parseOptions == null)
+            {
+                return true;
+            }
+            var defines = parseOptions.PreprocessorSymbolNames;
+            if (!defines.Contains(DefineSymbol_SelectiveAssemblies))
+            {
+                return true;
+            }
+            return compilation.Assembly.GetAttributes().Any(a => IsNeuroAttribute(a.AttributeClass));
+        }
 
         public static string GetFullName(ITypeSymbol symbol)
         {

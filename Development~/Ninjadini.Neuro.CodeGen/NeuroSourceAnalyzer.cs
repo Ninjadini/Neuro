@@ -60,7 +60,15 @@ namespace Ninjadini.Neuro.CodeGen
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
             
-            context.RegisterSymbolAction(ProcessClassOrStruct, SymbolKind.NamedType);
+            context.RegisterCompilationStartAction(compilationStart =>
+            {
+                if (!NeuroCodeGenUtils.CanScanAssembly(compilationStart.Compilation))
+                {
+                    return;
+                }
+                compilationStart.RegisterSymbolAction(ProcessClassOrStruct, SymbolKind.NamedType);
+            });
+            
         }
 
         public void ProcessClassOrStruct(SymbolAnalysisContext context)

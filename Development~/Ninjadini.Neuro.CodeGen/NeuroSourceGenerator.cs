@@ -16,6 +16,10 @@ namespace Ninjadini.Neuro.CodeGen
         {
             try
             {
+                if (!NeuroCodeGenUtils.CanScanAssembly(context.Compilation))
+                {
+                    return;
+                }
                 var src = Generate(context.Compilation, context.ReportDiagnostic);
                 if (!string.IsNullOrEmpty(src))
                 {

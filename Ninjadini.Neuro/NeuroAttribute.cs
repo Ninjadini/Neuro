@@ -2,7 +2,7 @@ using System;
 
 namespace Ninjadini.Neuro
 {
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct)]
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct | AttributeTargets.Assembly)]
     public class NeuroAttribute : Attribute
     {
         public uint Tag;

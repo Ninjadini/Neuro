@@ -215,6 +215,11 @@ In both cases, you will also need to stop using `NeuroDataProvider.GetSharedTabl
 Instead call via `NeuroReferences.Default.GetTable<T>()`
 
 
+# Selective assembly scanning for faster compile time
+By default Neuro will scan all assemblies for Neuro objects, this may be slow is a large project.   
+Turn on selective assemblies mode to only scan certain assemblies.
+1. In all the assemblies where you define Neuro types, add `[assembly:Neuro(0)]` - not the assemblies you use Neuro, just the places you define Neuro objects with `[Neuro(123)]`
+2. In Unity Project Settings > Player > Scripting Define Symbols, add NEURO_SELECTIVE_ASSEMBLIES and apply.
 
 
 # What's next ?
