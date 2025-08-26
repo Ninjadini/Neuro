@@ -24,7 +24,7 @@ namespace Ninjadini.Neuro.Editor
         public static VisualElement CreateNullable(ObjectInspector.Data data)
         {
             var value = data.getter();
-            var elementType = data.type.GenericTypeArguments[0];
+            var elementType = Nullable.GetUnderlyingType(data.type);
             
             var canEdit = data.Controller.CanEdit(data.type, value);
 
