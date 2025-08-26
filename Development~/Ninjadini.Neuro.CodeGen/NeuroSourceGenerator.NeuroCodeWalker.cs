@@ -267,7 +267,7 @@ namespace Ninjadini.Neuro.CodeGen
                     
                     var fieldType = fieldSymbol.Type;
                     EnsureClassToGenerate(classSymbol, ref classToGenerate);
-
+                    
                     var defaultValue = GetDefaultValue(fieldSymbol, fieldType);
                     classToGenerate.Fields.Add(new FieldToGenerate()
                     {
@@ -285,7 +285,6 @@ namespace Ninjadini.Neuro.CodeGen
                             enumTypes.Add(fullName);
                         }
                     }
-                    classToGenerate.HasPrivateFields |= fieldSymbol.DeclaredAccessibility != Accessibility.Public;
                 }
                 if (classToGenerate != null)
                 {
