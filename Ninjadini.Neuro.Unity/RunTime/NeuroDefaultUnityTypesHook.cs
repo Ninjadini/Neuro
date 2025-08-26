@@ -1,4 +1,7 @@
+using Ninjadini.Neuro;
 using UnityEngine;
+
+[assembly:Neuro(0)]
 
 namespace Ninjadini.Neuro.Sync
 {
