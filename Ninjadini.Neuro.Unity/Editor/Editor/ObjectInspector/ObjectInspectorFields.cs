@@ -172,7 +172,7 @@ namespace Ninjadini.Neuro.Editor
             var type = data.type;
             if (type.IsValueType && !type.IsPrimitive)
             {
-                if (type.Name == "Nullable`1" && type.Namespace == "System")
+                if (Nullable.GetUnderlyingType(type) != null)
                 {
                     return CreateNullable(data);
                 }
