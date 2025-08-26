@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Ninjadini.Neuro.Sync;
 using UnityEditor;
 using UnityEngine;
@@ -70,6 +71,10 @@ namespace Ninjadini.Neuro.Editor
         {
             var isNeuroField = fieldInfo.IsDefined(NeuroAttribute) || NeuroCustomEditorFieldRegistry.IsNameCustomField(holderObject.GetType(), fieldInfo.Name);
             if (isNeuroField)
+            {
+                return neuroController.ShouldDrawField(fieldInfo, holderObject);
+            }
+            if (fieldInfo.IsPublic && fieldInfo.IsDefined(typeof(FieldOffsetAttribute)))
             {
                 return neuroController.ShouldDrawField(fieldInfo, holderObject);
             }

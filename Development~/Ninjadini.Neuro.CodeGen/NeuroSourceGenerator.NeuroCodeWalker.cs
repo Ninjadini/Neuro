@@ -253,7 +253,7 @@ namespace Ninjadini.Neuro.CodeGen
                 ClassToGenerate classToGenerate = null;
                 foreach (var fieldSymbol in classSymbol.GetMembers().OfType<IFieldSymbol>())
                 {
-                    if (fieldSymbol.IsStatic)
+                    if (fieldSymbol.IsStatic || fieldSymbol.DeclaredAccessibility != Accessibility.Public)
                     {
                         continue;
                     }
