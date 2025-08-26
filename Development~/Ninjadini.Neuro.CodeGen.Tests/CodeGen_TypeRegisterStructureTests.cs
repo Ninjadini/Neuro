@@ -69,5 +69,23 @@ using Ninjadini.Neuro;
 "
         );
     }
+    
+    
+    [Test]
+    public void TestFieldOffsetCustom()
+    {
+        var src = @"
+        using FieldOffsetAttribute = System.Runtime.InteropServices.FieldOffsetAttribute;
+        [assembly:Ninjadini.Neuro.FieldOffsetToNeuro(typeof(TestObjWithFieldOffset))]
+        public partial struct TestObjWithFieldOffset
+        {
+            [FieldOffset(0)]
+            public int Id;
+        }
+";
+        var generatedSrc = TestUtils.GenerateSource(src);
+        Console.WriteLine(generatedSrc);
+        Assert.IsTrue(generatedSrc.Contains("Register<TestObjWithFieldOffset>"));
+    }
 
 }

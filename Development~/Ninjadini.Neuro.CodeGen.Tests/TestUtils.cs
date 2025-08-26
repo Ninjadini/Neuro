@@ -110,7 +110,15 @@ namespace Ninjadini.Neuro
             Tag = tag;
         }
     }
-
+    [System.AttributeUsage(System.AttributeTargets.Assembly, AllowMultiple = true)]
+    public class FieldOffsetToNeuro : System.Attribute
+    {
+        public System.Type Type;
+        public FieldOffsetToNeuro(System.Type type)
+        {
+            Type = type;
+        }
+    }
     public interface INeuroPoolable
     {
 

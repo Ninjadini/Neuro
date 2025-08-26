@@ -35,6 +35,20 @@ namespace Ninjadini.Neuro.CodeGen
                 {
                     Visit(syntaxTree.GetRoot());
                 }
+                
+                foreach (var attr in compilation.Assembly.GetAttributes())
+                {
+                    if (attr.AttributeClass?.Name == "FieldOffsetToNeuro")
+                    {
+                        foreach (var arg in attr.ConstructorArguments)
+                        {
+                            if (arg.Value is INamedTypeSymbol typeSym)
+                            {
+                                ProcessFieldOffsetStruct(typeSym);
+                            }
+                        }
+                    }
+                }
 
                 if (!ValidateConflicts())
                 {
@@ -232,6 +246,82 @@ namespace Ninjadini.Neuro.CodeGen
                 {
                     ProcessNeuroClass(classSymbol, classToGenerate, classAttribute);
                 }
+            }
+
+            void ProcessFieldOffsetStruct(INamedTypeSymbol classSymbol)
+            {
+                ClassToGenerate classToGenerate = null;
+                foreach (var fieldSymbol in classSymbol.GetMembers().OfType<IFieldSymbol>())
+                {
+                    if (fieldSymbol.IsStatic)
+                    {
+                        continue;
+                    }
+
+                    var fieldOffset = TryGetFieldOffset(fieldSymbol);
+                    Console.WriteLine(fieldOffset);
+                    if (fieldOffset == null)
+                    {
+                        continue;
+                    }
+                    
+                    var fieldType = fieldSymbol.Type;
+                    EnsureClassToGenerate(classSymbol, ref classToGenerate);
+
+                    var defaultValue = GetDefaultValue(fieldSymbol, fieldType);
+                    classToGenerate.Fields.Add(new FieldToGenerate()
+                    {
+                        Name = fieldSymbol.Name,
+                        Tag = (uint)fieldOffset.Value + 1,
+                        DefaultValue = defaultValue,
+                        IsEnum = fieldType.TypeKind == TypeKind.Enum,
+                        IsReadonly = fieldSymbol.IsReadOnly
+                    });
+                    if (fieldType.TypeKind == TypeKind.Enum)
+                    {
+                        var fullName = NeuroCodeGenUtils.GetFullName(fieldType);
+                        if (!enumTypes.Contains(fullName))
+                        {
+                            enumTypes.Add(fullName);
+                        }
+                    }
+                    classToGenerate.HasPrivateFields |= fieldSymbol.DeclaredAccessibility != Accessibility.Public;
+                }
+                if (classToGenerate != null)
+                {
+                    ProcessNeuroClass(classSymbol, classToGenerate, null);
+                }
+            }
+            
+            INamedTypeSymbol _fieldOffsetSymbol;
+
+            INamedTypeSymbol FieldOffsetSymbol
+            {
+                get
+                {
+                    if (_fieldOffsetSymbol == null)
+                    {
+                        _fieldOffsetSymbol = compilation.GetTypeByMetadataName("System.Runtime.InteropServices.FieldOffsetAttribute");
+                    }
+                    return _fieldOffsetSymbol;
+                }
+            }
+            
+            int? TryGetFieldOffset(IFieldSymbol field)
+            {
+                foreach (var attr in field.GetAttributes())
+                {
+                    if (!SymbolEqualityComparer.Default.Equals(attr.AttributeClass, FieldOffsetSymbol))
+                    {
+                        continue;
+                    }
+                    if (attr.ConstructorArguments.Length >= 1)
+                    {
+                        var arg = attr.ConstructorArguments[0];
+                        if (arg.Value is int i) return i;
+                    }
+                }
+                return null;
             }
 
             void EnsureClassToGenerate(INamedTypeSymbol symbol, ref ClassToGenerate classToGenerate)
