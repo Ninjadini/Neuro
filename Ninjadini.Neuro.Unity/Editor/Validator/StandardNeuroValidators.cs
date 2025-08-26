@@ -26,11 +26,15 @@ public class StandardNeuroValidators
             {
                 return;
             }
+            if(Resources.Load(address))
+            {
+                return;
+            }
             if (address.Length > 32)
             {
                 address = address.Substring(0, 32);
             }
-            if(string.IsNullOrEmpty(AssetDatabase.GUIDToAssetPath(address)) && !Resources.Load(address))
+            if(string.IsNullOrEmpty(AssetDatabase.GUIDToAssetPath(address)))
             {
                 context.AddProblem($"Asset with GUID {value.Address} does not exist");
             }
