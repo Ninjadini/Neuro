@@ -154,8 +154,17 @@ namespace Ninjadini.Neuro.Utils
                     list[count++] = (char)(d + '0'); 
                     remainingInt /= 10;
                 }
-                if (start >= 0)
+                if (count > 0)
                 {
+                    if (count < 5)
+                    {
+                        var cc = count;
+                        while (cc < 5)
+                        {
+                            stringBuilder.Append('0');
+                            cc++;
+                        }
+                    }
                     for (var i = count - 1; i >= start && maxDecimalPlaces > 0; i--)
                     {
                         maxDecimalPlaces--;
@@ -218,8 +227,17 @@ namespace Ninjadini.Neuro.Utils
                     list[count++] = (char)(d + '0'); 
                     remainingInt /= 10;
                 }
-                if (start >= 0)
+                if (count >= 0)
                 {
+                    if (count < 5)
+                    {
+                        var cc = count;
+                        while (cc < 5)
+                        {
+                            stringBuilder.Append('0');
+                            cc++;
+                        }
+                    }
                     for (var i = count - 1; i >= start && maxDecimalPlaces > 0; i--)
                     {
                         maxDecimalPlaces--;
