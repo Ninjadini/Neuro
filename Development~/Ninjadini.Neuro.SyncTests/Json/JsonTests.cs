@@ -5,6 +5,7 @@ using System.Text;
 using Newtonsoft.Json;
 using Ninjadini.Neuro;
 using Ninjadini.Neuro.Sync;
+using Ninjadini.Neuro.Utils;
 using NUnit.Framework;
 
 namespace Ninjadini.Neuro.SyncTests
@@ -226,6 +227,32 @@ namespace Ninjadini.Neuro.SyncTests
             var reader = new NeuroJsonReader();
             var result = reader.Read<UberTestClass>(json);
             UberTestClass.TestAllValuesMatch(testObj, result);
+        }
+        
+        
+        
+        [Test]
+        public void FloatWriter()
+        {
+            Assert.AreEqual("0", new StringBuilder().AppendNum(0f).ToString());
+            Assert.AreEqual("123", new StringBuilder().AppendNum(123f).ToString());
+            Assert.AreEqual("0.1", new StringBuilder().AppendNum(0.1f).ToString());
+            Assert.AreEqual("0.123", new StringBuilder().AppendNum(0.123f).ToString());
+            Assert.AreEqual("0.0123", new StringBuilder().AppendNum(0.0123f).ToString());
+            Assert.AreEqual("0.00123", new StringBuilder().AppendNum(0.00123f).ToString());
+            Assert.AreEqual("123.00456", new StringBuilder().AppendNum(123.00456f).ToString());
+        }
+        
+        [Test]
+        public void DoubleWrite()
+        {
+            Assert.AreEqual("0", new StringBuilder().AppendNum(0).ToString());
+            Assert.AreEqual("123", new StringBuilder().AppendNum(123).ToString());
+            Assert.AreEqual("0.1", new StringBuilder().AppendNum(0.1).ToString());
+            Assert.AreEqual("0.123", new StringBuilder().AppendNum(0.123).ToString());
+            Assert.AreEqual("0.0123", new StringBuilder().AppendNum(0.0123).ToString());
+            Assert.AreEqual("0.00123", new StringBuilder().AppendNum(0.00123).ToString());
+            Assert.AreEqual("10000.00123", new StringBuilder().AppendNum(10000.00123).ToString());
         }
     }
 }
