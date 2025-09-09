@@ -14,11 +14,13 @@ namespace Ninjadini.Neuro
         public bool HasNoRefId => RefId == 0;
         public bool HasRefId => RefId != 0;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T GetValue(NeuroReferences references)
         {
             return references?.Get<T>(RefId);
         }
         
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T GetValue(NeuroReferenceTable<T> table)
         {
             return table?.Get(RefId);
