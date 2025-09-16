@@ -8,8 +8,8 @@ using Object = UnityEngine.Object;
 namespace Ninjadini.Neuro
 {
     public static class NeuroAssetExtensions
-    {
-        public static AsyncOperationHandle<TObject> LoadAssetAsync<TObject>(this AssetAddress assetAddress)
+    {/*
+        public static async Task<TObject> LoadAssetAsync<TObject>(this AssetAddress assetAddress) where TObject : Object
         {
             if (assetAddress.IsEmpty())
             {
@@ -19,8 +19,17 @@ namespace Ninjadini.Neuro
             {
                 throw new Exception($"Can't load component [{typeof(TObject)}] synchronously, TObject needs to be GameObject instead and get component manually after load.");
             }
-            return Addressables.LoadAssetAsync<TObject>(assetAddress.Address);
-        }
+            if (IsResourcePath(assetAddress.Address))
+            {
+                // TODO this might not be needed as addressable should auto detect resources path...
+                var resReq = Resources.LoadAsync<TObject>(assetAddress.Address);
+                await resReq;
+                return resReq.asset as TObject;
+            }
+            var addressReq = Addressables.LoadAssetAsync<TObject>(assetAddress.Address);
+            await addressReq.Task;
+            return addressReq.Result;
+        }*/
         
         public static TObject LoadFromResources<TObject>(this AssetAddress assetAddress) where TObject : Object
         {
@@ -37,10 +46,8 @@ namespace Ninjadini.Neuro
             {
                 callback?.Invoke(default);
             }
-            else if (assetAddress.Address.Length < 32 || (assetAddress.Address.Length > 32 && !assetAddress.Address.EndsWith("]")))
+            else if (IsResourcePath(assetAddress.Address)) // TODO this might not be needed as addressable should auto detect resources path...
             {
-                // TODO this might not be needed as addressable should auto detect resources path...
-                // also it doesn't work if name is exactly 32 length anyway, 
                 var resReq = Resources.LoadAsync<TObject>(assetAddress.Address);
                 resReq.completed += operation =>
                 {
@@ -66,6 +73,25 @@ namespace Ninjadini.Neuro
                     callback?.Invoke(handle.Result);
                 };
             }
+        }
+
+        static bool IsResourcePath(string path)
+        {
+            if (path.Length < 32) return true;
+            if (path.Length > 32)
+            {
+                if (path[32] != '[') return true;
+                if (path[^1] != ']') return true;
+            }
+            for (var i = 0; i < 32; i++)
+            {
+                var c = path[i];
+                if (!((uint)(c - '0') <= 9 || (uint)(c - 'a') <= 5))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
         
         public static AsyncOperationHandle<SceneInstance> LoadSceneAsync(this AssetAddress assetAddress)

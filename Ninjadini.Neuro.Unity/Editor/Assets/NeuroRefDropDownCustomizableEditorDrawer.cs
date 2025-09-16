@@ -116,19 +116,37 @@ namespace Ninjadini.Neuro.Editor
 
         static void UpdateImage(VisualElement element, INeuroRefDropDownCustomizable item)
         {
-            Texture2D icon = null;
-            if (item is INeuroRefDropDownIconCustomizable iconCustomizable)
+            element.style.display = DisplayStyle.None;
+            element.style.backgroundImage = new StyleBackground();
+            element.userData = null;
+            if (item is not INeuroRefDropDownIconCustomizable iconCustomizable)
             {
-                var iconAddress = iconCustomizable.RefDropdownIcon;
-                if (iconAddress.HasAddress())
-                {
-                    var task = iconAddress.LoadAssetAsync<Texture2D>();
-                    task.WaitForCompletion();
-                    icon = task.Result;
-                }
+                return;
             }
-            element.style.display = icon ? DisplayStyle.Flex : DisplayStyle.None;
-            element.style.backgroundImage = icon ? new StyleBackground(icon) : new StyleBackground();
+            var iconAddress = iconCustomizable.RefDropdownIcon;
+            if (iconAddress.IsEmpty())
+            {
+                return;
+            }
+            element.userData = item;
+            iconAddress.LoadAssetAsync<UnityEngine.Object>(icon =>
+            {
+                if (element.userData != item)
+                {
+                    return;
+                }
+                element.userData = null;
+                if (icon is Texture2D texture2D)
+                {
+                    element.style.display = DisplayStyle.Flex;
+                    element.style.backgroundImage = new StyleBackground(texture2D);
+                }
+                else if (icon is Sprite sprite)
+                {
+                    element.style.display = DisplayStyle.Flex;
+                    element.style.backgroundImage = new StyleBackground(sprite);
+                }
+            });
         }
     }
 }
