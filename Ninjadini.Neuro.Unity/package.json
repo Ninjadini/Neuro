@@ -1,11 +1,11 @@
 {
   "name": "com.ninjadini.neuro.unity",
-  "version": "0.0.1",
+  "version": "0.1.4",
   "unity": "2022.1",
   "displayName": "Ninjadini Neuro Unity",
   "description": "",
   "dependencies" : {
-    "com.ninjadini.neuro" : "0.0.1",
+    "com.ninjadini.neuro" : "0.1.4",
     "com.unity.addressables": "2.0.0"
   }
 }
