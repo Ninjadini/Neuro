@@ -211,11 +211,19 @@ namespace Ninjadini.Neuro.Editor
             EditorPrefs.SetString(PrefHistoryKey, str);
         }
 
-        public static string GetDropDownName(IReferencable value)
+        public static string GetDropDownName(IReferencable value, NeuroReferences references)
         {
             if (value is ISingletonReferencable)
             {
                 return value.GetType().Name;
+            }
+            if (value is INeuroRefDropDownCustomizable dropDownCustomizable)
+            {
+                var txt = dropDownCustomizable.GetRefDropdownText(references);
+                if(!string.IsNullOrEmpty(txt))
+                {
+                    return $"{value.GetType().Name} > {txt}";;
+                }
             }
             var str = value.RefName;
             str = string.IsNullOrEmpty(str) ? value.RefId.ToString() : $"{value.RefId} : {str}";

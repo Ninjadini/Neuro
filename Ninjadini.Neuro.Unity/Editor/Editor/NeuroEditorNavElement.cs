@@ -434,7 +434,7 @@ namespace Ninjadini.Neuro.Editor
                 {
                     continue;
                 }
-                menu.AddItem(new GUIContent(NeuroEditorHistory.GetDropDownName(value)), false, () =>
+                menu.AddItem(new GUIContent(NeuroEditorHistory.GetDropDownName(value, dataProvider.References)), false, () =>
                 {
                     SetSelectedItem(item);
                 });
