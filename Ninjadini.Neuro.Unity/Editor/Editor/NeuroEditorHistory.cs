@@ -13,6 +13,8 @@ namespace Ninjadini.Neuro.Editor
         
         [SerializeField] List<Item> BackItems = new List<Item>();
         [SerializeField] List<Item> ForwardItems = new List<Item>();
+        [SerializeField] List<string> FoldoutOpenPaths = new List<string>();
+        [SerializeField] List<string> FoldoutClosePaths = new List<string>();
         
         [Serializable]
         public struct Item
@@ -106,6 +108,44 @@ namespace Ninjadini.Neuro.Editor
             }
         }
 
+        public void SetFoldout(string path, bool? visible)
+        {
+            if (visible == null)
+            {
+                FoldoutOpenPaths.Remove(path);
+                FoldoutClosePaths.Remove(path);
+            }
+            else if (visible.Value)
+            {
+                if (!FoldoutOpenPaths.Contains(path))
+                {
+                    FoldoutOpenPaths.Add(path);
+                }
+                FoldoutClosePaths.Remove(path);
+            }
+            else
+            {
+                if (!FoldoutClosePaths.Contains(path))
+                {
+                    FoldoutClosePaths.Add(path);
+                }
+                FoldoutOpenPaths.Remove(path);
+            }
+        }
+
+        public bool? GetFoldout(string path)
+        {
+            if (FoldoutOpenPaths.Contains(path))
+            {
+                return true;
+            }
+            if (FoldoutClosePaths.Contains(path))
+            {
+                return false;
+            }
+            return null;
+        }
+
         public static Item AsRecentItem(NeuroDataFile item)
         {
             var typeId = NeuroGlobalTypes.GetTypeIdOrThrow(item.Value.GetType(), out _);
@@ -181,6 +221,5 @@ namespace Ninjadini.Neuro.Editor
             str = string.IsNullOrEmpty(str) ? value.RefId.ToString() : $"{value.RefId} : {str}";
             return $"{value.GetType().Name} > {str}";
         }
-
     }
 }

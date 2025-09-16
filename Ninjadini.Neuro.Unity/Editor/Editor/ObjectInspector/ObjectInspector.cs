@@ -45,7 +45,7 @@ namespace Ninjadini.Neuro.Editor
                     //controller.OnValueChanged(obj);
                 } : null,
                 Controller = controller,
-                path = foldOutKey
+                path = foldOutKey ?? type.Name
             });
         }
 
@@ -89,7 +89,11 @@ namespace Ninjadini.Neuro.Editor
                 foldout = new Foldout();
                 if (!string.IsNullOrEmpty(data.path))
                 {
-                    foldout.viewDataKey = data.path;
+                    openFoldout ??= data.Controller?.History?.GetFoldout(data.path);
+                    //if (!openFoldout.HasValue)
+                    //{
+                    //    foldout.viewDataKey = data.path; // < this is supposed to do what GetFoldout is doing, but doesn't seem to be working in some places
+                    //}
                 }
                 foldout.hierarchy[0].style.marginLeft = 0f;
                 foldout.style.flexGrow = 1f;
@@ -100,6 +104,7 @@ namespace Ninjadini.Neuro.Editor
                 {
                     if (evt.currentTarget == evt.target)
                     {
+                        data.Controller?.History?.SetFoldout(data.path, evt.newValue);
                         openFoldout = evt.newValue;
                         if (evt.newValue)
                         {

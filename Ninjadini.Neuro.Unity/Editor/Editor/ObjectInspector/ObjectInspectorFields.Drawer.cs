@@ -523,12 +523,21 @@ namespace Ninjadini.Neuro.Editor
             foldout.value = false;
             if (!string.IsNullOrEmpty(data.path))
             {
-                foldout.viewDataKey = data.path;
+                var openFoldout = data.Controller?.History?.GetFoldout(data.path);
+                if (openFoldout.HasValue)
+                {
+                    foldout.value = openFoldout.Value;
+                }
+                //else
+                //{
+                //    foldout.viewDataKey = data.path; // < this is supposed to do what GetFoldout is doing, but doesn't seem to be working in some places 
+                //}
             }
             foldout.RegisterValueChangedCallback(delegate(ChangeEvent<bool> evt)
             {
                 if (evt.currentTarget == evt.target)
                 {
+                    data.Controller?.History?.SetFoldout(data.path, evt.newValue);
                     foldout.contentContainer.Clear();
                     if (evt.newValue)
                     {
