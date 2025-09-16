@@ -14,6 +14,7 @@ namespace Ninjadini.Neuro.Editor
     {
         public bool AllowIdChange;
         public readonly NeuroReferences References;
+        public readonly NeuroEditorHistory _history;
 
         public Action AnyValueChanged;
 
@@ -28,9 +29,10 @@ namespace Ninjadini.Neuro.Editor
 
         public object DrawnObj => drawnObj;
 
-        public NeuroObjectInspector(NeuroReferences references)
+        public NeuroObjectInspector(NeuroReferences references, NeuroEditorHistory history = null)
         {
             References = references;
+            _history = history;
         }
 
         public override void Draw(Data drawData)
@@ -203,6 +205,8 @@ namespace Ninjadini.Neuro.Editor
         {
             neuroController.CreateObject(type, fromElement, resultCallback);
         }
+
+        NeuroEditorHistory IController.History => _history;
 
         public static void ShowRefIdChangedError(uint idBefore, uint idAfter)
         {

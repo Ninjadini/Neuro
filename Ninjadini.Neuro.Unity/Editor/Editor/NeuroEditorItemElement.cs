@@ -7,6 +7,7 @@ namespace Ninjadini.Neuro.Editor
 {
     public class NeuroEditorItemElement : VisualElement
     {
+        NeuroEditorHistory _history;
         UnsignedIntegerField refIdTxt;
         TextField refNameTxt;
         NeuroObjectInspector objectInspector;
@@ -19,8 +20,9 @@ namespace Ninjadini.Neuro.Editor
         
         public Action AnyValueChanged;
 
-        public NeuroEditorItemElement()
+        public NeuroEditorItemElement(NeuroEditorHistory history)
         {
+            _history = history;
             var horizontal = NeuroUiUtils.AddHorizontal(this);
             refIdTxt = new UnsignedIntegerField();
             refIdTxt.style.minWidth = 30;
@@ -78,7 +80,7 @@ namespace Ninjadini.Neuro.Editor
             }
             if (objectInspector == null)
             {
-                objectInspector = new NeuroObjectInspector(dataProvider.References);
+                objectInspector = new NeuroObjectInspector(dataProvider.References, _history);
                 Add(objectInspector);
                 objectInspector.AnyValueChanged = OnAnyValueChanged;
             }

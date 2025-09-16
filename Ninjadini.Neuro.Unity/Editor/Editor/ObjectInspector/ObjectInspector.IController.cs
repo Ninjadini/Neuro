@@ -48,6 +48,8 @@ namespace Ninjadini.Neuro.Editor
             void SwitchObjectType(object originalObject, Type newType, ref object newObject){ }
 
             void OnValueChanged(object holderObject) {}
+
+            NeuroEditorHistory History => null; // OK to be null
         }
         
         public class BasicController : IController

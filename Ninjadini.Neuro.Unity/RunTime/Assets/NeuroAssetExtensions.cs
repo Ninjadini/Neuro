@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
@@ -8,12 +9,12 @@ using Object = UnityEngine.Object;
 namespace Ninjadini.Neuro
 {
     public static class NeuroAssetExtensions
-    {/*
+    {
         public static async Task<TObject> LoadAssetAsync<TObject>(this AssetAddress assetAddress) where TObject : Object
         {
             if (assetAddress.IsEmpty())
             {
-                throw new Exception("Invalid asset address");
+                return null;
             }
             if (typeof(Component).IsAssignableFrom(typeof(TObject)))
             {
@@ -29,7 +30,7 @@ namespace Ninjadini.Neuro
             var addressReq = Addressables.LoadAssetAsync<TObject>(assetAddress.Address);
             await addressReq.Task;
             return addressReq.Result;
-        }*/
+        }
         
         public static TObject LoadFromResources<TObject>(this AssetAddress assetAddress) where TObject : Object
         {

@@ -145,7 +145,7 @@ namespace Ninjadini.Neuro.Editor
             var scrollView = new ScrollView();
             scrollView.style.flexGrow = 1;
             Add(scrollView);
-            itemEditor = new NeuroEditorItemElement();
+            itemEditor = new NeuroEditorItemElement(history);
             itemEditor.AnyValueChanged = ItemValueChanged;
             itemEditor.style.flexShrink = 1f;
             scrollView.Add(itemEditor);
