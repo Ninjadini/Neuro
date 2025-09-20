@@ -34,6 +34,29 @@ namespace Ninjadini.Neuro.Editor
 
             return CreateUnsupportedDrawer(data.name, data.type, data.getter);
         }
+        
+        public static VisualElement CreateFieldWithStandardStyle(in ObjectInspector.Data data)
+        {
+            return AddStandardStyle(CreateField(data));
+        }
+
+        static VisualElement AddStandardStyle(VisualElement element)
+        {
+            if (element != null)
+            {
+                var elementStyle = element.style;
+                elementStyle.backgroundColor = new Color(0.24f, 0.24f, 0.24f);
+                elementStyle.marginLeft = 1;
+                elementStyle.paddingLeft = 3;
+                elementStyle.marginTop = 0;
+                elementStyle.marginBottom = 0;
+                elementStyle.paddingRight = elementStyle.paddingTop = elementStyle.paddingBottom = 1;
+                elementStyle.borderBottomWidth = elementStyle.borderTopWidth = 2;
+                elementStyle.borderLeftWidth = elementStyle.borderRightWidth = 3;
+                elementStyle.borderBottomColor = elementStyle.borderLeftColor = elementStyle.borderRightColor = elementStyle.borderTopColor = new Color(0.22f, 0.22f, 0.22f);
+            }
+            return element;
+        }
 
         public static void ApplyTooltip(VisualElement visualElement, MemberInfo memberInfo, Type objType)
         {

@@ -97,6 +97,7 @@ namespace Ninjadini.Neuro.Editor
                 }
                 foldout.hierarchy[0].style.marginLeft = 0f;
                 foldout.style.flexGrow = 1f;
+                foldout.contentContainer.style.marginLeft = 13;
                 foldout.text = data.GetDisplayName();
                 openFoldout ??= data.Controller?.ShouldAutoExpandFoldout(data.type) ?? false;
                 foldout.SetValueWithoutNotify(openFoldout.Value);
@@ -237,7 +238,7 @@ namespace Ninjadini.Neuro.Editor
                 }
                 var fieldData = CreateDataForField(data, obj, fieldInfo);
                 CreateFieldHeader(fieldData, ref container);
-                var element = ObjectInspectorFields.CreateField(fieldData);
+                var element = ObjectInspectorFields.CreateFieldWithStandardStyle(fieldData);
                 if (element != null)
                 {
                     element.userData = fieldInfo;
@@ -368,6 +369,7 @@ namespace Ninjadini.Neuro.Editor
                     var lbl = new Label(header.header);
                     lbl.style.paddingTop = 12;
                     lbl.style.paddingLeft = 4;
+                    lbl.style.paddingBottom = 2;
                     lbl.style.unityFontStyleAndWeight = FontStyle.Bold;
                     container.Add(lbl);
                 }
