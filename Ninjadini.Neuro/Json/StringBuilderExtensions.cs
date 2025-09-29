@@ -201,7 +201,7 @@ namespace Ninjadini.Neuro.Utils
                 // TODO need to start adding e##
                 return stringBuilder.Append(num);
             }
-            var wholeNum = (uint)num;
+            var wholeNum = (ulong)num;
             stringBuilder.AppendNum(wholeNum, group);
             AppendDecimal(stringBuilder, num - wholeNum, maxDecimalPlaces, minDecimalPlaces);
             return stringBuilder;

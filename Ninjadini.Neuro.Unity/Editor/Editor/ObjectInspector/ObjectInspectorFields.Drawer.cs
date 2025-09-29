@@ -733,6 +733,24 @@ namespace Ninjadini.Neuro.Editor
             listView.itemsSource = value;
             listView.schedule.Execute(() => UpdateCall(false)).Every(RefreshRate);
             UpdateCall(true);
+            
+            
+            var foldout = listView.Q<Foldout>();
+            if (foldout != null)
+            {
+                var openFoldout = data.Controller?.History?.GetFoldout(data.path);
+                if (openFoldout.HasValue)
+                {
+                    foldout.value = openFoldout.Value;
+                }
+                foldout.RegisterValueChangedCallback(delegate(ChangeEvent<bool> evt)
+                {
+                    if (evt.currentTarget == evt.target)
+                    {
+                        data.Controller?.History?.SetFoldout(data.path, evt.newValue);
+                    }
+                });
+            }
             return listView;
         }
 
@@ -992,6 +1010,23 @@ namespace Ninjadini.Neuro.Editor
             {
                 SyncKeysAndValuesFromList(true);
             };
+            var foldout = listView.Q<Foldout>();
+            if (foldout != null)
+            {
+                var openFoldout = data.Controller?.History?.GetFoldout(data.path);
+                if (openFoldout.HasValue)
+                {
+                    foldout.value = openFoldout.Value;
+                }
+                foldout.RegisterValueChangedCallback(delegate(ChangeEvent<bool> evt)
+                {
+                    if (evt.currentTarget == evt.target)
+                    {
+                        data.Controller?.History?.SetFoldout(data.path, evt.newValue);
+                    }
+                });
+            }
+            
             SyncKeysAndValuesToList();
             listView.itemsSource = keysAndValuesList;
             listView.schedule.Execute(() => UpdateCall(false)).Every(RefreshRate);

@@ -88,7 +88,7 @@ namespace Ninjadini.Neuro.Editor
                 if (references.GetTable(type).Get(id) is INeuroRefDropDownCustomizable item)
                 {
                     var txt = item.GetRefDropdownText(references);
-                    if(txt != null)
+                    if(!string.IsNullOrEmpty(txt))
                     {
                         return txt;
                     }
@@ -104,6 +104,7 @@ namespace Ninjadini.Neuro.Editor
             img.style.position = Position.Absolute;
             img.style.right = 16;
             img.style.width = img.style.height = 24;
+            img.pickingMode = PickingMode.Ignore;
             overlayElement = img;
 
             bindOverlayElement = (element, id) =>
