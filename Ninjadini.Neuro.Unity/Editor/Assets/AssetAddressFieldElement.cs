@@ -34,13 +34,11 @@ namespace Ninjadini.Neuro.Editor
             var result = new AssetAddress();
             if (obj)
             {
-                drawnAddress = AssetAddressEditorUtils.GetAddress(obj);
-                var path = AssetDatabase.GetAssetPath(obj);
-                if (!AssetAddressEditorUtils.IsInResourcePath(path) && !AssetAddressEditorUtils.IsAddressablePath(path))
+                if (!AssetAddressEditorUtils.PrepObjectLinkable(obj))
                 {
-                    EditorUtility.DisplayDialog("", "Object is not not Resources folder and it is not an Addressable.", "OK");
                     return;
                 }
+                drawnAddress = AssetAddressEditorUtils.GetAddress(obj);
             }
             else
             {
