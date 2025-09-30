@@ -158,7 +158,7 @@ namespace Ninjadini.Neuro.Editor
             var path = AssetDatabase.GetAssetPath(obj);
             if (!IsInResourcePath(path) && !IsAddressablePath(path))
             {
-                if (!EditorUtility.DisplayDialog("", "Object is not not Resources folder and it is not an Addressable.\nMark as addressable?", "Make Addressable", "Cancel"))
+                if (!EditorUtility.DisplayDialog("", "Object is not in Resources and not Addressable.\nMark it as Addressable now?", "Mark Addressable", "Cancel"))
                 {
                     return false;
                 }
