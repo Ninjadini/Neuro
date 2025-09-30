@@ -153,5 +153,51 @@ namespace Ninjadini.Neuro.Editor
             }
             return null;
         }
+        public static bool PrepObjectLinkable(Object obj)
+        {
+            var path = AssetDatabase.GetAssetPath(obj);
+            if (!IsInResourcePath(path) && !IsAddressablePath(path))
+            {
+                if (!EditorUtility.DisplayDialog("", "Object is not not Resources folder and it is not an Addressable.\nMark as addressable?", "Make Addressable", "Cancel"))
+                {
+                    return false;
+                }
+                MakeAddressable(obj);
+            }
+            return true;
+        }
+
+        public static void MakeAddressable(Object obj)
+        {
+            var path = AssetDatabase.GetAssetPath(obj);
+            if (string.IsNullOrEmpty(path))
+            {
+                return;
+            }
+            var settings = AddressableAssetSettingsDefaultObject.Settings;
+            if (settings == null)
+            {
+                EditorUtility.DisplayDialog("", "Addressables not set up. Go to 'Window → Asset Management → Addressables → Groups' first.", "OK");
+                return;
+            }
+            if (path.ToLower().Contains("/resources/"))
+            {
+                EditorUtility.DisplayDialog("", "Object is already in resources folder", "OK");
+                return;
+            }
+            var guid = AssetDatabase.AssetPathToGUID(path);
+            var entry = settings.FindAssetEntry(guid);
+            if (entry != null)
+            {
+                return;
+            }
+            entry = settings.CreateOrMoveEntry(guid, settings.DefaultGroup);
+            if (entry != null)
+            {
+                entry.address = obj.name; // Use asset name as address
+                Debug.Log($"✅ Made {obj.name} Addressable (address: {entry.address})");
+            }
+            AssetDatabase.SaveAssets();
+        }
     }
 }
