@@ -34,11 +34,15 @@ namespace Ninjadini.Neuro.Editor
             var result = new AssetAddress();
             if (obj)
             {
-                if (!AssetAddressEditorUtils.PrepObjectLinkable(obj))
+                if (AssetAddressEditorUtils.PrepObjectLinkable(obj))
                 {
-                    return;
+                    drawnAddress = AssetAddressEditorUtils.GetAddress(obj);
                 }
-                drawnAddress = AssetAddressEditorUtils.GetAddress(obj);
+                else
+                {
+                    drawnAddress = null;
+                    objectField.value = null;
+                }
             }
             else
             {
