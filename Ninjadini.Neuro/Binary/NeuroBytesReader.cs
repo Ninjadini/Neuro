@@ -410,10 +410,6 @@ namespace Ninjadini.Neuro
 
         void INeuroSync.SyncBaseClass<TRoot, TBase>(TBase value)
         {
-            if (nextHeader == NeuroConstants.EndOfChild)
-            {
-                return;
-            }
             if (!SeekKey(BaseClassKey))
             {
                 return;

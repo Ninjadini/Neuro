@@ -96,6 +96,12 @@ public partial class SubTestClass1 : BaseTestClass1
     [Neuro(2)] public string Value;
 }
     
+[Neuro(4)]
+public partial class SubTestClass2 : BaseTestClass1
+{
+    [Neuro(1)] public BaseTestClass1 Child;
+}
+    
     
 [Neuro(1)]
 public partial interface ITestInterface

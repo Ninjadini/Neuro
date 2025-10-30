@@ -307,6 +307,38 @@ namespace Ninjadini.Neuro.IntegrationTests
             Assert.AreEqual(src.value3, copyJson.value3);
             Assert.AreEqual(src.value4, copyJson.value4);
         }
+        
+        
+        [Test]
+        public void TestNested()
+        {
+            var src = new NestedClass();
+            src.BaseClassObj = new SubTestClass2()
+            {
+                Id = 123,
+                Name = "name",
+                Child = new SubTestClass1()
+                {
+                    Id = 345,
+                    Name = "child",
+                    Value = "childValue"
+                }
+            };
+            var bytes = new NeuroBytesWriter().Write(src);
+            var copy = new NeuroBytesReader().Read<NestedClass>(bytes.ToArray(), new ReaderOptions());
+
+            var child = (SubTestClass2)copy.BaseClassObj;
+            Assert.AreEqual(123, child.Id);
+            Assert.AreEqual("name", child.Name);
+            Assert.AreEqual(345, ((SubTestClass1)child.Child).Id);
+            Assert.AreEqual("child", ((SubTestClass1)child.Child).Name);
+            Assert.AreEqual("childValue", ((SubTestClass1)child.Child).Value);
+        }
+
+        public class NestedClass
+        {
+            [Neuro(1)] public BaseTestClass1 BaseClassObj;
+        }
 
         public partial class TypeWithDateTime
         {
