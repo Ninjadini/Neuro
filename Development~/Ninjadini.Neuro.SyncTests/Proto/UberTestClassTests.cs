@@ -71,6 +71,13 @@ namespace Ninjadini.Neuro.SyncTests
                     }
                 }
             };
+            testObj.BaseClassObj = new SubTestClass1()
+            {
+                Id = 123,
+                Name = "one",
+                NumValue = 456,
+                Value = "one2"
+            };
             TestClone(testObj);
         }
         
