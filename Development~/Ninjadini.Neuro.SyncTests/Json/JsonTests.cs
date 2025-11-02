@@ -245,6 +245,9 @@ namespace Ninjadini.Neuro.SyncTests
             Assert.AreEqual("0.0123", new StringBuilder().AppendNum(0.0123f).ToString());
             Assert.AreEqual("0.00123", new StringBuilder().AppendNum(0.00123f).ToString());
             Assert.AreEqual("123.456", new StringBuilder().AppendNum(123.456f).ToString());
+            Assert.AreEqual("100000000", new StringBuilder().AppendNum(1e8f).ToString());
+            Assert.AreEqual("1E+09", new StringBuilder().AppendNum(1e9f).ToString());
+            Assert.AreEqual("1E+10", new StringBuilder().AppendNum(1e10f).ToString());
         }
         
         [Test]
@@ -262,6 +265,10 @@ namespace Ninjadini.Neuro.SyncTests
             Assert.AreEqual("0.0123", new StringBuilder().AppendNum(0.0123).ToString());
             Assert.AreEqual("0.00123", new StringBuilder().AppendNum(0.00123).ToString());
             Assert.AreEqual("10000.00123", new StringBuilder().AppendNum(10000.00123).ToString());
+            Assert.AreEqual("27788615228878552", new StringBuilder().AppendNum(27788615228878552).ToString());
+            Assert.AreEqual("277886152288785536", new StringBuilder().AppendNum(2.7788615228878553E+17).ToString());
+            Assert.AreEqual("2.778861522887855E+18", new StringBuilder().AppendNum(2.7788615228878553E+18).ToString());
+            Assert.AreEqual("2.7788615228878553E+19", new StringBuilder().AppendNum(2.7788615228878553E+19).ToString());
         }
     }
 }
