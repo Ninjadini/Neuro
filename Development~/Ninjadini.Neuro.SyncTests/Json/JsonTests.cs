@@ -237,10 +237,14 @@ namespace Ninjadini.Neuro.SyncTests
             Assert.AreEqual("0", new StringBuilder().AppendNum(0f).ToString());
             Assert.AreEqual("123", new StringBuilder().AppendNum(123f).ToString());
             Assert.AreEqual("0.1", new StringBuilder().AppendNum(0.1f).ToString());
+            Assert.AreEqual("0.0001", new StringBuilder().AppendNum(0.0001f).ToString());
+            Assert.AreEqual("0.00001", new StringBuilder().AppendNum(0.00001f).ToString());
+            Assert.AreEqual("0.0002", new StringBuilder().AppendNum(0.0002f).ToString());
+            Assert.AreEqual("0.00002", new StringBuilder().AppendNum(0.00002f).ToString());
             Assert.AreEqual("0.123", new StringBuilder().AppendNum(0.123f).ToString());
             Assert.AreEqual("0.0123", new StringBuilder().AppendNum(0.0123f).ToString());
             Assert.AreEqual("0.00123", new StringBuilder().AppendNum(0.00123f).ToString());
-            Assert.AreEqual("123.00456", new StringBuilder().AppendNum(123.00456f).ToString());
+            Assert.AreEqual("123.456", new StringBuilder().AppendNum(123.456f).ToString());
         }
         
         [Test]
@@ -249,6 +253,11 @@ namespace Ninjadini.Neuro.SyncTests
             Assert.AreEqual("0", new StringBuilder().AppendNum(0).ToString());
             Assert.AreEqual("123", new StringBuilder().AppendNum(123).ToString());
             Assert.AreEqual("0.1", new StringBuilder().AppendNum(0.1).ToString());
+            Assert.AreEqual("0.00001", new StringBuilder().AppendNum(0.00001).ToString());
+            Assert.AreEqual("0.000001", new StringBuilder().AppendNum(0.000001).ToString());
+            Assert.AreEqual("0.00002", new StringBuilder().AppendNum(0.00002).ToString());
+            Assert.AreEqual("0.000002", new StringBuilder().AppendNum(0.000002).ToString());
+            Assert.AreEqual("0", new StringBuilder().AppendNum(0.0000002).ToString());
             Assert.AreEqual("0.123", new StringBuilder().AppendNum(0.123).ToString());
             Assert.AreEqual("0.0123", new StringBuilder().AppendNum(0.0123).ToString());
             Assert.AreEqual("0.00123", new StringBuilder().AppendNum(0.00123).ToString());

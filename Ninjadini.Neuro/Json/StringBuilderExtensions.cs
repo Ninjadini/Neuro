@@ -136,7 +136,7 @@ namespace Ninjadini.Neuro.Utils
 
         static void AppendDecimal(StringBuilder stringBuilder, float decimalValue, int maxDecimalPlaces, int minDecimalPlaces)
         {
-            if (maxDecimalPlaces > 0 && decimalValue > 0.000001f)
+            if (maxDecimalPlaces > 0 && decimalValue >= 0.00001f)
             {
                 stringBuilder.Append(DecimalSeparator);
                 var remainingInt = (uint)Math.Round(decimalValue * 100000f);
@@ -209,10 +209,10 @@ namespace Ninjadini.Neuro.Utils
 
         static void AppendDecimal(StringBuilder stringBuilder, double decimalValue, int maxDecimalPlaces, int minDecimalPlaces)
         {
-            if (maxDecimalPlaces > 0 && decimalValue > 0.000001)
+            if (maxDecimalPlaces > 0 && decimalValue >= 0.000001)
             {
                 stringBuilder.Append(DecimalSeparator);
-                var remainingInt = (uint)Math.Round(decimalValue * 100000);
+                var remainingInt = (uint)Math.Round(decimalValue * 1000000);
                 
                 Span<char> list = stackalloc char[6];
                 var count = 0;
@@ -229,10 +229,10 @@ namespace Ninjadini.Neuro.Utils
                 }
                 if (count >= 0)
                 {
-                    if (count < 5)
+                    if (count < 6)
                     {
                         var cc = count;
-                        while (cc < 5)
+                        while (cc < 6)
                         {
                             stringBuilder.Append('0');
                             cc++;
