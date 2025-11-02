@@ -123,9 +123,8 @@ namespace Ninjadini.Neuro.Utils
                 stringBuilder.Append(NegativeSign);
                 num = -num;
             }
-            if (num > 999999899999999999999f)
+            if (num >= 1E8f)
             {
-                // TODO need to start adding e##
                 return stringBuilder.Append(num);
             }
             var wholeNum = (uint)num;
@@ -196,9 +195,8 @@ namespace Ninjadini.Neuro.Utils
                 stringBuilder.Append(NegativeSign);
                 num = -num;
             }
-            if (num > 999999899999999999999f)
+            if (num >= 1E18)
             {
-                // TODO need to start adding e##
                 return stringBuilder.Append(num);
             }
             var wholeNum = (ulong)num;
