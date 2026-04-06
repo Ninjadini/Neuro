@@ -26,7 +26,7 @@ namespace Ninjadini.Neuro
         
 #if !NEURO_DISABLE_STATIC_REFERENCES
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T GetValue()
+        public readonly T GetValue()
         {
             return NeuroReferences.Default?.Get<T>(RefId);
         }
