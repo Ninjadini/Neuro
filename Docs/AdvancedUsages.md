@@ -56,37 +56,12 @@ Your validator will also be automatically included in Unity's edit mode test run
 ### Converting external objects to be neuro friendly
 Say you want to use an object in Neuro world, but you can not modify the code, e.g. 3rd party.
 
-You can write the 'sync' code manually. This is how Unity's build in data types such as Vector3 are registered.
+You can write the 'sync' code manually. This is how Unity's build in data types such as Vector3 are registered.   
 See full example of Unity ones in this class: [NeuroDefaultUnityTypesHook.cs](Ninjadini.Neuro.Unity/RunTime/NeuroDefaultUnityTypesHook.cs)
 
 Short example using Unity.Mathematics.int2:
 ```
     // This is auto picked up by code gen to be registered because it extends from INeuroCustomTypesRegistryHook
-    public struct NeuroMathematicsTypeHooks : INeuroCustomTypesRegistryHook
-    {
-        public void Register()
-        {
-            NeuroSyncTypes.Register((INeuroSync neuro, ref int2 value) =>
-            {
-                neuro.Sync(1, nameof(value.x), ref value.x);
-                neuro.Sync(2, nameof(value.y), ref value.y);
-            });
-            // number is used for binary, name string is used for json, ref value is used for actual data read/write.
-            
-            NeuroSyncTypes.Register((INeuroSync neuro, ref int3 value) => 
-            ...etc...
-        }
-    }
-```
-Unfortunately, ^ this only makes the serialisation to work, but Neuro editor still may not know how to render this item...
-
-#### Option A: declare which fields/properties to draw (the easy way)
-
-If the type's instance fields/properties already have drawable types (primitives, Unity types with built-in editors, or other Neuro types), you can just tell the editor which members to expose using `NeuroSyncEditorFields`. No custom drawer needed.
-
-`NeuroSyncEditorFields.AddField` / `AddProperty` are runtime-callable but marked `[Conditional("UNITY_EDITOR")]`, so the calls are stripped from player builds at compile time. The cleanest place to put them is right next to your `NeuroSyncTypes.Register(...)` call inside the `INeuroCustomTypesRegistryHook`:
-
-```
     public struct NeuroMathematicsTypeHooks : INeuroCustomTypesRegistryHook
     {
         public void Register()
@@ -98,21 +73,29 @@ If the type's instance fields/properties already have drawable types (primitives
                     neuro.Sync(1, nameof(value.x), ref value.x);
                     neuro.Sync(2, nameof(value.y), ref value.y);
                 });
-                // Tell the editor to draw int2.x and int2.y as fields.
+                // number is used for binary, name string is used for json, ref value is used for actual data read/write.
+
+                // Tell the Neuro editor which members to draw for this type.
                 // Use AddProperty(...) instead if the member is a property rather than a field.
                 NeuroSyncEditorFields.AddField(typeof(int2), nameof(int2.x));
                 NeuroSyncEditorFields.AddField(typeof(int2), nameof(int2.y));
             }
-            // ...etc for int3, int4...
+            
+            NeuroSyncTypes.Register((INeuroSync neuro, ref int3 value) => 
+            ...etc...
         }
     }
 ```
+The `NeuroSyncTypes.Register(...)` call teaches Neuro how to serialise the type.   
+The `NeuroSyncEditorFields.AddField` / `AddProperty` calls then tell the Neuro editor which instance members of the type to draw in the inspector — without these, the editor wouldn't know which fields of a non-`[Neuro]` type to render.   
+As long as those members have drawable types (primitives, Unity types with built-in editors, other Neuro types), no custom drawer code is required.
 
-That's it — the inspector will now render `int2` as two `int` fields, with no editor-only code required.
+> [!TIP]
+> `NeuroSyncEditorFields.AddField` / `AddProperty` are marked `[Conditional("UNITY_EDITOR")]`, so the calls (and their argument expressions) are stripped from player builds at compile time — there's no runtime cost outside the editor, which is why it's safe to put them right next to your serialisation registration.
 
-#### Option B: register a fully custom drawer
+#### When you need more control over how it's drawn
 
-If you need something fancier than per-field rendering (e.g. you want a single combined widget like `Vector2IntField`), register a custom drawer via `ICustomNeuroEditorProvider`:
+If per-field rendering isn't enough for a particular type (e.g. you'd rather draw `int2` as a single combined `Vector2IntField` widget), skip the `NeuroSyncEditorFields` calls for that type and register a custom drawer via `ICustomNeuroEditorProvider` instead:
 
 ```
     public class NeuroMathematicsEditors : ICustomNeuroEditorProvider
