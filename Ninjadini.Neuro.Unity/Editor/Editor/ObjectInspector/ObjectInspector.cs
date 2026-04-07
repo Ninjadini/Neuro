@@ -295,7 +295,7 @@ namespace Ninjadini.Neuro.Editor
             {
                 fieldsParent.Add(new HelpBox()
                 {
-                    text = $"Nothing to draw for {type}, maybe unsupported type?",
+                    text = $"Nothing to draw for {type}, could be:\n- Unsupported type\n- Needs registering to NeuroSyncEditorFields\n- Needs a custom drawer, see ICustomNeuroEditorProvider",
                     messageType = HelpBoxMessageType.Warning
                 });
             }

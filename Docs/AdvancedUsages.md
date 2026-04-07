@@ -78,8 +78,41 @@ Short example using Unity.Mathematics.int2:
         }
     }
 ```
-Unfortunately, ^ this only makes the serialisation to work, but Neuro editor still may not know how to render this item...  
-We will need to also register custom editor drawer for neuro.
+Unfortunately, ^ this only makes the serialisation to work, but Neuro editor still may not know how to render this item...
+
+#### Option A: declare which fields/properties to draw (the easy way)
+
+If the type's instance fields/properties already have drawable types (primitives, Unity types with built-in editors, or other Neuro types), you can just tell the editor which members to expose using `NeuroSyncEditorFields`. No custom drawer needed.
+
+`NeuroSyncEditorFields.AddField` / `AddProperty` are runtime-callable but marked `[Conditional("UNITY_EDITOR")]`, so the calls are stripped from player builds at compile time. The cleanest place to put them is right next to your `NeuroSyncTypes.Register(...)` call inside the `INeuroCustomTypesRegistryHook`:
+
+```
+    public struct NeuroMathematicsTypeHooks : INeuroCustomTypesRegistryHook
+    {
+        public void Register()
+        {
+            if (NeuroSyncTypes.IsEmpty<int2>())
+            {
+                NeuroSyncTypes.Register((INeuroSync neuro, ref int2 value) =>
+                {
+                    neuro.Sync(1, nameof(value.x), ref value.x);
+                    neuro.Sync(2, nameof(value.y), ref value.y);
+                });
+                // Tell the editor to draw int2.x and int2.y as fields.
+                // Use AddProperty(...) instead if the member is a property rather than a field.
+                NeuroSyncEditorFields.AddField(typeof(int2), nameof(int2.x));
+                NeuroSyncEditorFields.AddField(typeof(int2), nameof(int2.y));
+            }
+            // ...etc for int3, int4...
+        }
+    }
+```
+
+That's it — the inspector will now render `int2` as two `int` fields, with no editor-only code required.
+
+#### Option B: register a fully custom drawer
+
+If you need something fancier than per-field rendering (e.g. you want a single combined widget like `Vector2IntField`), register a custom drawer via `ICustomNeuroEditorProvider`:
 
 ```
     public class NeuroMathematicsEditors : ICustomNeuroEditorProvider
@@ -88,13 +121,13 @@ We will need to also register custom editor drawer for neuro.
         {
             if (data.type == typeof(int2))
             {
-                return ObjectInspectorFields.CreateDrawer<Vector2Int, int2>(data, new Vector2IntField(), 
+                return ObjectInspectorFields.CreateDrawer<Vector2Int, int2>(data, new Vector2IntField(),
                     (c) => new Vector2Int(c.x, c.y),
                     vector2 => new int2(vector2.x, vector2.y));
             }
             if (data.type == typeof(int3))
             ...etc...
-                
+
             return null;
         }
     }

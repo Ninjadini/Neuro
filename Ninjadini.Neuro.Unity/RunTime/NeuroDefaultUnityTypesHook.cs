@@ -33,6 +33,9 @@ namespace Ninjadini.Neuro.Sync
                         value.a = (byte)(num >> 24);
                     }
                 });
+                // not necessary here because we use built-in Color32 field editor
+                // NeuroSyncEditorFields.AddProperty(typeof(Color32), nameof(Color32.r));
+                // ...
             
             if(NeuroSyncTypes.IsEmpty<Color>())
                 NeuroSyncTypes.Register(FieldSizeType.VarInt, (INeuroSync neuro, ref Color value) =>
@@ -55,19 +58,34 @@ namespace Ninjadini.Neuro.Sync
                         value.a = ((num >> Bits3) & BaseL) / Base;
                     }
                 });
+            // not necessary here because we use built-in Color field editor
+            // NeuroSyncEditorFields.AddProperty(typeof(Color), nameof(Color.r));
+            // ...
             
             if(NeuroSyncTypes.IsEmpty<Vector3>())
+            {
                 NeuroSyncTypes.Register((INeuroSync neuro, ref Vector3 value) => {
                     neuro.Sync(1, nameof(value.x), ref value.x, 0f);
                     neuro.Sync(2, nameof(value.y), ref value.y, 0f);
                     neuro.Sync(3, nameof(value.z), ref value.z, 0f);
                 });
+                // not necessary here because we use built-in Vector3 field editor
+                // NeuroSyncEditorFields.AddField(typeof(Vector3), nameof(Vector3.x));
+                // NeuroSyncEditorFields.AddField(typeof(Vector3), nameof(Vector3.y));
+                // NeuroSyncEditorFields.AddField(typeof(Vector3), nameof(Vector3.z));
+            }
             if(NeuroSyncTypes.IsEmpty<Vector2>())
+            {
                 NeuroSyncTypes.Register((INeuroSync neuro, ref Vector2 value) => {
                     neuro.Sync(1, nameof(value.x), ref value.x, 0f);
                     neuro.Sync(2, nameof(value.y), ref value.y, 0f);
                 });
+                // not necessary here because we use built-in Vector2 field editor
+                // NeuroSyncEditorFields.AddField(typeof(Vector2), nameof(Vector2.x));
+                // NeuroSyncEditorFields.AddField(typeof(Vector2), nameof(Vector2.y));
+            }
             if(NeuroSyncTypes.IsEmpty<Vector2Int>())
+            {
                 NeuroSyncTypes.Register((INeuroSync neuro, ref Vector2Int value) =>
                 {
                     // they are properties so this is a long winded way :(
@@ -78,7 +96,12 @@ namespace Ninjadini.Neuro.Sync
                     value.x = x;
                     value.y = y;
                 });
+                // not necessary here because we use built-in Vector2Int field editor
+                // NeuroSyncEditorFields.AddProperty(typeof(Vector2Int), nameof(Vector2Int.x));
+                // NeuroSyncEditorFields.AddProperty(typeof(Vector2Int), nameof(Vector2Int.y));
+            }
             if(NeuroSyncTypes.IsEmpty<Vector3Int>())
+            {
                 NeuroSyncTypes.Register((INeuroSync neuro, ref Vector3Int value) =>
                 {
                     // they are properties so this is a long winded way :(
@@ -92,9 +115,15 @@ namespace Ninjadini.Neuro.Sync
                     value.y = y;
                     value.z = z;
                 });
-            
-            
+                // not necessary here because we use built-in Vector3Int field editor
+                // NeuroSyncEditorFields.AddProperty(typeof(Vector3Int), nameof(Vector3Int.x));
+                // NeuroSyncEditorFields.AddProperty(typeof(Vector3Int), nameof(Vector3Int.y));
+                // NeuroSyncEditorFields.AddProperty(typeof(Vector3Int), nameof(Vector3Int.z));
+            }
+
+
             if(NeuroSyncTypes.IsEmpty<Rect>())
+            {
                 NeuroSyncTypes.Register((INeuroSync neuro, ref Rect value) =>
                 {
                     var pos = value.position;
@@ -106,7 +135,14 @@ namespace Ninjadini.Neuro.Sync
                     value.position = pos;
                     value.size = size;
                 });
+                // not necessary here because we use built-in Rect field editor
+                // NeuroSyncEditorFields.AddProperty(typeof(Rect), nameof(Rect.x));
+                // NeuroSyncEditorFields.AddProperty(typeof(Rect), nameof(Rect.y));
+                // NeuroSyncEditorFields.AddProperty(typeof(Rect), nameof(Rect.width));
+                // NeuroSyncEditorFields.AddProperty(typeof(Rect), nameof(Rect.height));
+            }
             if(NeuroSyncTypes.IsEmpty<RectInt>())
+            {
                 NeuroSyncTypes.Register((INeuroSync neuro, ref RectInt value) =>
                 {
                     // they are properties so this is a long winded way :(
@@ -123,7 +159,14 @@ namespace Ninjadini.Neuro.Sync
                     value.width = width;
                     value.height = height;
                 });
+                // not necessary here because we use built-in RectInt field editor
+                // NeuroSyncEditorFields.AddProperty(typeof(RectInt), nameof(RectInt.x));
+                // NeuroSyncEditorFields.AddProperty(typeof(RectInt), nameof(RectInt.y));
+                // NeuroSyncEditorFields.AddProperty(typeof(RectInt), nameof(RectInt.width));
+                // NeuroSyncEditorFields.AddProperty(typeof(RectInt), nameof(RectInt.height));
+            }
             if(NeuroSyncTypes.IsEmpty<Bounds>())
+            {
                 NeuroSyncTypes.Register((INeuroSync neuro, ref Bounds value) =>
                 {
                     // they are properties so this is a long winded way :(
@@ -138,7 +181,12 @@ namespace Ninjadini.Neuro.Sync
                     value.center = pos;
                     value.extents = extents;
                 });
+                // not necessary here because we use built-in Bounds field editor
+                // NeuroSyncEditorFields.AddProperty(typeof(Bounds), nameof(Bounds.center));
+                // NeuroSyncEditorFields.AddProperty(typeof(Bounds), nameof(Bounds.extents));
+            }
             if(NeuroSyncTypes.IsEmpty<BoundsInt>())
+            {
                 NeuroSyncTypes.Register((INeuroSync neuro, ref BoundsInt value) =>
                 {
                     // they are properties so this is a long winded way :(
@@ -149,6 +197,10 @@ namespace Ninjadini.Neuro.Sync
                     value.position = pos;
                     value.size = size;
                 });
+                // not necessary here because we use built-in BoundsInt field editor
+                // NeuroSyncEditorFields.AddProperty(typeof(BoundsInt), nameof(BoundsInt.position));
+                // NeuroSyncEditorFields.AddProperty(typeof(BoundsInt), nameof(BoundsInt.size));
+            }
         }
     }
 }
