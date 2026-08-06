@@ -29,7 +29,7 @@ namespace Ninjadini.Neuro.CodeGen
             catch (Exception e)
             {
                 context.ReportDiagnostic(
-                    Diagnostic.Create(NeuroSourceAnalyzer.ExceptionThrown, null, e.ToString())
+                    Diagnostic.Create(NeuroSourceAnalyzer.ExceptionThrown, null, e.Message+"\n"+e.StackTrace)
                     );
                 
                 // This is a unity specific problem where it doesn't show an error for ReportDiagnostic() during the 'generation' step.
@@ -93,7 +93,7 @@ public static class ");
             strBuilder.Append(". ");
             strBuilder.Append(timeNow.Ticks);
             strBuilder.Append(". CodeGen DLL creation date: ");
-            strBuilder.Append(new System.IO.FileInfo(GetType().Assembly.Location).LastWriteTime);
+            strBuilder.Append(GetCodeGenDllDate());
             strBuilder.AppendLine();
             
             if (generationResult.RegistryHooks != null)
@@ -195,6 +195,21 @@ public static class NeuroTypesRegister
     }
 }");
 */
+        }
+
+        string GetCodeGenDllDate()
+        {
+            // Assembly.Location is empty when the analyzer was loaded from memory rather than a file,
+            // and the shadow copied file may no longer exist by the time we get here.
+            try
+            {
+                var location = GetType().Assembly.Location;
+                return string.IsNullOrEmpty(location) ? "unknown" : new System.IO.FileInfo(location).LastWriteTime.ToString();
+            }
+            catch (Exception)
+            {
+                return "unknown";
+            }
         }
 
         void AppendPartialClasses(StringBuilder strBuilder, GenerationResult generationResult)
