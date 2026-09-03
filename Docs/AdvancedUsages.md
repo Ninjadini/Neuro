@@ -6,6 +6,15 @@ var bytes = NeuroBytesWriter.Shared.Write(myData).ToArray();
 // Read byte array to neuro object
 var myReadData = NeuroBytesReader.Shared.Read<MyData>(bytes);
 ```
+> [!WARNING]
+> `Write()` returns a span over the writer's own buffer, which the next `Write()` on the same writer overwrites
+> in place - a span you are still holding silently turns into the other object's bytes:
+> ```
+> var a = NeuroBytesWriter.Shared.Write(objA);   // span into the shared buffer
+> var b = NeuroBytesWriter.Shared.Write(objB);   // a now reads as objB's bytes, no error
+> ```
+> So call `.ToArray()` on the result before writing anything else, unless you are done with it by then.
+> The same goes for `GetCurrentBytesChunk()`.
 
 ### Clone neuro data via binary serialization
 ```
@@ -20,6 +29,35 @@ var jsonString = NeuroJsonWriter.Shared.Write(data);
 // Read JSON string to neuro object
 var myData = NeuroJsonReader.Shared.Read<MyData>(jsonString);
 ```
+
+### Which read / write call do I use?
+Both the binary and JSON reader/writer have the same three pairs. They differ only in how the type is worked out on the reading side.
+
+| | Write | Read | Use when |
+|---|---|---|---|
+| **Generic** | `Write(value)` | `Read<MyType>(data)` | You know the type at compile time. Almost always this one. |
+| **Runtime type** | `WriteObject(value)` | `ReadObject(data, type)` | You only have a `System.Type`. Same data format as above, just a bit slower - it uses reflection once per type. |
+| **Global type** | `WriteGlobalTyped(value)` | `ReadGlobalTyped(data)` | The reading side has no idea what to expect. The type id is stored in the data, so the type needs a `[NeuroGlobalType]` attribute. Not interchangeable with the other two. |
+
+#### Sub classes
+The generic parameter is only a hint - what gets written is the object's actual runtime type.
+So you can write through a base class or interface and read it back as the sub class:
+```
+Animal animal = new Dog() { Barks = 7 };
+
+var bytes = NeuroBytesWriter.Shared.Write(animal).ToArray();   // writes it as a Dog
+var result = NeuroBytesReader.Shared.Read<Animal>(bytes);      // result is a Dog
+```
+You can read as any base type of the written object. Reading as an unrelated type (`Read<Cat>` above) throws.
+
+#### Empty input
+Reading nothing gives you back nothing rather than an exception - empty bytes, and `null` / `""` / `"null"` json,
+all read back as `null` on all three read calls. That mirrors the writers, which emit exactly those for a null value.
+
+#### Top level types
+`Write` / `Read` need a neuro object - a class or struct with `[Neuro]` fields.
+A bare `int`, `string`, `List<>` etc has no header of its own so there would be nothing to read it back with; those calls throw.
+Put the value in a field of a neuro object and write that instead.
 > [!TIP]
 > JSON output will print references and enum in this format `"myItem": "2:mySecondItemName"`
 > 
