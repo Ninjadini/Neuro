@@ -162,7 +162,15 @@ namespace Ninjadini.Neuro.Sync
             }
             var subTypesType = typeof(NeuroSyncTypes<>).MakeGenericType(type);
             var method = subTypesType.GetMethod("GetTypeInfo", BindingFlags.NonPublic | BindingFlags.Static);
-            result = (TypeInfo) method.Invoke(null, null);
+            try
+            {
+                result = (TypeInfo) method.Invoke(null, null);
+            }
+            catch (TargetInvocationException e) when (e.InnerException != null)
+            {
+                // don't bury the actual problem inside a reflection exception
+                throw e.InnerException;
+            }
             _typeInfos[type] = result;
             return result;
         }
@@ -240,6 +248,11 @@ namespace Ninjadini.Neuro.Sync
                         return output;
                     }
                 };
+            }
+            if (Delegate != null)
+            {
+                // it is registered, it just isn't something that can be read/written on its own.
+                throw NeuroSyncErrors.NotAStandaloneType(typeof(T), "read or write");
             }
             throw new Exception($"{typeof(T)} is not registered. You might just need to call NeuroTypesRegister.Register()");
         }

@@ -9,6 +9,7 @@ namespace Ninjadini.Neuro
 {
     public class NeuroJsonReader : INeuroSync
     {
+        /// A per thread reader you can reuse instead of allocating one.
         [ThreadStatic] private static NeuroJsonReader _shared;
         public static NeuroJsonReader Shared => _shared ??= new NeuroJsonReader();
         
@@ -30,6 +31,11 @@ namespace Ninjadini.Neuro
             NeuroDefaultJsonSyncTypes.Register();
         }
         
+        /// Reads json written by `NeuroJsonWriter.Write()` or `WriteObject()`. This is the one to use in almost all cases.
+        /// `T` can be any base class or interface of the written object - the sub class named by "-subType" is what you get back.
+        /// Throws if the json turns out to describe a type that isn't a `T`.
+        /// Alternatives: `ReadObject(json, type)` when the type is only known at runtime,
+        /// `ReadGlobalTyped(json)` for json written by `WriteGlobalTyped()`.
         public T Read<T>(string json, ReaderOptions opts = default)
         {
             T value = default;
@@ -39,20 +45,35 @@ namespace Ninjadini.Neuro
 
         public void Read<T>(string json, ref T result, ReaderOptions opts = default)
         {
-            options = opts;
-            jsonStr = json;
-            nodes = _jsonVisitor.Visit(json);
-            currentParent = nodes.Array[0].Parent;
-            NeuroSyncTypes<T>.TryAutoRegisterTypeOrThrow();
-            var subTypeNode = FindNode(NeuroJsonWriter.FieldName_ClassTag);
             if (typeof(T) == typeof(object))
             {
                 throw GetErrorAboutGlobalTypes("json");
             }
+            NeuroSyncTypes<T>.TryAutoRegisterTypeOrThrow();
+            var sizeType = NeuroJsonSyncTypes<T>.SizeType;
+            if (sizeType != NeuroConstants.Child && sizeType != NeuroConstants.ChildWithType)
+            {
+                throw NeuroSyncErrors.NotAStandaloneType(typeof(T), "read");
+            }
+            if (IsNothingToRead(json))
+            {
+                result = default;
+                return;
+            }
+            options = opts;
+            jsonStr = json;
+            nodes = _jsonVisitor.Visit(json);
+            currentParent = nodes.Array[0].Parent;
+            var subTypeNode = FindNode(NeuroJsonWriter.FieldName_ClassTag);
             if (subTypeNode.Type != NeuroJsonTokenizer.NodeType.Unknown)
             {
                 var tag = GetFirstUintPart(subTypeNode.Value);
                 NeuroSyncSubTypes<T>.Sync(this, tag, ref result);
+            }
+            else if (sizeType == NeuroConstants.ChildWithType)
+            {
+                // T is itself a registered sub class, the json just didn't spell the tag out.
+                NeuroSyncSubTypes<T>.Sync(this, NeuroSyncSubTypes<T>.GetTag(typeof(T)), ref result);
             }
             else
             {
@@ -60,7 +81,8 @@ namespace Ninjadini.Neuro
             }
         }
         
-        /// This is a bit slower as it needs to use reflection once.
+        /// Same as `Read&lt;T&gt;(json)` but for when the type is only known at runtime.
+        /// This is a bit slower as it needs to use reflection once per type.
         public object ReadObject(string json, Type type, ReaderOptions opts = default)
         {
             object result = null;
@@ -71,6 +93,11 @@ namespace Ninjadini.Neuro
         /// This is a bit slower as it needs to use reflection once.
         public void ReadObject(string json, Type type, ref object resultTarget, ReaderOptions opts = default)
         {
+            if (IsNothingToRead(json))
+            {
+                resultTarget = null;
+                return;
+            }
             options = opts;
             jsonStr = json;
             nodes = _jsonVisitor.Visit(json);
@@ -82,9 +109,15 @@ namespace Ninjadini.Neuro
             resultTarget = typeInfo.Sync(this, tag, resultTarget);
         }
         
+        /// Reads json written by `NeuroJsonWriter.WriteGlobalTyped()`, working the type out from the "-globalType" field.
+        /// Use this when you don't know what type to expect. Throws if the json has no "-globalType" field.
         public object ReadGlobalTyped(string json, ReaderOptions opts = default)
         {
             object result = null;
+            if (IsNothingToRead(json))
+            {
+                return null;
+            }
             options = opts;
             jsonStr = json;
             nodes = _jsonVisitor.Visit(json);
@@ -103,6 +136,17 @@ namespace Ninjadini.Neuro
                 throw new Exception(NoGlobalTypeIdFoundErrMsg);
             }
             return result;
+        }
+
+        /// null, empty and a literal `null` document all read back as no value, mirroring what the writers emit.
+        static bool IsNothingToRead(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return true;
+            }
+            var trimmed = json.AsSpan().Trim();
+            return trimmed.Length == 4 && trimmed.SequenceEqual("null".AsSpan());
         }
 
         T INeuroSync.GetPooled<T>()

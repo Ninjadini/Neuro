@@ -11,6 +11,7 @@ namespace Ninjadini.Neuro
         public const string FieldName_GlobalType = "-globalType";
         public const string FieldName_ClassTag = "-subType";
         
+        /// A per thread writer you can reuse instead of allocating one.
         [ThreadStatic] private static NeuroJsonWriter _shared;
         public static NeuroJsonWriter Shared => _shared ??= new NeuroJsonWriter();
         
@@ -41,6 +42,11 @@ namespace Ninjadini.Neuro
             NeuroDefaultJsonSyncTypes.Register();
         }
         
+        /// Writes a neuro object to a JSON string. This is the one to use in almost all cases.
+        /// `T` can be the base class or interface of `value` - the actual runtime type is written out as a "-subType" field and read back.
+        /// Read it back with `NeuroJsonReader.Read&lt;T&gt;(json)`, where T can be any base type of the written object.
+        /// Alternatives: `WriteObject(value)` when you only have a `System.Type` at read time,
+        /// `WriteGlobalTyped(value)` when the reader has no idea what type to expect - see [NeuroGlobalType].
         public string Write<T>(T value, NeuroReferences refs = null, Options options = 0)
         {
             if (defaultStringBuilder == null)
@@ -57,6 +63,7 @@ namespace Ninjadini.Neuro
             return result;
         }
         
+        /// Same as `Write&lt;T&gt;(value)` but appends into your own StringBuilder instead of allocating a string.
         public void WriteTo<T>(StringBuilder strBuilder, ref T value, NeuroReferences refs = null, Options options = 0)
         {
             if (strBuilder == null)
@@ -65,23 +72,29 @@ namespace Ninjadini.Neuro
             }
             if (value == null)
             {
-                stringBuilder.Append("null");
+                strBuilder.Append("null");
                 return;
             }
             if (typeof(T) == typeof(object))
             {
                 throw GetErrorAboutGlobalTypes(value.GetType());
             }
+            NeuroSyncTypes<T>.TryAutoRegisterTypeOrThrow();
+            var sizeType = NeuroJsonSyncTypes<T>.SizeType;
+            if (sizeType != NeuroConstants.Child && sizeType != NeuroConstants.ChildWithType)
+            {
+                throw NeuroSyncErrors.NotAStandaloneType(typeof(T), "write");
+            }
             opts = options & ~Options.ExcludeTopLevelGlobalType;
             references = refs ?? defaultReferences;
             stringBuilder = strBuilder;
             stringBuilder.Append("{\n");
             numIndents = 1;
-            NeuroSyncTypes<T>.TryAutoRegisterTypeOrThrow();
             
             var type = value.GetType();
             var posAtStart = stringBuilder.Length;
-            if (NeuroJsonSyncTypes<T>.SizeType == NeuroConstants.ChildWithType)
+            // The runtime type is what matters, `value` may well be a sub class of T.
+            if (sizeType == NeuroConstants.ChildWithType || type != typeof(T))
             {
                 var subTag = NeuroSyncSubTypes<T>.GetTag(type);
                 AppendSubTagAndOrName(FieldName_ClassTag, subTag, type.Name);
@@ -101,7 +114,9 @@ namespace Ninjadini.Neuro
             stringBuilder = null;
         }
         
-        /// This is a bit slower as it needs to use reflection once.
+        /// Same output as `Write&lt;T&gt;(value)` but for when the type is only known at runtime.
+        /// Read it back with `NeuroJsonReader.ReadObject(json, type)`.
+        /// This is a bit slower as it needs to use reflection once per type.
         public string WriteObject(object value, NeuroReferences refs = null, Options options = 0)
         {
             if (defaultStringBuilder == null)
@@ -127,7 +142,7 @@ namespace Ninjadini.Neuro
             }
             if (value == null)
             {
-                stringBuilder.Append("null");
+                strBuilder.Append("null");
                 return;
             }
             opts = options & ~Options.ExcludeTopLevelGlobalType;
@@ -155,6 +170,9 @@ namespace Ninjadini.Neuro
             stringBuilder = null;
         }
 
+        /// Writes the object with a "-globalType" field in front, so the reader can work out the type from the json alone.
+        /// Use this when the reading side doesn't know what to expect. The type must have a [NeuroGlobalType] attribute.
+        /// Read it back with `NeuroJsonReader.ReadGlobalTyped(json)`.
         public string WriteGlobalTyped(object value, NeuroReferences refs = null, Options options = 0)
         {
             if (defaultStringBuilder == null)

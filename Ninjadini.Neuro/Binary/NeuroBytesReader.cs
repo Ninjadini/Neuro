@@ -9,6 +9,7 @@ namespace Ninjadini.Neuro
 {
     public class NeuroBytesReader : INeuroSync
     {
+        /// A per thread reader you can reuse instead of allocating one.
         [ThreadStatic] private static NeuroBytesReader _shared;
         public static NeuroBytesReader Shared => _shared ??= new NeuroBytesReader();
 
@@ -22,6 +23,11 @@ namespace Ninjadini.Neuro
         
         const uint BaseClassKey = uint.MaxValue - 1; 
 
+        /// Reads bytes written by `NeuroBytesWriter.Write()` or `WriteObject()`. This is the one to use in almost all cases.
+        /// `T` can be any base class or interface of the written object - the sub class stored in the data is what you get back.
+        /// Throws if the data turns out to be a type that isn't a `T`.
+        /// Alternatives: `ReadObject(bytes, type)` when the type is only known at runtime,
+        /// `ReadGlobalTyped(bytes)` for data written by `WriteGlobalTyped()`.
         public T Read<T>(in BytesChunk bytesChunk, in ReaderOptions opts = default)
         {
             var result = default(T);
@@ -29,6 +35,7 @@ namespace Ninjadini.Neuro
             return result;
         }
 
+        /// Same as `Read&lt;T&gt;(bytes)` but reads into `result` if it is already an instance of the right type, saving an allocation.
         public void Read<T>(in BytesChunk bytesChunk, ref T result,  in ReaderOptions opts = default)
         {
             if (typeof(T) == typeof(object))
@@ -39,6 +46,14 @@ namespace Ninjadini.Neuro
             {
                 result = default;
                 return;
+            }
+            if (NeuroSyncTypes<T>.SizeType != NeuroConstants.Child && NeuroSyncTypes<T>.SizeType != NeuroConstants.ChildWithType)
+            {
+                NeuroSyncTypes<T>.TryAutoRegisterTypeOrThrow();
+                if (NeuroSyncTypes<T>.SizeType != NeuroConstants.Child && NeuroSyncTypes<T>.SizeType != NeuroConstants.ChildWithType)
+                {
+                    throw NeuroSyncErrors.NotAStandaloneType(typeof(T), "read");
+                }
             }
             proto.Set(bytesChunk);
             options = opts;
@@ -56,7 +71,7 @@ namespace Ninjadini.Neuro
             }
             else
             {
-                throw new Exception("Invalid type " + sizeType);
+                throw NeuroSyncErrors.NotANeuroObjectHeader(typeof(T), sizeType);
             }
             if (proto.Available > 1) // 1 byte left is fine, thats the group end tag.
             {
@@ -65,7 +80,8 @@ namespace Ninjadini.Neuro
             proto.Set(Array.Empty<byte>());
         }
 
-        /// This is a bit slower as it needs to use reflection once.
+        /// Same as `Read&lt;T&gt;(bytes)` but for when the type is only known at runtime.
+        /// This is a bit slower as it needs to use reflection once per type.
         public object ReadObject(in BytesChunk bytesChunk, Type type, in ReaderOptions opts = default)
         {
             object result = null;
@@ -76,13 +92,18 @@ namespace Ninjadini.Neuro
         /// This is a bit slower as it needs to use reflection once.
         public void ReadObject(in BytesChunk bytesChunk, Type type, ref object resultTarget, in ReaderOptions opts = default)
         {
+            if (bytesChunk.Length == 0)
+            {
+                resultTarget = null;
+                return;
+            }
+            NeuroSyncTypes.TryRegisterAssembly(type.Assembly);
+            var typeInfo = NeuroSyncTypes.GetTypeInfo(type);
+
             proto.Set(bytesChunk);
             options = opts;
             nextKey = 0;
             
-            NeuroSyncTypes.TryRegisterAssembly(type.Assembly);
-            
-            var typeInfo = NeuroSyncTypes.GetTypeInfo(type);
             var sizeType = proto.ReadUint() & NeuroConstants.HeaderMask;
             if (sizeType == NeuroConstants.ChildWithType)
             {
@@ -95,7 +116,7 @@ namespace Ninjadini.Neuro
             }
             else
             {
-                throw new Exception("Invalid type " + sizeType);
+                throw NeuroSyncErrors.NotANeuroObjectHeader(type, sizeType);
             }
             if (proto.Available > 1) // 1 byte left is fine, that's the group end tag.
             {
@@ -104,6 +125,8 @@ namespace Ninjadini.Neuro
             proto.Set(Array.Empty<byte>());
         }
         
+        /// Reads bytes written by `NeuroBytesWriter.WriteGlobalTyped()`, working the type out from the [NeuroGlobalType] id in the data.
+        /// Use this when you don't know what type to expect. It can not read `Write()` / `WriteObject()` output.
         public object ReadGlobalTyped(in BytesChunk bytesChunk, in ReaderOptions opts = default)
         {
             object result = null;
@@ -113,6 +136,11 @@ namespace Ninjadini.Neuro
 
         public void ReadGlobalTyped(in BytesChunk bytesChunk, ref object result, in ReaderOptions opts = default)
         {
+            if (bytesChunk.Length == 0)
+            {
+                result = null;
+                return;
+            }
             proto.Set(bytesChunk);
             options = opts;
             nextKey = 0;
@@ -120,7 +148,7 @@ namespace Ninjadini.Neuro
             var sizeType = proto.ReadUint() & NeuroConstants.HeaderMask;
             if ((sizeType & NeuroConstants.HeaderMask) != NeuroConstants.VarInt)
             {
-                throw new Exception("Invalid header " + sizeType);
+                throw NeuroSyncErrors.NotGlobalTypedData("bytes", "Read<T>(bytes)");
             }
             var typeId = proto.ReadUint();
             var tag = 0u;
