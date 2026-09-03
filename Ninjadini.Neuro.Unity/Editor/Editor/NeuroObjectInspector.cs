@@ -215,7 +215,12 @@ namespace Ninjadini.Neuro.Editor
                 return NeuroGlobalTypes.GetAllRootTypes().ToArray();
             }
             var typeIsClass = type.IsClass;
-            var result = (from domainAssembly in AppDomain.CurrentDomain.GetAssemblies()
+#if UNITY_6000_5_OR_NEWER
+            var assemblies = UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies();
+#else
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+#endif 
+            var result = (from domainAssembly in assemblies
                 where !domainAssembly.IsDynamic && domainAssembly.IsDefined(typeof(NeuroAssemblyAttribute))
                 from assemblyType in domainAssembly.GetExportedTypes()
                 where assemblyType.IsClass

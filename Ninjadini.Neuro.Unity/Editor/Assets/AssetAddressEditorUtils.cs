@@ -139,7 +139,12 @@ namespace Ninjadini.Neuro.Editor
                     }
                     else if (!string.IsNullOrEmpty(attribute.TypeString))
                     {
-                        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+#if UNITY_6000_5_OR_NEWER
+                        var assemblies = UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies();
+#else
+                        var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+#endif
+                        foreach (var assembly in assemblies)
                         {
                             var t = assembly.GetType(attribute.TypeString);
                             if (t != null && t.FullName == attribute.TypeString)

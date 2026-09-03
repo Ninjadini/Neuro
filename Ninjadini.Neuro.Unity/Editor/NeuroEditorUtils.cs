@@ -22,7 +22,13 @@ namespace Ninjadini.Neuro.Editor
             }
             
             var startTime = DateTime.Now;
-            var result = AppDomain.CurrentDomain.GetAssemblies()
+            
+#if UNITY_6000_5_OR_NEWER
+            var assemblies = UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies();
+#else
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+#endif 
+            var result = assemblies
                 .Where(assembly => !assembly.IsDynamic)
                 .SelectMany(assembly =>
                 {
@@ -89,7 +95,12 @@ namespace Ninjadini.Neuro.Editor
 
         public static Type[] FindAllNeuroTypes()
         {
-            return (from domainAssembly in AppDomain.CurrentDomain.GetAssemblies()
+#if UNITY_6000_5_OR_NEWER
+            var assemblies = UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies();
+#else
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+#endif
+            return (from domainAssembly in assemblies
                     where !domainAssembly.IsDynamic && domainAssembly.IsDefined(typeof(NeuroAssemblyAttribute))
                     where NeuroSyncTypes.TryRegisterAssembly(domainAssembly)
                     from type in domainAssembly.GetExportedTypes()

@@ -39,7 +39,12 @@ static class NeuroBakedAutoTypesRegister
     static void OnAfterAssembliesLoaded()
     {");
             var playerAssemblies = CompilationPipeline.GetAssemblies(AssembliesType.PlayerWithoutTestAssemblies).Select(a => a.name).ToArray();
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+#if UNITY_6000_5_OR_NEWER
+            var assemblies = UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies();
+#else
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+#endif
+            foreach (var assembly in assemblies)
             {
                 var assemblyAttribute = assembly.GetCustomAttribute<NeuroAssemblyAttribute>();
                 if (assemblyAttribute?.RegistryType != null && !string.IsNullOrEmpty(assemblyAttribute.RegistryMethodName) && playerAssemblies.Contains(assembly.GetName().Name))
