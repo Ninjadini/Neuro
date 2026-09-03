@@ -79,6 +79,36 @@ namespace Ninjadini.Neuro.Sync
                     value = new TimeSpan(valueLong * TimeSpan.TicksPerMillisecond);
                 }
             });
+            NeuroSyncTypes.Register(FieldSizeType.Length, delegate(INeuroSync neuro, ref Uri value)
+            {
+                // OriginalString, not ToString - ToString normalises escaping, so it would not round trip
+                // what was originally authored. RelativeOrAbsolute so relative paths are allowed too.
+                var str = neuro.IsReading ? null : value?.OriginalString;
+                neuro.Sync(ref str);
+                if (neuro.IsReading)
+                {
+                    value = string.IsNullOrEmpty(str) ? null : new Uri(str, UriKind.RelativeOrAbsolute);
+                }
+            });
+            NeuroSyncTypes.Register(FieldSizeType.Child, delegate(INeuroSync neuro, ref Version value)
+            {
+                // Build and Revision are -1 when unset, and defaulting them to -1 means an unset one is
+                // skipped entirely - so the component count survives and "1.2" never becomes "1.2.0.0".
+                var major = value?.Major ?? 0;
+                var minor = value?.Minor ?? 0;
+                var build = value?.Build ?? -1;
+                var revision = value?.Revision ?? -1;
+                neuro.Sync(1, nameof(Version.Major), ref major, 0);
+                neuro.Sync(2, nameof(Version.Minor), ref minor, 0);
+                neuro.Sync(3, nameof(Version.Build), ref build, -1);
+                neuro.Sync(4, nameof(Version.Revision), ref revision, -1);
+                if (neuro.IsReading)
+                {
+                    value = build < 0 ? new Version(major, minor)
+                        : revision < 0 ? new Version(major, minor, build)
+                        : new Version(major, minor, build, revision);
+                }
+            });
             NeuroSyncTypes.Register<Guid>(FieldSizeType.Child, delegate(INeuroSync neuro, ref Guid value)
             {
                 Span<byte> buffer = stackalloc byte[16];

@@ -266,6 +266,132 @@ namespace Ninjadini.Neuro.Sync
                 // drawn with Unity's own CurveField.
             }
 
+            if(NeuroSyncTypes.IsEmpty<Hash128>())
+            {
+                NeuroSyncTypes.Register(FieldSizeType.Length, (INeuroSync neuro, ref Hash128 value) =>
+                {
+                    // the four u32s can be passed to the constructor but not read back out, so the hex
+                    // string is the only form that round trips.
+                    var str = neuro.IsReading ? null : value.ToString();
+                    neuro.Sync(ref str);
+                    if (neuro.IsReading)
+                    {
+                        value = string.IsNullOrEmpty(str) ? default : Hash128.Parse(str);
+                    }
+                });
+                // drawn with the built-in Hash128 field, which the editor already had.
+            }
+            if(NeuroSyncTypes.IsEmpty<LayerMask>())
+            {
+                NeuroSyncTypes.Register(FieldSizeType.VarInt, (INeuroSync neuro, ref LayerMask value) =>
+                {
+                    var mask = value.value;
+                    neuro.Sync(ref mask);
+                    if (neuro.IsReading)
+                    {
+                        value = mask;
+                    }
+                });
+                // drawn with the built-in LayerMaskField.
+            }
+            if(NeuroSyncTypes.IsEmpty<BoundingSphere>())
+            {
+                NeuroSyncTypes.Register((INeuroSync neuro, ref BoundingSphere value) =>
+                {
+                    neuro.Sync(1, nameof(value.position), ref value.position, default);
+                    neuro.Sync(2, nameof(value.radius), ref value.radius, 0f);
+                });
+                NeuroSyncEditorFields.AddField(typeof(BoundingSphere), nameof(BoundingSphere.position));
+                NeuroSyncEditorFields.AddField(typeof(BoundingSphere), nameof(BoundingSphere.radius));
+            }
+            if(NeuroSyncTypes.IsEmpty<RangeInt>())
+            {
+                NeuroSyncTypes.Register((INeuroSync neuro, ref RangeInt value) =>
+                {
+                    neuro.Sync(1, nameof(value.start), ref value.start, 0);
+                    neuro.Sync(2, nameof(value.length), ref value.length, 0);
+                });
+                NeuroSyncEditorFields.AddField(typeof(RangeInt), nameof(RangeInt.start));
+                NeuroSyncEditorFields.AddField(typeof(RangeInt), nameof(RangeInt.length));
+            }
+            if(NeuroSyncTypes.IsEmpty<Plane>())
+            {
+                NeuroSyncTypes.Register((INeuroSync neuro, ref Plane value) =>
+                {
+                    // they are properties so this is a long winded way :(
+                    var normal = value.normal;
+                    var distance = value.distance;
+                    neuro.Sync(1, nameof(value.normal), ref normal, default);
+                    neuro.Sync(2, nameof(value.distance), ref distance, 0f);
+                    if (neuro.IsReading)
+                    {
+                        value.normal = normal;
+                        value.distance = distance;
+                    }
+                });
+                NeuroSyncEditorFields.AddProperty(typeof(Plane), nameof(Plane.normal));
+                NeuroSyncEditorFields.AddProperty(typeof(Plane), nameof(Plane.distance));
+            }
+            if(NeuroSyncTypes.IsEmpty<Ray>())
+            {
+                NeuroSyncTypes.Register((INeuroSync neuro, ref Ray value) =>
+                {
+                    // note the constructor normalises direction, so a non unit direction will not survive.
+                    var origin = value.origin;
+                    var direction = value.direction;
+                    neuro.Sync(1, nameof(value.origin), ref origin, default);
+                    neuro.Sync(2, nameof(value.direction), ref direction, default);
+                    if (neuro.IsReading)
+                    {
+                        value = new Ray(origin, direction);
+                    }
+                });
+                NeuroSyncEditorFields.AddProperty(typeof(Ray), nameof(Ray.origin));
+                NeuroSyncEditorFields.AddProperty(typeof(Ray), nameof(Ray.direction));
+            }
+            if(NeuroSyncTypes.IsEmpty<Ray2D>())
+            {
+                NeuroSyncTypes.Register((INeuroSync neuro, ref Ray2D value) =>
+                {
+                    var origin = value.origin;
+                    var direction = value.direction;
+                    neuro.Sync(1, nameof(value.origin), ref origin, default);
+                    neuro.Sync(2, nameof(value.direction), ref direction, default);
+                    if (neuro.IsReading)
+                    {
+                        value = new Ray2D(origin, direction);
+                    }
+                });
+                NeuroSyncEditorFields.AddProperty(typeof(Ray2D), nameof(Ray2D.origin));
+                NeuroSyncEditorFields.AddProperty(typeof(Ray2D), nameof(Ray2D.direction));
+            }
+            if(NeuroSyncTypes.IsEmpty<RectOffset>())
+            {
+                NeuroSyncTypes.Register((INeuroSync neuro, ref RectOffset value) =>
+                {
+                    value ??= new RectOffset();
+                    var left = value.left;
+                    var right = value.right;
+                    var top = value.top;
+                    var bottom = value.bottom;
+                    neuro.Sync(1, nameof(value.left), ref left, 0);
+                    neuro.Sync(2, nameof(value.right), ref right, 0);
+                    neuro.Sync(3, nameof(value.top), ref top, 0);
+                    neuro.Sync(4, nameof(value.bottom), ref bottom, 0);
+                    if (neuro.IsReading)
+                    {
+                        value.left = left;
+                        value.right = right;
+                        value.top = top;
+                        value.bottom = bottom;
+                    }
+                });
+                NeuroSyncEditorFields.AddProperty(typeof(RectOffset), nameof(RectOffset.left));
+                NeuroSyncEditorFields.AddProperty(typeof(RectOffset), nameof(RectOffset.right));
+                NeuroSyncEditorFields.AddProperty(typeof(RectOffset), nameof(RectOffset.top));
+                NeuroSyncEditorFields.AddProperty(typeof(RectOffset), nameof(RectOffset.bottom));
+            }
+
             if(NeuroSyncTypes.IsEmpty<Rect>())
             {
                 NeuroSyncTypes.Register((INeuroSync neuro, ref Rect value) =>

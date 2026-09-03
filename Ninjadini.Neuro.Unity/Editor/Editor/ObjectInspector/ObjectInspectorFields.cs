@@ -198,6 +198,12 @@ namespace Ninjadini.Neuro.Editor
             {
                 return CreateDrawer(data, new Hash128Field());
             }
+            if (type == typeof(LayerMask))
+            {
+                return CreateDrawer<int>(data, new LayerMaskField(),
+                    o => ((LayerMask)o).value,
+                    v => (LayerMask)v);
+            }
             return null;
         }
 
