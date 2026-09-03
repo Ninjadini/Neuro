@@ -14,9 +14,15 @@ namespace Ninjadini.Neuro.CodeGen.Tests
 {
     public static class TestUtils
     {
-        public static string GenerateSource(string source)
+        public const string FastCodeGenDefine = "NEURO_FAST_CODEGEN";
+
+        /// Fast code gen only looks at assemblies that asked to be looked at. Includes the using directive
+        /// because assembly attributes have to come after those.
+        public const string AssemblyOptIn = "using Ninjadini.Neuro;\n[assembly:Neuro]\n";
+
+        public static string GenerateSource(string source, params string[] defines)
         {
-            var compilation = CreateCompilation(source + GetStandardSrc());
+            var compilation = CreateCompilation(source + GetStandardSrc(), defines);
             var walker = new AnalyzerWrappedCodeWalker();
             walker.Walk(compilation, new NeuroSourceAnalyzer());
             var errors = walker.GetErrorsString();
@@ -36,9 +42,9 @@ namespace Ninjadini.Neuro.CodeGen.Tests
             return result;
         }
         
-        public static void GenerateSourceExpectingError(string source, string expectedPartialErrorString)
+        public static void GenerateSourceExpectingError(string source, string expectedPartialErrorString, params string[] defines)
         {
-            var compilation = CreateCompilation(source + GetStandardSrc());
+            var compilation = CreateCompilation(source + GetStandardSrc(), defines);
             var walker = new AnalyzerWrappedCodeWalker();
             walker.Walk(compilation, new NeuroSourceAnalyzer());
             var errors = walker.GetErrorsString();
@@ -63,9 +69,9 @@ namespace Ninjadini.Neuro.CodeGen.Tests
             }
         }
 
-        public static Compilation CreateCompilation(string source)
+        public static Compilation CreateCompilation(string source, params string[] defines)
         {
-            var syntaxTree = CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview));
+            var syntaxTree = CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview, preprocessorSymbols: defines));
             foreach (var diagnostic in syntaxTree.GetDiagnostics())
             {
                 Console.WriteLine(diagnostic);
@@ -95,17 +101,29 @@ namespace Ninjadini.Neuro.CodeGen.Tests
             }
         }
 
+        /// Same as <see cref="TestSourceGenerates"/> but with NEURO_FAST_CODEGEN on and the assembly opted in.
+        public static void TestFastCodeGenSourceGenerates(string source, params string[] partialExpectedResults)
+        {
+            var generatedSrc = GenerateSource(AssemblyOptIn + source, FastCodeGenDefine);
+            foreach (var partialExpectedResult in partialExpectedResults)
+            {
+                CompareSource(generatedSrc, partialExpectedResult);
+            }
+        }
+
+        public static string StandardSrc => GetStandardSrc();
+
         static string GetStandardSrc()
         {
             return
                 @"
 namespace Ninjadini.Neuro
 {
-    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Class | System.AttributeTargets.Struct)]
+    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Interface | System.AttributeTargets.Assembly)]
     public class NeuroAttribute : System.Attribute
     {
         public uint Tag;
-        public NeuroAttribute(uint tag)
+        public NeuroAttribute(uint tag = 0)
         {
             Tag = tag;
         }
@@ -197,6 +215,12 @@ namespace Ninjadini.Neuro
                 {
                     VisitClassOrStructNode(syntaxNode);
                 }
+                else if (syntaxNode is AttributeSyntax attributeSyntax
+                         && NeuroSourceAnalyzer.GetScanMode(compilation) == NeuroScanMode.Fast)
+                {
+                    analyzer.ProcessFieldAttribute(attributeSyntax, compilation.GetSemanticModel(syntaxNode.SyntaxTree),
+                        ReportDiagnostic, CancellationToken.None);
+                }
 
                 base.Visit(syntaxNode);
             }
@@ -207,7 +231,7 @@ namespace Ninjadini.Neuro
                 var classSymbol = model.GetDeclaredSymbol(syntaxNode);
                 var ctx = new SymbolAnalysisContext(classSymbol, compilation, options, ReportDiagnostic,
                     IsSupportedDiagnostic, new CancellationToken());
-                analyzer.ProcessClassOrStruct(ctx);
+                analyzer.ProcessClassOrStruct(ctx, NeuroSourceAnalyzer.GetScanMode(compilation));
             }
 
             private void ReportDiagnostic(Diagnostic obj)

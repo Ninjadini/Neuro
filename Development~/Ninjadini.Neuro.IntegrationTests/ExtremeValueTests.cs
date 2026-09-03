@@ -325,6 +325,102 @@ namespace Ninjadini.Neuro.IntegrationTests
         [TestCaseSource(nameof(DateTimeValues))]
         public void DateTime_Kind_Json(DateTime v) => Assert.AreEqual(v.Kind, Jsn(new DateTimeBox { Value = v }).Value.Kind);
 
+// ---------------------------------------------------------------------------------------------------- DateTimeOffset
+
+        public partial class DateTimeOffsetBox
+        {
+            [Neuro(1)] public DateTimeOffset Value;
+        }
+
+        static IEnumerable<TestCaseData> DateTimeOffsetValues()
+        {
+            yield return new TestCaseData(default(DateTimeOffset)).SetName("{m}_default");
+            yield return new TestCaseData(DateTimeOffset.MinValue).SetName("{m}_min");
+            yield return new TestCaseData(DateTimeOffset.MaxValue).SetName("{m}_max");
+            yield return new TestCaseData(new DateTimeOffset(2024, 6, 5, 4, 3, 2, 1, TimeSpan.Zero)).SetName("{m}_utc");
+            yield return new TestCaseData(new DateTimeOffset(2024, 6, 5, 4, 3, 2, 1, TimeSpan.FromHours(14))).SetName("{m}_maxPositiveOffset");
+            yield return new TestCaseData(new DateTimeOffset(2024, 6, 5, 4, 3, 2, 1, TimeSpan.FromHours(-14))).SetName("{m}_maxNegativeOffset");
+            yield return new TestCaseData(new DateTimeOffset(2024, 6, 5, 4, 3, 2, 1, new TimeSpan(5, 30, 0))).SetName("{m}_indiaHalfHour");
+            yield return new TestCaseData(new DateTimeOffset(2024, 6, 5, 4, 3, 2, 1, new TimeSpan(5, 45, 0))).SetName("{m}_nepalQuarterHour");
+            yield return new TestCaseData(new DateTimeOffset(2024, 6, 5, 4, 3, 2, 1, new TimeSpan(0, -1, 0))).SetName("{m}_oneMinuteWest");
+            yield return new TestCaseData(new DateTimeOffset(2024, 6, 5, 4, 3, 2, 1, new TimeSpan(0, 1, 0))).SetName("{m}_oneMinuteEast");
+            yield return new TestCaseData(new DateTimeOffset(1969, 7, 20, 20, 17, 40, TimeSpan.FromHours(-5))).SetName("{m}_beforeEpochWithOffset");
+            yield return new TestCaseData(new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero)).SetName("{m}_neuroZeroPoint");
+            yield return new TestCaseData(DateTimeOffset.MaxValue.AddHours(-14).ToOffset(TimeSpan.FromHours(14))).SetName("{m}_maxWithMaxOffset");
+            yield return new TestCaseData(DateTimeOffset.MinValue.AddHours(14).ToOffset(TimeSpan.FromHours(-14))).SetName("{m}_minWithMinOffset");
+        }
+
+        static void AssertStoredResolution(DateTimeOffset expected, DateTimeOffset actual)
+        {
+            Assert.AreEqual(expected.Offset, actual.Offset, $"offset of {expected:O} was not preserved (got {actual:O})");
+            var lost = Math.Abs((expected - actual).Ticks);
+            Assert.Less(lost, TimeSpan.TicksPerMillisecond,
+                $"expected {expected:O} to survive to the millisecond, got {actual:O}");
+        }
+
+        [TestCaseSource(nameof(DateTimeOffsetValues))]
+        public void DateTimeOffset_Binary(DateTimeOffset v) => AssertStoredResolution(v, Bin(new DateTimeOffsetBox { Value = v }).Value);
+
+        [TestCaseSource(nameof(DateTimeOffsetValues))]
+        public void DateTimeOffset_Json(DateTimeOffset v) => AssertStoredResolution(v, Jsn(new DateTimeOffsetBox { Value = v }).Value);
+
+        [Test]
+        public void DateTimeOffset_KeepsOffsetWhenInstantMatchesDefault()
+        {
+            // DateTimeOffset.Equals only compares the utc instant, so this one is "equal" to default and would
+            // be skipped by the writer's default check if that were the only test.
+            var sameInstantAsDefault = new DateTimeOffset(1, 1, 1, 5, 0, 0, TimeSpan.FromHours(5));
+            Assert.IsTrue(sameInstantAsDefault.Equals(default(DateTimeOffset)), "premise of this test changed");
+            Assert.AreEqual(TimeSpan.FromHours(5), Bin(new DateTimeOffsetBox { Value = sameInstantAsDefault }).Value.Offset);
+            Assert.AreEqual(TimeSpan.FromHours(5), Jsn(new DateTimeOffsetBox { Value = sameInstantAsDefault }).Value.Offset);
+        }
+
+        [Test]
+        public void DateTimeOffset_SubMillisecondIsIntentionallyDropped()
+        {
+            var withTicks = new DateTimeOffset(2024, 6, 5, 4, 3, 2, 1, TimeSpan.FromHours(2)).AddTicks(1234);
+            var expected = new DateTimeOffset(2024, 6, 5, 4, 3, 2, 1, TimeSpan.FromHours(2));
+            Assert.AreEqual(expected, Bin(new DateTimeOffsetBox { Value = withTicks }).Value);
+            Assert.AreEqual(expected, Jsn(new DateTimeOffsetBox { Value = withTicks }).Value);
+        }
+
+        [Test]
+        public void DateTimeOffset_JsonIsReadable()
+        {
+            var json = new NeuroJsonWriter().Write(new DateTimeOffsetBox
+            {
+                Value = new DateTimeOffset(2024, 6, 5, 4, 3, 2, 1, new TimeSpan(5, 30, 0))
+            });
+            TestContext.WriteLine(json);
+            Assert.IsTrue(json.Contains("\"2024-06-05T04:03:02:001+05:30\""), json);
+        }
+
+        [Test]
+        public void DateTimeOffset_JsonNegativeOffsetIsReadable()
+        {
+            var json = new NeuroJsonWriter().Write(new DateTimeOffsetBox
+            {
+                Value = new DateTimeOffset(2024, 6, 5, 4, 3, 2, 1, new TimeSpan(-5, -45, 0))
+            });
+            Assert.IsTrue(json.Contains("\"2024-06-05T04:03:02:001-05:45\""), json);
+        }
+
+        [Test]
+        public void DateTimeOffset_ReadsIsoFromElsewhere()
+        {
+            // anything not in our own 29 char shape falls through to the framework parser.
+            var copy = ReadJson<DateTimeOffsetBox>(@"{""Value"": ""2024-06-05T04:03:02.0010000+05:30""}");
+            Assert.AreEqual(new DateTimeOffset(2024, 6, 5, 4, 3, 2, 1, new TimeSpan(5, 30, 0)), copy.Value);
+        }
+
+        [Test]
+        public void DateTimeOffset_WriteDoesNotMutateSource()
+        {
+            var src = new DateTimeOffsetBox { Value = DateTimeOffset.MaxValue };
+            new NeuroBytesWriter().Write(src);
+            Assert.AreEqual(DateTimeOffset.MaxValue, src.Value, "writing changed the object that was written");
+        }
+
 // ---------------------------------------------------------------------------------------------------- TimeSpan
 
         public partial class TimeSpanBox
@@ -479,6 +575,7 @@ namespace Ninjadini.Neuro.IntegrationTests
             [Neuro(3)] public DateTime? Date;
             [Neuro(4)] public ExtremeEnum? Enum;
             [Neuro(5)] public bool? Bool;
+            [Neuro(6)] public DateTimeOffset? DateOffset;
         }
 
         [Test]
@@ -490,6 +587,7 @@ namespace Ninjadini.Neuro.IntegrationTests
             Assert.IsNull(copy.Date);
             Assert.IsNull(copy.Enum);
             Assert.IsNull(copy.Bool);
+            Assert.IsNull(copy.DateOffset);
         }
 
         [Test]
@@ -1234,6 +1332,7 @@ namespace Ninjadini.Neuro.IntegrationTests
             [Neuro(14)] public ExtremeStruct Struct;
             [Neuro(15)] public Reference<ExtremeReferencable> Ref;
             [Neuro(16)] public Color Color;
+            [Neuro(17)] public DateTimeOffset DateOffset;
         }
 
         static KitchenSink MaxedOutSink() => new KitchenSink
@@ -1253,7 +1352,8 @@ namespace Ninjadini.Neuro.IntegrationTests
             FlagEnum = ExtremeFlagEnum.All,
             Struct = new ExtremeStruct { Id = int.MaxValue, Name = "struct" },
             Ref = uint.MaxValue,
-            Color = Color.FromArgb(255, 255, 255, 255)
+            Color = Color.FromArgb(255, 255, 255, 255),
+            DateOffset = new DateTimeOffset(2024, 6, 5, 4, 3, 2, 1, new TimeSpan(5, 45, 0))
         };
 
         static void AssertSink(KitchenSink a, KitchenSink b)
@@ -1275,6 +1375,7 @@ namespace Ninjadini.Neuro.IntegrationTests
             Assert.AreEqual(a.Struct.Name, b.Struct.Name, nameof(a.Struct));
             Assert.AreEqual(a.Ref.RefId, b.Ref.RefId, nameof(a.Ref));
             Assert.AreEqual(a.Color.ToArgb(), b.Color.ToArgb(), nameof(a.Color));
+            AssertStoredResolution(a.DateOffset, b.DateOffset);
         }
 
         [Test]

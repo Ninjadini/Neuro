@@ -1,10 +1,13 @@
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Ninjadini.Neuro.CodeGen
 {
     internal static class NeuroCodeGenUtils
     {
+        public const string DefineSymbol_FastCodeGen = "NEURO_FAST_CODEGEN";
+        /// The original name of <see cref="DefineSymbol_FastCodeGen"/>, still honoured so existing projects keep working.
         public const string DefineSymbol_SelectiveAssemblies = "NEURO_SELECTIVE_ASSEMBLIES";
         public const string Name_NeuroAttribute = "NeuroAttribute";
         public const string Name_NeuroAttribute_Tag = "Tag";
@@ -19,19 +22,150 @@ namespace Ninjadini.Neuro.CodeGen
         
         static readonly SymbolDisplayFormat fullNameFormat = new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces);
 
-        public static bool CanScanAssembly(Compilation compilation)
+        public static NeuroScanMode GetScanMode(Compilation compilation)
         {
             var parseOptions = compilation.SyntaxTrees.FirstOrDefault()?.Options;
             if (parseOptions == null)
             {
-                return true;
+                return NeuroScanMode.Full;
             }
-            var defines = parseOptions.PreprocessorSymbolNames;
-            if (!defines.Contains(DefineSymbol_SelectiveAssemblies))
+            var fastCodeGen = false;
+            foreach (var define in parseOptions.PreprocessorSymbolNames)
+            {
+                if (define == DefineSymbol_FastCodeGen || define == DefineSymbol_SelectiveAssemblies)
+                {
+                    fastCodeGen = true;
+                    break;
+                }
+            }
+            if (!fastCodeGen)
+            {
+                return NeuroScanMode.Full;
+            }
+            foreach (var attributeData in compilation.Assembly.GetAttributes())
+            {
+                if (IsNeuroAttribute(attributeData.AttributeClass))
+                {
+                    return NeuroScanMode.Fast;
+                }
+            }
+            return NeuroScanMode.Skip;
+        }
+
+        // --- Syntax only checks -------------------------------------------------------------------------
+        // Asking the semantic model about a type forces Roslyn to bind it, and in a real project almost every
+        // type has nothing to do with Neuro. These read the source text instead, so the expensive question is
+        // only asked about types that could plausibly answer yes.
+        // The trade off is that an attribute reached through a `using` alias is not recognised here.
+
+        /// Does the declaration carry an attribute that could make this a Neuro type?
+        public static bool HasNeuroTypeAttributeSyntax(TypeDeclarationSyntax typeDeclaration)
+        {
+            foreach (var attributeList in typeDeclaration.AttributeLists)
+            {
+                foreach (var attribute in attributeList.Attributes)
+                {
+                    var name = GetRightMostName(attribute.Name);
+                    if (name == "Neuro" || name == Name_NeuroAttribute
+                        || name == "NeuroGlobalType" || name == Name_NeuroGlobalTypeAttribute
+                        || name == "ReservedNeuroTag" || name == Name_ReservedNeuroTagAttribute)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        /// Does any field of the declaration carry a [Neuro] attribute?
+        public static bool HasNeuroFieldAttributeSyntax(TypeDeclarationSyntax typeDeclaration)
+        {
+            foreach (var member in typeDeclaration.Members)
+            {
+                var fieldDeclaration = member as FieldDeclarationSyntax;
+                if (fieldDeclaration == null)
+                {
+                    continue;
+                }
+                foreach (var attributeList in fieldDeclaration.AttributeLists)
+                {
+                    foreach (var attribute in attributeList.Attributes)
+                    {
+                        var name = GetRightMostName(attribute.Name);
+                        if (name == "Neuro" || name == Name_NeuroAttribute)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        /// Is this declaration a <see cref="Name_INeuroCustomTypesRegistryHook"/>? Hooks carry no attribute,
+        /// so the base list is the only thing that can give them away without binding.
+        public static bool HasRegistryHookBaseSyntax(TypeDeclarationSyntax typeDeclaration)
+        {
+            if (typeDeclaration.BaseList == null)
+            {
+                return false;
+            }
+            foreach (var baseType in typeDeclaration.BaseList.Types)
+            {
+                if (GetRightMostName(baseType.Type) == Name_INeuroCustomTypesRegistryHook)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// The widest possible net, for when fast code gen is off: anything attributed, anything with a base
+        /// list (it could inherit its Neuro-ness, or be a registry hook or a referencable), is worth binding.
+        public static bool CouldBeNeuroTypeSyntax(TypeDeclarationSyntax typeDeclaration)
+        {
+            if (typeDeclaration.AttributeLists.Count > 0 || typeDeclaration.BaseList != null)
             {
                 return true;
             }
-            return compilation.Assembly.GetAttributes().Any(a => IsNeuroAttribute(a.AttributeClass));
+            foreach (var member in typeDeclaration.Members)
+            {
+                var fieldDeclaration = member as FieldDeclarationSyntax;
+                if (fieldDeclaration != null && fieldDeclaration.AttributeLists.Count > 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// Is this attribute written as [Neuro...]? Name only, nothing is bound.
+        public static bool IsNeuroAttributeNameSyntax(AttributeSyntax attribute)
+        {
+            var name = GetRightMostName(attribute.Name);
+            return name == "Neuro" || name == Name_NeuroAttribute;
+        }
+
+        /// `Ninjadini.Neuro.Neuro` -> `Neuro`. Null for anything that isn't a plain name.
+        static string GetRightMostName(TypeSyntax typeSyntax)
+        {
+            while (true)
+            {
+                var qualifiedName = typeSyntax as QualifiedNameSyntax;
+                if (qualifiedName != null)
+                {
+                    typeSyntax = qualifiedName.Right;
+                    continue;
+                }
+                var aliasQualifiedName = typeSyntax as AliasQualifiedNameSyntax;
+                if (aliasQualifiedName != null)
+                {
+                    typeSyntax = aliasQualifiedName.Name;
+                    continue;
+                }
+                var simpleName = typeSyntax as SimpleNameSyntax;
+                return simpleName?.Identifier.ValueText;
+            }
         }
 
         public static string GetFullName(ITypeSymbol symbol)

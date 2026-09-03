@@ -16,7 +16,7 @@ namespace Ninjadini.Neuro.CodeGen
         {
             try
             {
-                if (!NeuroCodeGenUtils.CanScanAssembly(context.Compilation))
+                if (NeuroCodeGenUtils.GetScanMode(context.Compilation) == NeuroScanMode.Skip)
                 {
                     return;
                 }

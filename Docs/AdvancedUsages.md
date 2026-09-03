@@ -231,11 +231,43 @@ In both cases, you will also need to stop using `NeuroDataProvider.GetSharedTabl
 Instead call via `NeuroReferences.Default.GetTable<T>()`
 
 
-# Selective assembly scanning for faster compile time
-By default Neuro will scan all assemblies for Neuro objects, this may be slow in a large project.   
-Turn on selective assemblies mode to only scan certain assemblies.
-1. In all the assemblies where you define Neuro types, add `[assembly:Neuro(0)]` - not the assemblies you use Neuro, just the places you define Neuro objects with `[Neuro(123)]`
-2. In Unity Project Settings > Player > Scripting Define Symbols, add NEURO_SELECTIVE_ASSEMBLIES and apply.
+# Fast code gen for faster compile time
+By default Neuro looks at every type in every assembly to work out what to generate, which may be slow in a
+large project. Fast code gen mode narrows that down so it can tell from the source text alone whether a type
+is worth looking at properly.
+
+1. In all the assemblies where you define Neuro types, add `[assembly:Neuro]` - not the assemblies where you
+   *use* Neuro, just the places you define Neuro objects with `[Neuro(123)]`
+2. In Unity Project Settings > Player > Scripting Define Symbols, add `NEURO_FAST_CODEGEN` and apply.
+
+### The extra rule
+Normally a type takes part in Neuro if the class *or any of its fields* is attributed. Under fast code gen only
+the class level attribute counts:
+
+```csharp
+// Fine, the class says what it is.
+[Neuro(1)]
+public partial class Item
+{
+    [Neuro(1)] public int Id;
+}
+
+// Error Neuro406 - the fields are attributed but the class never opted in.
+public partial class Item
+{
+    [Neuro(1)] public int Id;
+}
+```
+
+`[NeuroGlobalType(#)]` counts as opting in too, and `INeuroCustomTypesRegistryHook` implementations are still
+found without any attribute. A subclass of a Neuro class still has to carry its own `[Neuro(#)]`, same as always.
+
+If you forget one you get a compile error pointing at the type, not a silent "type is not registered" at runtime.
+
+### Notes
+- `NEURO_SELECTIVE_ASSEMBLIES`, the old name for this define, still works.
+- The check that decides whether to look at a type reads the source text, so it does not follow `using` aliases.
+  Writing `using N = Ninjadini.Neuro.NeuroAttribute;` and then `[N(1)]` will not be picked up in this mode.
 
 
 # What's next ?

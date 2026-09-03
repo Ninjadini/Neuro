@@ -7,7 +7,7 @@ namespace Ninjadini.Neuro
     {
         public uint Tag;
 
-        public NeuroAttribute(uint tag, NeuroOptions options = 0)
+        public NeuroAttribute(uint tag = 0, NeuroOptions options = 0)
         {
             Tag = tag;
         }

@@ -6,21 +6,13 @@ namespace Ninjadini.Neuro.Sync
 {
     public delegate void NeuroSyncDelegate<T>(INeuroSync neuro, ref T value);
     public delegate void NeuroSyncSubDelegate<T>(INeuroSync neuro, uint tag, ref T value);
+    public delegate bool NeuroEqualsDelegate<T>(T a, T b);
 
     public static class NeuroSyncTypes
     {
         static NeuroSyncTypes()
         {
             NeuroDefaultSyncTypes.Register();
-        }
-
-        internal static bool DiffersOnlyByDateTimeKind<T>(T value, T defaultValue)
-        {
-            if (typeof(T) != typeof(DateTime))
-            {
-                return false;
-            }
-            return ((DateTime)(object)value).Kind != ((DateTime)(object)defaultValue).Kind;
         }
 
         public static bool IsEmpty<T>()
@@ -31,6 +23,12 @@ namespace Ninjadini.Neuro.Sync
         public static bool Exists<T>()
         {
             return NeuroSyncTypes<T>.Delegate != null;
+        }
+
+        internal static bool AreEqual<T>(T value, T defaultValue) where T : IEquatable<T>
+        {
+            var equals = NeuroSyncTypes<T>.EqualsDelegate;
+            return equals != null ? equals(value, defaultValue) : value.Equals(defaultValue);
         }
 
         public static void Register<T>(NeuroSyncDelegate<T> d, uint globalTypeId = 0)
@@ -61,6 +59,11 @@ namespace Ninjadini.Neuro.Sync
         {
             NeuroSyncTypes<T>.SizeType = (uint)sizeType;
             NeuroSyncTypes<T>.Delegate = d;
+        }
+
+        public static void RegisterEqualityCheck<T>(NeuroEqualsDelegate<T> d)
+        {
+            NeuroSyncTypes<T>.EqualsDelegate = d;
         }
         
         static bool _scannedAssemblies;
@@ -176,6 +179,7 @@ namespace Ninjadini.Neuro.Sync
     {
         internal static uint SizeType;
         internal static NeuroSyncDelegate<T> Delegate;
+        internal static NeuroEqualsDelegate<T> EqualsDelegate;
         
         internal static NeuroSyncDelegate<T> GetOrThrow()
         {

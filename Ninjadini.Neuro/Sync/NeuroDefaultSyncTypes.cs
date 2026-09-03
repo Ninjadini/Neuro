@@ -4,6 +4,10 @@ namespace Ninjadini.Neuro.Sync
 {
     static class NeuroDefaultSyncTypes
     {
+        const int OffsetBits = 11;
+        const int MaxOffsetMinutes = 840; // 14 hours, the largest utc offset DateTimeOffset allows
+        const long OffsetMask = (1L << OffsetBits) - 1;
+
         public static void Register()
         {
             NeuroSyncTypes.Register(FieldSizeType.Child, delegate(INeuroSync neuro, ref object value)
@@ -42,6 +46,7 @@ namespace Ninjadini.Neuro.Sync
             {
                 neuro.Sync(ref value);
             });
+            NeuroSyncTypes.RegisterEqualityCheck<DateTime>((a, b) => a.Ticks == b.Ticks && a.Kind == b.Kind);
             NeuroSyncTypes.Register(FieldSizeType.VarInt, delegate(INeuroSync neuro, ref DateTime value)
             {
                 var valueLong = (long)value.Kind | ((value.Ticks - NeuroConstants.TwentyTwentyTicks) / 10000L) << 2;
@@ -49,6 +54,20 @@ namespace Ninjadini.Neuro.Sync
                 if (neuro.IsReading)
                 {
                     value = new DateTime((valueLong >> 2) * 10000L + NeuroConstants.TwentyTwentyTicks, (DateTimeKind)(valueLong & 3));
+                }
+            });
+            NeuroSyncTypes.RegisterEqualityCheck<DateTimeOffset>((a, b) => a.UtcTicks == b.UtcTicks && a.Offset == b.Offset);
+            NeuroSyncTypes.Register(FieldSizeType.VarInt, delegate(INeuroSync neuro, ref DateTimeOffset value)
+            {
+                var offsetMinutes = (int)(value.Offset.Ticks / TimeSpan.TicksPerMinute);
+                var utcMs = (value.UtcTicks - NeuroConstants.TwentyTwentyTicks) / TimeSpan.TicksPerMillisecond;
+                var valueLong = (utcMs << OffsetBits) | (long)(offsetMinutes + MaxOffsetMinutes);
+                neuro.Sync(ref valueLong);
+                if (neuro.IsReading)
+                {
+                    var readOffset = new TimeSpan(((int)(valueLong & OffsetMask) - MaxOffsetMinutes) * TimeSpan.TicksPerMinute);
+                    var utcTicks = (valueLong >> OffsetBits) * TimeSpan.TicksPerMillisecond + NeuroConstants.TwentyTwentyTicks;
+                    value = new DateTimeOffset(utcTicks + readOffset.Ticks, readOffset);
                 }
             });
             NeuroSyncTypes.Register(FieldSizeType.VarInt, delegate(INeuroSync neuro, ref TimeSpan value)
