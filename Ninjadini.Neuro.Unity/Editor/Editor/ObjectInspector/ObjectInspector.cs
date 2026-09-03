@@ -524,7 +524,12 @@ namespace Ninjadini.Neuro.Editor
         {
             var typeIsClass = type.IsClass;
             // https://stackoverflow.com/questions/857705/get-all-derived-types-of-a-type
-            var result = (from domainAssembly in AppDomain.CurrentDomain.GetAssemblies()
+#if UNITY_6000_5_OR_NEWER
+            var assemblies = UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies();
+#else
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+#endif 
+            var result = (from domainAssembly in assemblies
                 where !domainAssembly.IsDynamic
                 from assemblyType in domainAssembly.GetExportedTypes()
                 where assemblyType.IsClass 
