@@ -15,7 +15,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <DefaultItemExcludes>\**\*.meta;\**\*.json;\**\*.asmdef</DefaultItemExcludes>
+        <DefaultItemExcludes>$(DefaultItemExcludes);**/*.meta;**/*.json;**/*.asmdef</DefaultItemExcludes>
     </PropertyGroup>
 
     <ItemGroup>

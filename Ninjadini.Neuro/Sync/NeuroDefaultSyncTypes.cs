@@ -46,13 +46,19 @@ namespace Ninjadini.Neuro.Sync
             {
                 var valueLong = (long)value.Kind | ((value.Ticks - NeuroConstants.TwentyTwentyTicks) / 10000L) << 2;
                 neuro.Sync(ref valueLong);
-                value = new DateTime((valueLong >> 2) * 10000L + NeuroConstants.TwentyTwentyTicks, (DateTimeKind)(valueLong & 3));
+                if (neuro.IsReading)
+                {
+                    value = new DateTime((valueLong >> 2) * 10000L + NeuroConstants.TwentyTwentyTicks, (DateTimeKind)(valueLong & 3));
+                }
             });
             NeuroSyncTypes.Register(FieldSizeType.VarInt, delegate(INeuroSync neuro, ref TimeSpan value)
             {
                 var valueLong = value.Ticks / TimeSpan.TicksPerMillisecond;
                 neuro.Sync(ref valueLong);
-                value = new TimeSpan(valueLong * TimeSpan.TicksPerMillisecond);
+                if (neuro.IsReading)
+                {
+                    value = new TimeSpan(valueLong * TimeSpan.TicksPerMillisecond);
+                }
             });
             NeuroSyncTypes.Register<Guid>(FieldSizeType.Child, delegate(INeuroSync neuro, ref Guid value)
             {

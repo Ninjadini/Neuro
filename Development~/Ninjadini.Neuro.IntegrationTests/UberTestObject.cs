@@ -47,8 +47,12 @@ public class UberTestObject
         Id = random.Next();
         Float = random.NextSingle();
         Name = "String:" + random.Next();
-        Date = new DateTime(Math.Max(DateTime.MinValue.Ticks, Math.Min(random.NextInt64(), DateTime.MaxValue.Ticks)));
-        TimeSpan = new TimeSpan(Math.Max(TimeSpan.MinValue.Ticks, Math.Min(random.NextInt64(), TimeSpan.MaxValue.Ticks)));
+        // Neuro stores DateTime and TimeSpan to the millisecond on purpose, so generate values it can actually
+        // represent - otherwise a clone can never compare equal. Sub millisecond truncation has its own tests.
+        var dateTicks = Math.Max(DateTime.MinValue.Ticks, Math.Min(random.NextInt64(), DateTime.MaxValue.Ticks));
+        Date = new DateTime(dateTicks - dateTicks % TimeSpan.TicksPerMillisecond);
+        var spanTicks = Math.Max(TimeSpan.MinValue.Ticks, Math.Min(random.NextInt64(), TimeSpan.MaxValue.Ticks));
+        TimeSpan = new TimeSpan(spanTicks - spanTicks % TimeSpan.TicksPerMillisecond);
 
 
         DictionaryIntStr = new Dictionary<int, string>();

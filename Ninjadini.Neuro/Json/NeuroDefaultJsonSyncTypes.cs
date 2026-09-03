@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using Ninjadini.Neuro.Utils;
 using Ninjadini.Neuro.Sync;
 
@@ -61,7 +62,8 @@ namespace Ninjadini.Neuro
                     var currentValue = jsonReader.CurrentValue;
                     if (currentValue.Length != 23)
                     {
-                        DateTime.Parse(currentValue);
+                        // not our own format, so let the framework have a go at it.
+                        value = DateTime.Parse(currentValue, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
                     }
                     else
                     {

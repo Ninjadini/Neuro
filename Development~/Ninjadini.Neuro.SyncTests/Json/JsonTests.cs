@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using Newtonsoft.Json;
@@ -208,6 +209,31 @@ namespace Ninjadini.Neuro.SyncTests
             TestStringOutput(obj);
         }
 
+        [Test]
+        public void TestControlCharacterEscapes()
+        {
+            UberTestClass.RegisterAll();
+            // every character the json spec says must be escaped, checked against Newtonsoft's output.
+            TestStringOutput(new StringTest() { String = "tab\there" });
+            TestStringOutput(new StringTest() { String = "carriage\rreturn" });
+            TestStringOutput(new StringTest() { String = "windows\r\nline" });
+            TestStringOutput(new StringTest() { String = "backspace\bformfeed\fvtab\v" });
+            TestStringOutput(new StringTest() { String = "nul\0char" });
+            TestStringOutput(new StringTest() { String = "\u0001\u0002\u001e\u001f" });
+            TestStringOutput(new StringTest() { String = "\t\r\n\\\"\b\f" });
+            TestStringOutput(new StringTest() { String = "unicode stays raw: \u00e9\u4e2d\U0001F600" });
+        }
+
+        [Test]
+        public void TestControlCharactersAreActuallyEscaped()
+        {
+            UberTestClass.RegisterAll();
+            var json = NeuroJsonWriter.Shared.Write(new StringTest() { String = "a\tb\rc\u001fd" });
+            Assert.IsTrue(json.Contains(@"a\tb\rc\u001fd"), json);
+            Assert.IsFalse(json.Contains("\t"), "a raw tab was written into the json");
+            Assert.IsFalse(json.Contains("\r"), "a raw carriage return was written into the json");
+        }
+
         void TestStringOutput(StringTest obj)
         {
             var neuroJson = NeuroJsonWriter.Shared.Write(obj);
@@ -245,11 +271,69 @@ namespace Ninjadini.Neuro.SyncTests
             Assert.AreEqual("0.0123", new StringBuilder().AppendNum(0.0123f).ToString());
             Assert.AreEqual("0.00123", new StringBuilder().AppendNum(0.00123f).ToString());
             Assert.AreEqual("123.456", new StringBuilder().AppendNum(123.456f).ToString());
+            // the fast path widens its decimal places as needed rather than truncating.
+            Assert.AreEqual("0.000123456", new StringBuilder().AppendNum(0.000123456f).ToString());
+            Assert.AreEqual("0.00000001", new StringBuilder().AppendNum(1e-8f).ToString());
+            Assert.AreEqual("0.000000001", new StringBuilder().AppendNum(1e-9f).ToString());
+            // past the widest step it falls back to exact formatting.
+            Assert.AreEqual("1E-45", new StringBuilder().AppendNum(float.Epsilon).ToString());
             Assert.AreEqual("100000000", new StringBuilder().AppendNum(1e8f).ToString());
             Assert.AreEqual("1E+09", new StringBuilder().AppendNum(1e9f).ToString());
             Assert.AreEqual("1E+10", new StringBuilder().AppendNum(1e10f).ToString());
         }
         
+        [Test]
+        public void FloatWriterRoundTripsRandomValues()
+        {
+            // the writer picks how many decimal places to use, so whatever it picks has to parse back to the
+            // exact same value - including for the values it hands over to the framework's own formatting.
+            var random = new Random(12345);
+            var stringBuilder = new StringBuilder();
+            for (var i = 0; i < 200000; i++)
+            {
+                var value = BitConverter.Int32BitsToSingle((int)(uint)random.NextInt64(0, uint.MaxValue));
+                if (!float.IsFinite(value))
+                {
+                    continue;
+                }
+                stringBuilder.Clear();
+                stringBuilder.AppendNum(value);
+                var written = stringBuilder.ToString();
+                if (float.Parse(written, CultureInfo.InvariantCulture) != value)
+                {
+                    Assert.Fail($"{value:R} was written as '{written}'");
+                }
+            }
+        }
+
+        [Test]
+        public void DoubleWriterRoundTripsRandomValues()
+        {
+            var random = new Random(12345);
+            var stringBuilder = new StringBuilder();
+            for (var i = 0; i < 200000; i++)
+            {
+                var value = random.NextDouble() * Math.Pow(10, random.Next(-20, 20)) * (random.Next(2) == 0 ? 1 : -1);
+                stringBuilder.Clear();
+                stringBuilder.AppendNum(value);
+                var written = stringBuilder.ToString();
+                if (double.Parse(written, CultureInfo.InvariantCulture) != value)
+                {
+                    Assert.Fail($"{value:R} was written as '{written}'");
+                }
+            }
+        }
+
+        [Test]
+        public void DecimalsThatRoundUpToAWholeCarryOver()
+        {
+            // exact mode just widens until it fits, no rounding up needed.
+            Assert.AreEqual("0.999999", new StringBuilder().AppendNum(0.999999f).ToString());
+            // the fixed places of presentation mode do round up, and that has to carry into the whole part.
+            Assert.AreEqual("1", new StringBuilder().AppendNum(0.999999f, 2).ToString());
+            Assert.AreEqual("1.00", new StringBuilder().AppendNum(0.999999f, 2, 2).ToString());
+        }
+
         [Test]
         public void DoubleWrite()
         {
@@ -260,7 +344,11 @@ namespace Ninjadini.Neuro.SyncTests
             Assert.AreEqual("0.000001", new StringBuilder().AppendNum(0.000001).ToString());
             Assert.AreEqual("0.00002", new StringBuilder().AppendNum(0.00002).ToString());
             Assert.AreEqual("0.000002", new StringBuilder().AppendNum(0.000002).ToString());
-            Assert.AreEqual("0", new StringBuilder().AppendNum(0.0000002).ToString());
+            // the fast path widens its decimal places as needed rather than truncating.
+            Assert.AreEqual("0.0000002", new StringBuilder().AppendNum(0.0000002).ToString());
+            Assert.AreEqual("0.000000000000001", new StringBuilder().AppendNum(1E-15).ToString());
+            // past the widest step it falls back to exact formatting.
+            Assert.AreEqual("1E-300", new StringBuilder().AppendNum(1E-300).ToString());
             Assert.AreEqual("0.123", new StringBuilder().AppendNum(0.123).ToString());
             Assert.AreEqual("0.0123", new StringBuilder().AppendNum(0.0123).ToString());
             Assert.AreEqual("0.00123", new StringBuilder().AppendNum(0.00123).ToString());

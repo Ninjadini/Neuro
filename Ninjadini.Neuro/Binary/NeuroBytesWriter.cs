@@ -233,7 +233,7 @@ namespace Ninjadini.Neuro
 
         void INeuroSync.Sync<T>(uint key, string name, ref T value, T defaultValue)
         {
-            if (value != null && !value.Equals(defaultValue))
+            if (value != null && (!value.Equals(defaultValue) || NeuroSyncTypes.DiffersOnlyByDateTimeKind(value, defaultValue)))
             {
                 var sizeType = NeuroSyncTypes<T>.SizeType;
                 WriteHeader(key, sizeType);

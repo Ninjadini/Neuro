@@ -14,6 +14,15 @@ namespace Ninjadini.Neuro.Sync
             NeuroDefaultSyncTypes.Register();
         }
 
+        internal static bool DiffersOnlyByDateTimeKind<T>(T value, T defaultValue)
+        {
+            if (typeof(T) != typeof(DateTime))
+            {
+                return false;
+            }
+            return ((DateTime)(object)value).Kind != ((DateTime)(object)defaultValue).Kind;
+        }
+
         public static bool IsEmpty<T>()
         {
             return NeuroSyncTypes<T>.Delegate == null;

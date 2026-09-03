@@ -273,45 +273,73 @@ namespace Ninjadini.Neuro
         {
             if (value != null)
             {
-                stringBuilder.Append("\"");
-                var strSpan = value.AsSpan();
-                var lineBreakIndex = strSpan.IndexOf("\n", StringComparison.Ordinal);
-                var quoteIndex = strSpan.IndexOf("\"", StringComparison.Ordinal);
-                var slashIndex = strSpan.IndexOf("\\", StringComparison.Ordinal);
-                // TODO, this is just way too complicated for what it is
-                while (quoteIndex >= 0 || slashIndex >= 0 || lineBreakIndex >= 0)
-                {
-                    if (lineBreakIndex >= 0 
-                        && (quoteIndex == -1 || lineBreakIndex < quoteIndex)
-                        && (slashIndex == -1 || lineBreakIndex < slashIndex))
-                    {
-                        stringBuilder.Append(strSpan.Slice(0, lineBreakIndex));
-                        strSpan = strSpan.Slice(lineBreakIndex + 1);
-                        stringBuilder.Append("\\n");
-                    }
-                    else if ((quoteIndex < slashIndex && quoteIndex != -1) || slashIndex == -1)
-                    {
-                        stringBuilder.Append(strSpan.Slice(0, quoteIndex));
-                        strSpan = strSpan.Slice(quoteIndex + 1);
-                        stringBuilder.Append("\\\"");
-                    }
-                    else
-                    {
-                        stringBuilder.Append(strSpan.Slice(0, slashIndex));
-                        strSpan = strSpan.Slice(slashIndex + 1);
-                        stringBuilder.Append(@"\\");
-                    }
-                    lineBreakIndex = strSpan.IndexOf("\n", StringComparison.Ordinal);
-                    slashIndex = strSpan.IndexOf("\\", StringComparison.Ordinal);
-                    quoteIndex = strSpan.IndexOf("\"", StringComparison.Ordinal);
-                }
-                stringBuilder.Append(strSpan);
-                stringBuilder.Append("\"");
+                stringBuilder.Append('"');
+                AppendEscaped(stringBuilder, value);
+                stringBuilder.Append('"');
             }
             else
             {
                 stringBuilder.Append("null");
             }
+        }
+
+        /// Writes the body of a json string. Escapes exactly what the spec requires - the quote, the backslash
+        /// and every control character below U+0020 - using the short form where there is one and \u00xx otherwise.
+        /// Everything else, unicode included, goes out as is.
+        static void AppendEscaped(StringBuilder stringBuilder, string value)
+        {
+            var start = 0;
+            for (var i = 0; i < value.Length; i++)
+            {
+                var c = value[i];
+                if (c >= ' ' && c != '"' && c != '\\')
+                {
+                    continue;
+                }
+                if (i > start)
+                {
+                    stringBuilder.Append(value, start, i - start);
+                }
+                switch (c)
+                {
+                    case '"':
+                        stringBuilder.Append("\\\"");
+                        break;
+                    case '\\':
+                        stringBuilder.Append("\\\\");
+                        break;
+                    case '\n':
+                        stringBuilder.Append("\\n");
+                        break;
+                    case '\r':
+                        stringBuilder.Append("\\r");
+                        break;
+                    case '\t':
+                        stringBuilder.Append("\\t");
+                        break;
+                    case '\b':
+                        stringBuilder.Append("\\b");
+                        break;
+                    case '\f':
+                        stringBuilder.Append("\\f");
+                        break;
+                    default:
+                        stringBuilder.Append("\\u00");
+                        AppendHexDigit(stringBuilder, (c >> 4) & 0xF);
+                        AppendHexDigit(stringBuilder, c & 0xF);
+                        break;
+                }
+                start = i + 1;
+            }
+            if (start < value.Length)
+            {
+                stringBuilder.Append(value, start, value.Length - start);
+            }
+        }
+
+        static void AppendHexDigit(StringBuilder stringBuilder, int digit)
+        {
+            stringBuilder.Append((char)(digit < 10 ? '0' + digit : 'a' + digit - 10));
         }
 
         void INeuroSync.Sync<T>(ref Reference<T> value)
@@ -324,7 +352,7 @@ namespace Ninjadini.Neuro
                     stringBuilder.Append("\"");
                     stringBuilder.Append(value.RefId);
                     stringBuilder.Append(":");
-                    stringBuilder.Append(refName);
+                    AppendEscaped(stringBuilder, refName);
                     stringBuilder.Append("\"");
                     return;
                 }
@@ -358,7 +386,7 @@ namespace Ninjadini.Neuro
 
         void INeuroSync.Sync<T>(uint key, string name, ref T value, T defaultValue)
         {
-            if (value != null && !value.Equals(defaultValue))
+            if (value != null && (!value.Equals(defaultValue) || NeuroSyncTypes.DiffersOnlyByDateTimeKind(value, defaultValue)))
             {
                 SyncObj(name, ref value);
             }

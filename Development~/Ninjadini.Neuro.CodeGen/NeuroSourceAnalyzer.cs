@@ -237,11 +237,44 @@ namespace Ninjadini.Neuro.CodeGen
             return null;
         }
 
+        static bool IsNeuroType(INamedTypeSymbol symbol)
+        {
+            return NeuroCodeGenUtils.FindNeuroAttribute(symbol) != null
+                   || symbol.GetMembers()
+                       .Where(m => m.Kind == SymbolKind.Field).Cast<IFieldSymbol>()
+                       .Any(s => NeuroCodeGenUtils.FindNeuroAttribute(s) != null);
+        }
+
+        /// A class deriving from a Neuro class takes part in serialization whether or not it declares members
+        /// of its own, so it still has to be checked for its `[Neuro(#)]` tag. Without this a field-less
+        /// subclass would slip through and silently serialize as its base type.
+        static bool HasNeuroBaseType(INamedTypeSymbol classSymbol)
+        {
+            var baseSymbol = classSymbol.BaseType;
+            while (baseSymbol != null)
+            {
+                if (IsNeuroType(baseSymbol))
+                {
+                    return true;
+                }
+                baseSymbol = baseSymbol.BaseType;
+            }
+            foreach (var interfaceSymbol in classSymbol.AllInterfaces)
+            {
+                if (NeuroCodeGenUtils.FindNeuroAttribute(interfaceSymbol) != null)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private void ProcessNeuroBaseClass(INamedTypeSymbol classSymbol, ClassFieldsInfo fieldsInfo, SymbolAnalysisContext context)
         {
             var classAttribute = NeuroCodeGenUtils.FindNeuroAttribute(classSymbol);
-            if (classAttribute == null && fieldsInfo == ClassFieldsInfo.NoNeuro)
+            if (classAttribute == null && fieldsInfo == ClassFieldsInfo.NoNeuro && !HasNeuroBaseType(classSymbol))
             {
+                // nothing marks this type as taking part in Neuro, so leave it alone.
                 return;
             }
             if (fieldsInfo == ClassFieldsInfo.NeuroWithPrivateFields)
@@ -279,10 +312,7 @@ namespace Ninjadini.Neuro.CodeGen
             var baseSymbol = classSymbol.BaseType;
             while (baseSymbol != null)
             {
-                if (NeuroCodeGenUtils.FindNeuroAttribute(baseSymbol) != null 
-                    || baseSymbol.GetMembers()
-                        .Where(m => m.Kind == SymbolKind.Field).Cast<IFieldSymbol>()
-                        .Any(s => NeuroCodeGenUtils.FindNeuroAttribute(s) != null))
+                if (IsNeuroType(baseSymbol))
                 {
                     baseClassSymbol = baseSymbol;
                     break;
