@@ -84,23 +84,9 @@ Follow protobuf's rules.
   retired subtype tag; restructuring a polymorphic hierarchy.
 - Reading data with unknown tags in it is fine - they are skipped.
 
-## Codegen diagnostics
+## Codegen errors
 
-| Id | Meaning |
-|---|---|
-| `Neuro002` | Class-level neuro tag out of range (0..int.MaxValue). |
-| `Neuro022` | `readonly` `[Neuro]` field on a non-class type. |
-| `Neuro023` | `readonly` `[Neuro]` field with no `new` initialiser. |
-| `Neuro101` | Unsupported type / unsupported dictionary key / class with private neuro fields is not `partial`. |
-| `Neuro102` | Unsupported number type - use `int`/`uint`/`long`/`ulong`, `string` for char, `double` for decimal. |
-| `Neuro300` | Two fields in one class share a tag. |
-| `Neuro301` | Field tag out of range. |
-| `Neuro303` | Two subtypes of the same root share a class tag. |
-| `Neuro304` | Class tag is marked `[ReservedNeuroTag]`. |
-| `Neuro310` | Two types share a `[NeuroGlobalType]` id. |
-| `Neuro311` | Global type id out of range. |
-| `Neuro312` | An `IReferencable` root is missing `[NeuroGlobalType(#)]`. |
-| `Neuro404` | Subclass of a neuro class is missing its own `[Neuro(#)]`. |
-| `Neuro405` | Type inherits from two separate neuro roots. |
-| `Neuro406` | Under `NEURO_FAST_CODEGEN`: has `[Neuro]` fields but no class-level `[Neuro(#)]`. |
-| `Neuro911` | The generator itself threw - report it. |
+Violations of the rules above are compile errors prefixed `Neuro` (`Neuro022`, `Neuro101`, `Neuro102`,
+`Neuro300`, `Neuro303`, `Neuro312`, `Neuro404`, `Neuro405`, `Neuro406`, ...). The messages state the
+cause and the fix, so read the error text rather than guessing from the code alone. Every descriptor is
+declared in one place if you need the full list: `Development~/Ninjadini.Neuro.CodeGen/NeuroSourceAnalyzer.cs`.

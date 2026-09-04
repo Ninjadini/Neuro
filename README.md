@@ -41,7 +41,7 @@ Let's get started ⤵️
 ## [For AI coding assistants >](Docs/AI/neuro.md)
 
 [Docs/AI/](Docs/AI/) is a condensed Neuro reference written for coding agents — the whole API surface,
-the codegen rules and every diagnostic code in ~25KB, so the agent answers from that instead of reading
+the codegen rules and the gotchas in ~25KB, so the agent answers from that instead of reading
 the library source. It is plain markdown with no tool-specific format, so any assistant can use it.
 
 Point your tool at it:

@@ -20,10 +20,10 @@ Other menu items:
 | `Tools > Neuro > Content Debugger` | Inspect/round-trip arbitrary neuro data, including runtime saves. |
 | `Tools > Neuro > Type Mapping Debugger` | Shows every registered type, its global id and subtype tags. |
 | `Tools > Neuro > Reload` / `Reload + Read all data` | Re-read the JSON files after external edits. |
-| `Tools > Neuro > Save Data To Resources` | Bake the binary blob builds use. |
-| `Tools > Neuro > Save Resources data as JSON` | Dump the baked binary back to JSON. |
-| `Tools > Neuro > Bake AutoTypesRegister Script` | Generate the static type registry (avoids assembly scanning). |
 | `Tools > Neuro > Migrate RefIds to base36...` | One-time migration for pre-base36 data. |
+
+Also under that menu: `Save Data To Resources` / `Save Resources data as JSON` (bake and dump the binary
+blob builds use) and `Bake AutoTypesRegister Script` (static type registry, skips assembly scanning).
 
 ## RefIds are base36 in files and JSON
 
@@ -150,14 +150,12 @@ public class TroopBuildProcessor : INeuroBundledDataResourcesForBuildProcessor
 
 ## Customising the editor UI
 
-Cheap wins first - `[DisplayName]`, `[Tooltip]`, `[Header("> foldout")]`, `[InspectorStyle]` on the type
-or field.
+Cheap wins, on the type or field: `[DisplayName]`, `[Tooltip]`, `[Header("> foldout")]`,
+`[InspectorStyle]`. Reference dropdown labels/icons: implement `INeuroRefDropDownCustomizable` /
+`INeuroRefDropDownIconCustomizable`. Full custom drawers: `ICustomNeuroEditorProvider.CreateCustomDrawer`
+returns a `VisualElement` for types you take over, `null` otherwise, with helpers on
+`ObjectInspectorFields`.
 
-Reference dropdowns: implement `INeuroRefDropDownCustomizable.GetRefDropdownText(references)` for custom
-label text, and `INeuroRefDropDownIconCustomizable.RefDropdownIcon` for an icon.
-
-Full custom drawers: implement `ICustomNeuroEditorProvider.CreateCustomDrawer(inspector, data)`, return
-a `VisualElement` for the types you want to take over and `null` for everything else. Helpers:
-`ObjectInspectorFields.CreateField(data)`, `ObjectInspectorFields.CreateDrawer<TWidget, TValue>(...)`,
-`ObjectInspector.CreateDataForField(...)`. This API is marked as liable to change; prefer
-`INeuroContentValidator` over drawing your own validation UI.
+This API is documented as liable to change and is rarely what you want — prefer `INeuroContentValidator`
+over drawing your own validation UI. If you are actually writing a drawer, read
+[../EditorCustomisation.md](../EditorCustomisation.md), which has the full worked examples.
