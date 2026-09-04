@@ -14,6 +14,27 @@ namespace Ninjadini.Neuro.Editor
     {
         static ReadOnlyCollection<Type> _allScannableTypes;
 
+        /// How a RefId is shown in the editor UI - base36, plus the plain number after it when
+        /// `Show Raw Ref Id Numbers` is turned on in the Neuro settings.
+        /// Display only. Never use it where the text is read back, such as file names or the RefId field.
+        public static string DisplayRefId(uint refId)
+        {
+            var text = NeuroRefId.ToString(refId);
+            return NeuroUnityUserSettings.Get().ShowRawRefIdNumbers ? text + " (" + refId.ToString() + ")" : text;
+        }
+
+        /// The editor's version of IReferencable.TryGetIdAndName(), honouring `Show Raw Ref Id Numbers`.
+        public static string DisplayIdAndName(IReferencable referencable)
+        {
+            if (referencable == null)
+            {
+                return "null";
+            }
+            var id = DisplayRefId(referencable.RefId);
+            var name = referencable.RefName;
+            return string.IsNullOrEmpty(name) ? $"#{id}" : $"#{id}:{name}";
+        }
+
         public static IReadOnlyList<Type> GetAllScannableTypes()
         {
             if (_allScannableTypes != null)
@@ -58,7 +79,7 @@ namespace Ninjadini.Neuro.Editor
                 .ToArray();
             _allScannableTypes = new ReadOnlyCollection<Type>(result);
 
-            if (NeuroUnityEditorSettings.Get().LogTimings)
+            if (NeuroUnityUserSettings.Get().LogTimings)
             {
                 var timeTaken = DateTime.Now - startTime;
                 Debug.Log($"All scannable types found in {timeTaken.TotalMilliseconds}ms");

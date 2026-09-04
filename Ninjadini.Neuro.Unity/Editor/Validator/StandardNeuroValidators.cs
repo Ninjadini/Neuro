@@ -1,6 +1,7 @@
 using System;
 using Ninjadini.Neuro;
 using Ninjadini.Neuro.Utils;
+using Ninjadini.Neuro.Editor;
 using UnityEditor;
 using UnityEngine;
 
@@ -60,7 +61,7 @@ public class StandardNeuroValidators
             var type = value.RefType;
             if(type != null && context.References.GetTable(type).Get(refId) == null)
             {
-                context.AddProblem($"Reference to {type.Name} with RefId #{value.RefId} does not exist");
+                context.AddProblem($"Reference to {type.Name} with RefId #{NeuroEditorUtils.DisplayRefId(value.RefId)} does not exist");
             }
         }
     }

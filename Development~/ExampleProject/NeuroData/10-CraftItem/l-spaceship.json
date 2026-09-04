@@ -1,0 +1,19 @@
+{
+    "Name": "Spaceship",
+    "Icon": "Icons/spaceship",
+    "RequiredItems": [
+        {
+            "Item": "i",
+            "Amount": 1
+        },
+        {
+            "Item": "j",
+            "Amount": 1
+        },
+        {
+            "Item": "k",
+            "Amount": 1
+        }
+    ],
+    "CraftDuration": 3600000
+}

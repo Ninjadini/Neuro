@@ -1,0 +1,12 @@
+{
+    "Name": "Sharpened Stone",
+    "Icon": "Icons/stones",
+    "CraftOutputCount": 3,
+    "RequiredItems": [
+        {
+            "Item": "2:stone",
+            "Amount": 1
+        }
+    ],
+    "CraftDuration": 3000
+}

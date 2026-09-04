@@ -1,0 +1,10 @@
+{
+    "Name": "Fuel Tank",
+    "RequiredItems": [
+        {
+            "Item": "d",
+            "Amount": 2
+        }
+    ],
+    "CraftDuration": 2400000
+}

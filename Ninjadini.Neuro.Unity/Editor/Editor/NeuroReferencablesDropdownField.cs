@@ -69,12 +69,13 @@ namespace Ninjadini.Neuro.Editor
                     return "";
                 }
             }
+            var idStr = NeuroEditorUtils.DisplayRefId(id);
             var refName = type != null ? references?.GetTable(type).GetRefName(id) : null;
             if (string.IsNullOrEmpty(refName))
             {
-                return id.ToString();
+                return idStr;
             }
-            return id + " : " + refName;
+            return idStr + " : " + refName;
         }
 
         protected override void SetupWindow(SearchListPopupWindow window)

@@ -362,20 +362,24 @@ namespace Ninjadini.Neuro
 
         void INeuroSync.Sync<T>(ref Reference<T> value)
         {
+            var refId = value.RefId;
             if ((opts & Options.TagValuesOnly) == 0)
             {
                 var refName = value.GetValue(references)?.RefName;
                 if (!string.IsNullOrEmpty(refName))
                 {
                     stringBuilder.Append("\"");
-                    stringBuilder.Append(value.RefId);
+                    NeuroRefId.Append(stringBuilder, refId);
                     stringBuilder.Append(":");
                     AppendEscaped(stringBuilder, refName);
                     stringBuilder.Append("\"");
                     return;
                 }
             }
-            stringBuilder.AppendNum(value.RefId);
+            // A RefId is base36, which is not a json number, so it always goes in as a string.
+            stringBuilder.Append("\"");
+            NeuroRefId.Append(stringBuilder, refId);
+            stringBuilder.Append("\"");
         }
 
         void INeuroSync.SyncEnum<T>(ref int value)

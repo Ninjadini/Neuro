@@ -146,7 +146,7 @@ public class NeuroReferenceTable<T> : INeuroReferenceTable where T: class,  IRef
         }
         else if (result.RefId != refId)
         {
-            throw new Exception($"Ref id does not match, expecting {refId}, got {result.RefId}");
+            throw new Exception($"Ref id does not match, expecting {NeuroRefId.ToString(refId)}, got {NeuroRefId.ToString(result.RefId)}");
         }
         var refName = loader.GetRefName(refId);
         result.RefName = refName;

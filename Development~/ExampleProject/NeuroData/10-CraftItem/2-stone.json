@@ -1,0 +1,6 @@
+{
+    "Name": "Stone",
+    "Icon": "Icons/stones",
+    "CraftOutputCount": 3,
+    "CraftDuration": 1000
+}

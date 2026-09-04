@@ -299,7 +299,7 @@ namespace Ninjadini.Neuro
 
         void INeuroSync.Sync<T>(ref Reference<T> value)
         {
-            value.RefId = GetFirstUintPart(currentValue);
+            value.RefId = GetFirstRefIdPart(currentValue);
         }
 
         void INeuroSync.SyncEnum<T>(ref int value)
@@ -611,6 +611,22 @@ namespace Ninjadini.Neuro
                 }
             }
             currentParent = parentBefore;
+        }
+
+        uint GetFirstRefIdPart(in NeuroJsonTokenizer.StringRange stringRange)
+        {
+            var len = stringRange.Length;
+            if (len == 0)
+            {
+                return 0;
+            }
+            var endIndex = jsonStr.IndexOf(':', stringRange.Start, len);
+            var span = jsonStr.AsSpan(stringRange.Start, (endIndex > 0 ? endIndex : stringRange.End) - stringRange.Start);
+            if (!NeuroRefId.TryParse(span, out var refId))
+            {
+                throw new Exception($"`{span.ToString()}` is not a valid RefId @ {stringRange.Start}");
+            }
+            return refId;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

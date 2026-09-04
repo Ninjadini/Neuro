@@ -94,7 +94,7 @@ namespace Ninjadini.Neuro
 
         public override string ToString()
         {
-            return RefId == 0 ? $"[{typeof(T)} ref null]" : $"[{typeof(T)} ref #{RefId}]";
+            return RefId == 0 ? $"[{typeof(T)} ref null]" : $"[{typeof(T)} ref #{NeuroRefId.ToString(RefId)}]";
         }
 
         public static void Sync(INeuroSync neuro, ref Reference<T> value)

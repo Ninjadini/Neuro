@@ -6,6 +6,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UIElements;
 
 namespace Ninjadini.Neuro.Editor
@@ -26,13 +27,6 @@ namespace Ninjadini.Neuro.Editor
         [Tooltip("This is where Neuro will bake the data for builds as "+ NeuroDataProvider.BinaryResourceName + "."+NeuroDataProvider.BinaryResourceExtension+" file.\nDefault value: Assets/Resources/")]
         public string ResourcesDir = "Assets/Resources/";
         
-        [Header("Debug")]
-        [Tooltip("Debug.Log() neuro loading timings in case you need to know how long things are taking.")]
-        public bool LogTimings;
-        
-        [Tooltip("Show dialog if json data file changes are detected")]
-        public bool ShowDialogOnDataFileChange;
-        
         [Header("Experimental")]
         public bool UndoRedosEnabled;
 
@@ -41,6 +35,16 @@ namespace Ninjadini.Neuro.Editor
         public bool BakeAutoTypeRegistryForBuild = true;
         
         public List<NeuroEditorTypeItemSetting> ClassSettings = new List<NeuroEditorTypeItemSetting>();
+
+        /// The RefId text format the data files on disk are written in. See NeuroRefIdMigration.
+        /// 0 is the original decimal spelling, and is what a project that predates base36 RefIds deserializes as.
+        [HideInInspector] public int RefIdFormatVersion;
+
+        /// These moved to NeuroUnityUserSettings, they only exist so old ProjectSettings/NeuroSettings.asset
+        /// values can be carried over once. Safe to delete once everyone has opened the project on this version.
+        [SerializeField, HideInInspector, FormerlySerializedAs("LogTimings")] internal bool MigratedLogTimings;
+        [SerializeField, HideInInspector, FormerlySerializedAs("ShowDialogOnDataFileChange")] internal bool MigratedShowDialogOnDataFileChange;
+        [SerializeField, HideInInspector, FormerlySerializedAs("ShowRawRefIdNumbers")] internal bool MigratedShowRawRefIdNumbers;
         
         public NeuroUnityEditorSettings() : base()
         {
@@ -103,7 +107,7 @@ namespace Ninjadini.Neuro.Editor
                        
             public override void OnActivate(string searchContext, VisualElement rootElement)
             {
-                var settings = NeuroUnityEditorSettings.Get();
+                var settings = Get();
                 settings.hideFlags = HideFlags.None;
                 
                 var title = NeuroUiUtils.AddLabel(rootElement, "❖ Neuro");
@@ -112,6 +116,8 @@ namespace Ninjadini.Neuro.Editor
                 title.style.paddingLeft = 10;
                 title.style.paddingTop = 1;
                 title.style.paddingBottom = 5;
+
+                AddUserSettingsUI(rootElement);
 
                 SetUpPrimaryDataPathUI(rootElement, settings);
                 
@@ -131,6 +137,39 @@ namespace Ninjadini.Neuro.Editor
                         field.style.paddingLeft = 8;
                         field.BindProperty(serializedProperty);
                         rootElement.Add(field);
+                    }
+                }
+            }
+
+            void AddUserSettingsUI(VisualElement rootElement)
+            {
+                var userSettings = NeuroUnityUserSettings.Get();
+                userSettings.hideFlags = HideFlags.None;
+                
+                var box = new VisualElement();
+                NeuroUiUtils.SetBorder(box, new Color(0.3f, 0.3f, 0.2f));
+                box.style.marginLeft = 8;
+                box.style.marginTop = 10;
+                box.style.marginRight = 8;
+                rootElement.Add(box);
+                
+                var header = NeuroUiUtils.AddLabel(box, "User settings");
+                header.style.unityFontStyleAndWeight = FontStyle.Bold;
+                
+                var note = NeuroUiUtils.AddLabel(box, "These apply to you only, they are stored in UserSettings/ instead of ProjectSettings/ so they are not shared with the rest of the team.");
+                note.style.opacity = 0.7f;
+                note.style.whiteSpace = WhiteSpace.Normal;
+                note.style.paddingBottom = 5;
+                
+                var serializedObject = new SerializedObject(userSettings);
+                var serializedProperty = serializedObject.GetIterator();
+                if (serializedProperty.NextVisible(true))
+                {
+                    while (serializedProperty.NextVisible(false))
+                    {
+                        var field = new PropertyField();
+                        field.BindProperty(serializedProperty);
+                        box.Add(field);
                     }
                 }
             }
@@ -200,6 +239,7 @@ namespace Ninjadini.Neuro.Editor
             void OnSaveClicked()
             {
                 Get().Save();
+                NeuroUnityUserSettings.Get().Save();
             }
                             
             [SettingsProvider]

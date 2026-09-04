@@ -37,7 +37,7 @@ namespace Ninjadini.Neuro.Editor
             var tester = new NeuroContentTester(context);
             foreach (var referencable in table.SelectAll())
             {
-                itemName = referencable.TryGetIdAndName();
+                itemName = NeuroEditorUtils.DisplayIdAndName(referencable);
                 tester.Test(referencable);
             }
             if (problems.Count > 0)

@@ -83,7 +83,7 @@ namespace Ninjadini.Neuro.Editor
             foreach (var referencable in table.SelectAll())
             {
                 count++;
-                guiNames.Add(referencable.RefId + " : "+referencable.RefName);
+                guiNames.Add(NeuroEditorUtils.DisplayRefId(referencable.RefId) + " : "+referencable.RefName);
                 if (refId == referencable.RefId)
                 {
                     prevIndex = count;

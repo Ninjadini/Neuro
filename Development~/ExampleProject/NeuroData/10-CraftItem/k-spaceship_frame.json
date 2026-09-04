@@ -1,0 +1,14 @@
+{
+    "Name": "Spaceship Frame",
+    "RequiredItems": [
+        {
+            "Item": "g",
+            "Amount": 3
+        },
+        {
+            "Item": "h",
+            "Amount": 2
+        }
+    ],
+    "CraftDuration": 3600000
+}

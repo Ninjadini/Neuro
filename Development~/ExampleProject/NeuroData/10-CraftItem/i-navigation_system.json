@@ -1,0 +1,10 @@
+{
+    "Name": "Navigation System",
+    "RequiredItems": [
+        {
+            "Item": "e",
+            "Amount": 1
+        }
+    ],
+    "CraftDuration": 1800000
+}

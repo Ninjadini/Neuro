@@ -97,6 +97,17 @@ namespace Ninjadini.Neuro.Editor
             LoadDirectories(dataPaths);
         }
 
+        static uint ReadTypeIdFromDirName(string dirPath)
+        {
+            var dirName = Path.GetFileName(dirPath.AsSpan());
+            var splitIndex = dirName.IndexOf("-");
+            if (splitIndex > 0)
+            {
+                dirName = dirName.Slice(0, splitIndex);
+            }
+            return uint.TryParse(dirName, out var id) ? id : 0;
+        }
+
         void LoadDirectories(List<string> dataPaths)
         {
             var count = 0;
@@ -118,7 +129,9 @@ namespace Ninjadini.Neuro.Editor
                 AddFileWatchers(dirPath);
                 foreach (var subDir in Directory.GetDirectories(dirPath))
                 {
-                    var typeId = NeuroDataFile.ReadIdFromFileName(subDir);
+                    // the type directory is `<globalTypeId>-<TypeName>`, and a global type id is a plain decimal
+                    // number - not a RefId, so it must not go through the base36 reading.
+                    var typeId = ReadTypeIdFromDirName(subDir);
                     if (typeId > 0)
                     {
                         var globalType = NeuroGlobalTypes.FindTypeById(typeId);
@@ -133,10 +146,31 @@ namespace Ninjadini.Neuro.Editor
                     }
                 }
             }
-            if (NeuroUnityEditorSettings.Get().LogTimings)
+            if (NeuroUnityUserSettings.Get().LogTimings)
             {
                 Debug.Log($"Neuro ~ Found {count:N0} json files in {(DateTime.UtcNow - startTime).TotalMilliseconds:N0} ms");
             }
+            WarnIfRefIdsNeedMigrating(count);
+        }
+
+        /// RefIds used to be spelled in decimal and are now base36, and the two disagree on any name made only of
+        /// digits - `20-item.json` used to be RefId 20 and now reads as 72. That is silent, so it gets said out
+        /// loud once per load until the data is converted.
+        static void WarnIfRefIdsNeedMigrating(int fileCount)
+        {
+            if (!NeuroRefIdMigration.IsMigrationNeeded())
+            {
+                return;
+            }
+            if (fileCount == 0)
+            {
+                // nothing on disk to be misread, so a new project is simply already in the current format.
+                NeuroRefIdMigration.MarkAsMigrated();
+                return;
+            }
+            Debug.LogWarning("Neuro ~ this project's data files were written when RefIds were spelled in decimal," +
+                             " and RefIds are now base36. Ids that are all digits are being read as the wrong number." +
+                             "\nRun `Tools > Neuro > Migrate RefIds to base36...` to convert the data. It keeps the id numbers as they are.");
         }
 
         void LoadFile(Type globalType, string filePath)
@@ -153,7 +187,7 @@ namespace Ninjadini.Neuro.Editor
                 var type = fileData.RootType;
                 if (References.Get(type, refId) != null)
                 {
-                    Debug.LogError($"Neuro data file with duplicate RefId `{refId}` found @ {filePath}");
+                    Debug.LogError($"Neuro data file with duplicate RefId `{NeuroEditorUtils.DisplayRefId(refId)}` found @ {filePath}");
                     return;
                 }
                 References.GetTable(type).Register(refId, fileData);
@@ -198,7 +232,7 @@ namespace Ninjadini.Neuro.Editor
                 return;
             }
             fileChangesCount++;
-            if (updatesCountSinceFilesChanged < 0 && NeuroUnityEditorSettings.Get().ShowDialogOnDataFileChange)
+            if (updatesCountSinceFilesChanged < 0 && NeuroUnityUserSettings.Get().ShowDialogOnDataFileChange)
             {
                 updatesCountSinceFilesChanged = 0;
                 EditorApplication.update += OnEditorUpdateForFileChanges;
@@ -256,15 +290,32 @@ namespace Ninjadini.Neuro.Editor
             });
         }
 
+        static readonly System.Random RefIdRandom = new System.Random();
+        
         public uint FindNextId(Type type)
         {
-            var nextId = 1u;
-            var keys = References.GetTable(type).GetIds();
-            foreach (var key in keys)
+            var used = new HashSet<uint>(References.GetTable(type).GetIds());
+            var rootType = NeuroReferences.GetRootReferencable(type);
+            if (dataFiles != null)
             {
-                nextId = Math.Max(nextId, key + 1);
+                foreach (var dataFile in dataFiles)
+                {
+                    if (dataFile.RootType == rootType)
+                    {
+                        used.Add(dataFile.RefId);
+                    }
+                }
             }
-            return nextId;
+            const int maxAttempts = 1000;
+            for (var attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                var id = (uint)RefIdRandom.Next((int)NeuroRefId.GeneratedMinValue, (int)NeuroRefId.GeneratedMaxValue + 1);
+                if (!used.Contains(id))
+                {
+                    return id;
+                }
+            }
+            throw new Exception($"Could not find a free RefId for `{type}` after {maxAttempts} attempts, there are {used.Count} ids in use.");
         }
 
         public NeuroDataFile Add(IReferencable newObj, uint customRefId = 0)
@@ -276,7 +327,7 @@ namespace Ninjadini.Neuro.Editor
                 nextId = customRefId;
                 if (References.Get(newObj.GetType(), customRefId) != null)
                 {
-                    throw new Exception($"Custom RefId `{customRefId}` is already in use for type `{newObj.GetType()}`");
+                    throw new Exception($"Custom RefId `{NeuroEditorUtils.DisplayRefId(customRefId)}` is already in use for type `{newObj.GetType()}`");
                 }
             }
             else if(newObj.RefId > 0)
@@ -289,7 +340,7 @@ namespace Ninjadini.Neuro.Editor
                     {
                         return other;
                     }
-                    throw new Exception($"Object with RefId `{nextId} already exists, set the ref of the new object to 0 to generate a new next number");
+                    throw new Exception($"Object with RefId `{NeuroEditorUtils.DisplayRefId(nextId)}` already exists, set the ref of the new object to 0 to generate a new next number");
                 }
             }
             else
@@ -300,7 +351,7 @@ namespace Ninjadini.Neuro.Editor
             var resultId = newObj.RefId;
             if (resultId != nextId)
             {
-                Debug.LogError($"Tried to assign {newObj.GetType().Name}'s RefId to `{nextId}` but it is still `{resultId}`");
+                Debug.LogError($"Tried to assign {newObj.GetType().Name}'s RefId to `{NeuroEditorUtils.DisplayRefId(nextId)}` but it is still `{NeuroEditorUtils.DisplayRefId(resultId)}`");
                 return null;
             }
             var fileName = GetFileName(newObj)+".json";
@@ -351,7 +402,7 @@ namespace Ninjadini.Neuro.Editor
             }
             else
             {
-                Debug.LogWarning("Data file not found for " + type +" with id " + data.RefId);
+                Debug.LogWarning("Data file not found for " + type +" with id " + NeuroEditorUtils.DisplayRefId(data.RefId));
             }
         }
 
@@ -395,6 +446,161 @@ namespace Ninjadini.Neuro.Editor
             dataFiles.Remove(dataFile);
         }
 
+        /// Moves an existing item to a different RefId and rewrites every Reference<> in the database that
+        /// pointed at the old one, so nothing is left dangling. Returns the other items that had to be updated.
+        /// Throws if the new id is not free - check with GetRefIdChangeProblem() first if you want to ask first.
+        public IReadOnlyList<IReferencable> ChangeRefId(NeuroDataFile dataFile, uint newRefId)
+        {
+            if (dataFile == null)
+            {
+                throw new ArgumentNullException(nameof(dataFile));
+            }
+            var oldRefId = dataFile.RefId;
+            var rootType = dataFile.RootType;
+            var problem = GetRefIdChangeProblem(dataFile, newRefId);
+            if (problem != null)
+            {
+                throw new Exception(problem);
+            }
+            if (newRefId == oldRefId)
+            {
+                return Array.Empty<IReferencable>();
+            }
+            // Get() rather than dataFile.Value so that the item is moved out of the table's lazy loaders and into
+            // its loaded items. Otherwise the full scan below would load it under the old id afterwards, and the
+            // table checks the loaded object's RefId against the id it asked for.
+            var value = References.Get(rootType, oldRefId) ?? dataFile.Value;
+
+            // Check the id can actually be assigned before anything is modified - an IReferencable is free to
+            // implement RefId however it likes, and failing half way would leave the loaded data pointing at an
+            // id that no item has.
+            value.RefId = newRefId;
+            var assignable = value.RefId == newRefId;
+            value.RefId = oldRefId;
+            if (!assignable)
+            {
+                throw new Exception($"{value.GetType().Name}'s RefId can not be assigned - tried to set it to `{NeuroEditorUtils.DisplayRefId(newRefId)}` and it stayed `{NeuroEditorUtils.DisplayRefId(value.RefId)}`.");
+            }
+
+            var updated = RewriteReferencesTo(rootType, oldRefId, newRefId);
+
+            var table = References.GetTable(rootType);
+            table.Unregister(oldRefId);
+            value.RefId = newRefId;
+            table.Register(value);
+
+            // the id is part of the file name, so moving the id renames the file.
+            var newPath = Path.Combine(Path.GetDirectoryName(dataFile.FilePath), GetFileName(value) + ".json");
+            if (!string.IsNullOrEmpty(dataFile.FilePath) && File.Exists(dataFile.FilePath))
+            {
+                AddTempIgnoreFile(dataFile.FilePath);
+                File.Delete(dataFile.FilePath);
+            }
+            AddTempIgnoreFile(newPath);
+            dataFile.SetFilePath(newPath);
+            dataFile.Value = value;
+            SaveData(dataFile);
+
+            foreach (var referencable in updated)
+            {
+                var otherFile = Find(referencable.GetType(), referencable.RefId);
+                if (otherFile != null)
+                {
+                    SaveData(otherFile);
+                }
+            }
+            return updated;
+        }
+
+        /// Why `newRefId` can not be given to this item, or null when it can.
+        public string GetRefIdChangeProblem(NeuroDataFile dataFile, uint newRefId)
+        {
+            var rootType = dataFile.RootType;
+            if (rootType == null)
+            {
+                return "Can not determine the type of this item.";
+            }
+            if (typeof(ISingletonReferencable).IsAssignableFrom(rootType))
+            {
+                return $"`{rootType.Name}` is a singleton, its RefId is always 1.";
+            }
+            if (newRefId == dataFile.RefId)
+            {
+                return null;
+            }
+            if (newRefId == 0)
+            {
+                return "RefId `0` is reserved for 'no reference', it can not be used for an item.";
+            }
+            var existing = Find(rootType, newRefId);
+            if (existing != null)
+            {
+                return $"RefId `{NeuroEditorUtils.DisplayRefId(newRefId)}` is already used by `{existing.RefName}`\n@ {existing.FilePath}";
+            }
+            if (References.Get(rootType, newRefId) != null)
+            {
+                return $"RefId `{NeuroEditorUtils.DisplayRefId(newRefId)}` is already in use for type `{rootType.Name}`.";
+            }
+            return null;
+        }
+
+        /// Points every Reference<rootType> that held `oldRefId` at `newRefId`, across every item in the
+        /// database. Returns the items that changed - they still need saving.
+        List<IReferencable> RewriteReferencesTo(Type rootType, uint oldRefId, uint newRefId)
+        {
+            var neuroVisitor = new NeuroEditVisitor();
+            var rewriter = new RefIdRewriteVisitor(rootType, oldRefId, newRefId);
+            var updated = new List<IReferencable>();
+            foreach (var baseType in References.GetRegisteredBaseTypes().ToArray())
+            {
+                // ToArray because visiting deserializes the lazily loaded items, which writes to the very table
+                // we would otherwise still be enumerating.
+                foreach (var referencable in References.GetTable(baseType).SelectAll().ToArray())
+                {
+                    rewriter.Changes = 0;
+                    neuroVisitor.Visit(referencable, rewriter);
+                    if (rewriter.Changes > 0)
+                    {
+                        updated.Add(referencable);
+                    }
+                }
+            }
+            return updated;
+        }
+
+        class RefIdRewriteVisitor : NeuroEditVisitor.IInterface
+        {
+            readonly Type rootType;
+            readonly uint oldRefId;
+            readonly uint newRefId;
+
+            public int Changes;
+
+            public RefIdRewriteVisitor(Type rootType, uint oldRefId, uint newRefId)
+            {
+                this.rootType = rootType;
+                this.oldRefId = oldRefId;
+                this.newRefId = newRefId;
+            }
+
+            void NeuroEditVisitor.IInterface.BeginVisit<T>(ref T obj, string name, int? listIndex)
+            {
+            }
+
+            void NeuroEditVisitor.IInterface.EndVisit()
+            {
+            }
+
+            void NeuroEditVisitor.IInterface.VisitRef<T>(ref Reference<T> reference)
+            {
+                if (reference.RefId == oldRefId && typeof(T) == rootType)
+                {
+                    reference.RefId = newRefId;
+                    Changes++;
+                }
+            }
+        }
+
         public void SetRefName(NeuroDataFile dataFile, string newName)
         {
             var obj = dataFile.Value;
@@ -432,12 +638,13 @@ namespace Ninjadini.Neuro.Editor
             {
                 return "1-"+referencable.GetType().Name;
             }
+            var id = NeuroRefId.ToString(referencable.RefId);
             var name = Regex.Replace(referencable.RefName ?? "", NeuroDataFile.InvalidFileNameRegExp, "");
             if (string.IsNullOrEmpty(name))
             {
-                return referencable.RefId.ToString();
+                return id;
             }
-            return referencable.RefId + "-" + (name.Length > 64 ? name.Substring(0, 64) : name);
+            return id + "-" + (name.Length > 64 ? name.Substring(0, 64) : name);
         }
 
         public void SaveBundledBinaryToResources(BuildReport report)

@@ -205,7 +205,7 @@ namespace Ninjadini.Neuro.Editor
 
         public static void ShowRefIdChangedError(uint idBefore, uint idAfter)
         {
-            EditorUtility.DisplayDialog("", $"RefId was changed from {idBefore} to {idAfter} but this is not allowed (yet).", "OK");
+            EditorUtility.DisplayDialog("", $"RefId was changed from {NeuroEditorUtils.DisplayRefId(idBefore)} to {NeuroEditorUtils.DisplayRefId(idAfter)} but this is not allowed (yet).", "OK");
         }
 
         public static Type[] GetPossibleCreationTypesOf(Type type)

@@ -91,6 +91,45 @@ public class MyFirstNeuroObject : Referencable
 - This is reflected in the JSON file name
 - You can see the location of the file by clicking `⊙ File`
 
+### RefIds in file names and JSON
+A new item's `RefId` is a random number rather than the next number up, so that two people adding items on
+separate branches do not both take the same id and conflict on merge.
+
+In memory and in the binary format a `RefId` is always a `uint`. In file names and in JSON it is written in
+base36 (`0-9a-z`), which keeps a generated id down to 4 characters - `NeuroData/1-MyItem/4zbc-my_item.json`.
+The generated range is picked so that every generated id is exactly 4 base36 chars and costs 3 bytes in the
+binary format. base36 rather than base62 because data file names have to survive a case insensitive file system.
+
+Every id has exactly one spelling and every spelling is one id. Note that `20` is base36, so it is the number
+72 - not 20. Only the text changes; the id is the same `uint` everywhere else.
+
+Hovering the `RefId` field in the editor tells you the plain number. If you want to see it everywhere - the
+reference drop downs, recent items, validator messages - turn on `Show Raw Ref Id Numbers` in
+`Project Settings > Ninjadini Neuro`, and ids read as `1v83 (87123)`. It is display only: file names, json and
+the id you type into the `RefId` field are always plain base36.
+
+### Migrating data from before base36 RefIds
+RefIds used to be written in plain decimal, so `20-wood.json` meant RefId 20 and now reads as 72. If you have
+data from that version, Neuro warns you on load, and `Tools > Neuro > Migrate RefIds to base36...` converts it.
+
+The migration keeps the id numbers exactly as they are and only changes how they are spelled, so ids held
+outside the JSON - in save games, prefabs, or hard coded in your code - keep pointing at the same items.
+
+It can only be run once, and it says so if you try again. A name made only of digits is a valid base36 id
+(RefId 72 is `20`), so there is no way to tell a converted file from an unconverted one by looking at it - which
+is why the project records that it has been done. Commit your data before running it.
+
+### Changing an item's RefId
+Type a new id into the `RefId` field at the top of the editor and press enter. You will be asked to confirm, and
+told how many other items reference this one.
+
+On confirm Neuro checks the id is free, repoints every `Reference<>` in the data that pointed at the old id,
+renames the data file and saves everything it changed.
+
+Two things it can not do for you:
+- Undo only covers the item itself, not the other items that were repointed.
+- Ids stored outside the Neuro data - in scenes, prefabs, save games or hard coded in your code - are not updated.
+
 ### How to read from referencable/config at runtime
 ```
 // Get the table of certain type
