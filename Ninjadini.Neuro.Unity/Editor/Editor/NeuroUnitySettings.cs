@@ -16,10 +16,20 @@ namespace Ninjadini.Neuro.Editor
     {
         public const string SETTINGS_MENU_PATH = "Project/Ninjadini ❖ Neuro";
         public const string DEFAULT_DATA_PATH = "NeuroData";
+        /// Ends with `~` so unity's asset importer ignores the folder, the json data can then live inside Assets/
+        /// without being imported as assets.
+        public const string DEFAULT_EXTRA_DATA_PATH = "Assets/NeuroData/";
         const string PrimaryDataPathTooltip = "Location of JSON data files.\nDefault value: " + DEFAULT_DATA_PATH;
+        const string ExtraDataPathsTooltip = "Extra locations of JSON data files, they are loaded in addition to PrimaryDataPath.\n" +
+                                             "A directory that does not exist is simply skipped, so you can leave paths in here for optional data sets.\n" +
+                                             "New objects are still created in PrimaryDataPath (or the type's own DataPath).\n" +
+                                             "Default value: " + DEFAULT_EXTRA_DATA_PATH;
 
         [Tooltip(PrimaryDataPathTooltip)]
         public string PrimaryDataPath;
+
+        [Tooltip(ExtraDataPathsTooltip)]
+        public List<string> ExtraDataPaths = new List<string>() { DEFAULT_EXTRA_DATA_PATH };
         
         [Tooltip("This is required so you can access your references data in build. But you can turn it off if you want to manage the loading manually.\nDefault value: true")]
         public bool BakeDataResourcesForBuild = true;
@@ -54,6 +64,12 @@ namespace Ninjadini.Neuro.Editor
         public static NeuroUnityEditorSettings Get()
         {
             return instance;
+        }
+
+        /// True if the path is one of the optional extra data paths, those are allowed to not exist on disk.
+        public bool IsExtraDataPath(string path)
+        {
+            return ExtraDataPaths != null && ExtraDataPaths.Contains(path);
         }
 
         public NeuroEditorTypeItemSetting FindTypeSetting(Type type)
@@ -119,16 +135,22 @@ namespace Ninjadini.Neuro.Editor
 
                 AddUserSettingsUI(rootElement);
 
-                SetUpPrimaryDataPathUI(rootElement, settings);
-                
                 var serializedObject = new SerializedObject(settings);
+                
+                var dataPathsBox = new VisualElement();
+                NeuroUiUtils.SetBorder(dataPathsBox, new Color(0.3f, 0.3f, 0.2f));
+                dataPathsBox.style.marginLeft = 8;
+                rootElement.Add(dataPathsBox);
+                SetUpPrimaryDataPathUI(dataPathsBox, settings);
+                SetUpExtraDataPathsUI(dataPathsBox, serializedObject);
 
                 var serializedProperty = serializedObject.GetIterator();
                 if (serializedProperty.NextVisible(true))
                 {
                     while (serializedProperty.NextVisible(false))
                     {
-                        if (serializedProperty.name == nameof(PrimaryDataPath))
+                        if (serializedProperty.name == nameof(PrimaryDataPath)
+                            || serializedProperty.name == nameof(ExtraDataPaths))
                         {
                             continue;
                         }
@@ -147,7 +169,7 @@ namespace Ninjadini.Neuro.Editor
                 userSettings.hideFlags = HideFlags.None;
                 
                 var box = new VisualElement();
-                NeuroUiUtils.SetBorder(box, new Color(0.3f, 0.3f, 0.2f));
+                NeuroUiUtils.SetBorder(box, new Color(0.2f, 0.3f, 0.22f));
                 box.style.marginLeft = 8;
                 box.style.marginTop = 10;
                 box.style.marginRight = 8;
@@ -174,7 +196,7 @@ namespace Ninjadini.Neuro.Editor
                 }
             }
 
-            void SetUpPrimaryDataPathUI(VisualElement rootElement, NeuroUnityEditorSettings settings)
+            void SetUpPrimaryDataPathUI(VisualElement parent, NeuroUnityEditorSettings settings)
             {
                 var dataPathField = new TextField(nameof(PrimaryDataPath));
                 
@@ -206,9 +228,7 @@ namespace Ninjadini.Neuro.Editor
                     }
                 };
                 
-                var horizontal = NeuroUiUtils.AddHorizontal(rootElement);
-                NeuroUiUtils.SetBorder(horizontal, new Color(0.3f, 0.3f, 0.2f));
-                horizontal.style.marginLeft = 8;
+                var horizontal = NeuroUiUtils.AddHorizontal(parent);
                 
                 dataPathField.value = settings.PrimaryDataPath;
                 dataPathField.style.flexGrow = 1f;
@@ -229,6 +249,21 @@ namespace Ninjadini.Neuro.Editor
                     }
                 });
                 NeuroUiUtils.AddButton(horizontal, "Apply", applyAct);
+            }
+
+            void SetUpExtraDataPathsUI(VisualElement box, SerializedObject serializedObject)
+            {
+                var field = new PropertyField();
+                field.BindProperty(serializedObject.FindProperty(nameof(ExtraDataPaths)));
+                field.tooltip = ExtraDataPathsTooltip;
+                box.Add(field);
+                
+                // the paths are only read at load time, so the list needs an explicit apply like PrimaryDataPath does.
+                NeuroUiUtils.AddButton(box, "Apply extra data paths", () =>
+                {
+                    OnSaveClicked();
+                    NeuroEditorDataProvider.Shared.FullScriptReload();
+                });
             }
 
             public override void OnInspectorUpdate()

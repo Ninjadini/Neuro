@@ -87,6 +87,13 @@ namespace Ninjadini.Neuro.Editor
             var settings = NeuroUnityEditorSettings.Get();
             ClearAllFileWatchers();
             var dataPaths = new List<string>() { settings.PrimaryDataPath };
+            foreach (var extraPath in settings.ExtraDataPaths ?? Enumerable.Empty<string>())
+            {
+                if (!string.IsNullOrEmpty(extraPath) && !dataPaths.Contains(extraPath))
+                {
+                    dataPaths.Add(extraPath);
+                }
+            }
             foreach (var classSetting in settings.ClassSettings)
             {
                 if (!string.IsNullOrEmpty(classSetting.DataPath) && !dataPaths.Contains(classSetting.DataPath))
@@ -119,6 +126,11 @@ namespace Ninjadini.Neuro.Editor
                     if (dirPath == NeuroUnityEditorSettings.DEFAULT_DATA_PATH)
                     {
                         Directory.CreateDirectory(NeuroUnityEditorSettings.DEFAULT_DATA_PATH);
+                    }
+                    else if (NeuroUnityEditorSettings.Get().IsExtraDataPath(dirPath))
+                    {
+                        // extra data paths are optional, a project simply may not have that data set.
+                        continue;
                     }
                     else
                     {
