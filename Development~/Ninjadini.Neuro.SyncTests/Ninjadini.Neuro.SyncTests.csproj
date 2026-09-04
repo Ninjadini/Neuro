@@ -25,4 +25,10 @@
       <ProjectReference Include="..\Ninjadini.Neuro\Ninjadini.Neuro.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <Compile Include="..\..\Tests\Sync\**\*.cs">
+            <Link>Sync\%(RecursiveDir)\%(Filename)%(Extension)</Link>
+        </Compile>
+    </ItemGroup>
+
 </Project>

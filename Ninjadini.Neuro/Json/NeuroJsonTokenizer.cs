@@ -3,6 +3,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Ninjadini.Neuro.SyncTests")]
+[assembly: InternalsVisibleTo("Ninjadini.Neuro.Tests.Sync")]
 [assembly: InternalsVisibleTo("Ninjadini.Neuro.Unity.Editor")]
 namespace Ninjadini.Neuro.Sync
 {

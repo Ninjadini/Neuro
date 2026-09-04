@@ -2,10 +2,13 @@
 
     <PropertyGroup>
         <TargetFramework>net7.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>disable</Nullable>
 
+        <ImplicitUsings>disable</ImplicitUsings>
+        <LangVersion>9</LangVersion>
+
         <IsPackable>false</IsPackable>
+        <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     </PropertyGroup>
 
     <ItemGroup>
@@ -17,6 +20,12 @@
     </ItemGroup>
     <ItemGroup>
       <ProjectReference Include="..\Ninjadini.Neuro\Ninjadini.Neuro.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="..\..\Tests\Integration\**\*.cs">
+            <Link>Integration\%(RecursiveDir)\%(Filename)%(Extension)</Link>
+        </Compile>
     </ItemGroup>
 
     <ItemGroup>
