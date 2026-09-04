@@ -20,6 +20,33 @@ namespace Ninjadini.Neuro.Editor
                 NeuroReferences.Default = new NeuroReferences();
             }
             NeuroDataProvider.Shared.SetReferenceProvider(new NeuroEditorDataProviderHook());
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+        }
+
+        /// Data files changed on disk are not reloaded as they happen, but entering play mode with stale data would
+        /// silently run the wrong content, so any pending changes are picked up at that point.
+        static void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            // _shared is deliberately not touched via Shared here, there is nothing to reload if nothing loaded it.
+            if (state != PlayModeStateChange.ExitingEditMode || _shared == null || !_shared.HasPendingFileChanges)
+            {
+                return;
+            }
+            var changesCount = _shared.fileChangesCount;
+            _shared.Reload();
+            Debug.Log($"Neuro ~ ~{changesCount:N0} data file(s) changed on disk, reloaded the data before entering play mode.");
+            var userSettings = NeuroUnityUserSettings.Get();
+            if (userSettings.IsPlayModeReloadDialogMutedToday())
+            {
+                return;
+            }
+            if (!EditorUtility.DisplayDialog("❖ Neuro",
+                    $"~{changesCount:N0} data file(s) changed on disk.\nThe data was reloaded before entering play mode.",
+                    "OK",
+                    "Don't show again today"))
+            {
+                userSettings.MutePlayModeReloadDialogForToday();
+            }
         }
 
         static NeuroEditorDataProvider _shared;

@@ -1,3 +1,4 @@
+using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -23,6 +24,11 @@ namespace Ninjadini.Neuro.Editor
                  "Default value: false")]
         public bool ShowRawRefIdNumbers;
 
+        /// The day the user asked to stop being told that data files were reloaded on entering play mode,
+        /// as days since epoch. Stored as a day rather than a bool so it comes back the next day
+        /// instead of being muted forever.
+        [HideInInspector] public int PlayModeReloadDialogMutedDay;
+
         /// These used to live in NeuroUnityEditorSettings, this carries the old values over once.
         [HideInInspector] public bool MigratedFromProjectSettings;
 
@@ -45,6 +51,20 @@ namespace Ninjadini.Neuro.Editor
             ShowRawRefIdNumbers = projectSettings.MigratedShowRawRefIdNumbers;
             Save();
         }
+
+        public bool IsPlayModeReloadDialogMutedToday()
+        {
+            return PlayModeReloadDialogMutedDay == Today();
+        }
+
+        public void MutePlayModeReloadDialogForToday()
+        {
+            PlayModeReloadDialogMutedDay = Today();
+            Save();
+        }
+
+        /// Local days since epoch - the mute is about the person's day, not UTC's.
+        static int Today() => (int)(DateTime.Now - new DateTime(1970, 1, 1)).TotalDays;
 
         public void Save()
         {
