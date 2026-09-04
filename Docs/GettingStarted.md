@@ -11,6 +11,13 @@ https://youtu.be/AZOHbK-prHo
 > To target a specific tag / release - to be safe from surprise API changes, use this format:  
 `https://github.com/Ninjadini/Neuro.git#v0.1.2`
 
+> [!TIP]
+> To run Neuro's own tests inside your project, add the package to `testables` in your
+> project's `Packages/manifest.json` — they then appear in `Window` > `General` > `Test Runner`:
+> ```json
+> "testables": [ "com.ninjadini.neuro-unity" ]
+> ```
+
 ### Your first Neuro reference type
 They are essentially your ScriptableObjects that hold some config data.  
 You can reference these items from other places via Reference<T> type - similar to linking objects in Unity, e.g. linking a Material to a Renderer's material field.  

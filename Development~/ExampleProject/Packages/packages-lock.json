@@ -5,7 +5,7 @@
       "depth": 0,
       "source": "local",
       "dependencies": {
-        "com.unity.addressables": "2.2.2"
+        "com.unity.addressables": "1.21.19"
       }
     },
     "com.unity.addressables": {
