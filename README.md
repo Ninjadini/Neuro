@@ -27,6 +27,10 @@ In fact for both binary and JSON, if you pre allocate buffer caches ahead, there
 
 It leverages C# roslyn code analysis APIs to generate highly optimised and minimal code so serialisation methods do not need reflection methods.
 
+[![Tests](https://github.com/Ninjadini/Neuro/actions/workflows/tests.yml/badge.svg)](https://github.com/Ninjadini/Neuro/actions/workflows/tests.yml)
+[![Version](https://img.shields.io/github/v/tag/Ninjadini/Neuro?label=version)](https://github.com/Ninjadini/Neuro/tags)
+[![License](https://img.shields.io/github/license/Ninjadini/Neuro)](LICENSE.md)
+
 Let's get started ⤵️
 
 ## [Getting Started >](Docs/GettingStarted.md)
