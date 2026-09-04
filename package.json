@@ -2,7 +2,7 @@
   "name": "com.ninjadini.neuro-unity",
   "version": "0.2.0",
   "displayName": "Ninjadini Neuro",
-  "description": "A unified, data-driven toolset for Unity. At its core a fast, compact, allocation-free C# binary and JSON serializer with no schema files and no reflection at runtime — backwards and forwards compatible, inspired by Protocol Buffers. Ships with editor tooling to author, validate, debug and ship your config data, and to save player progress.",
+  "description": "A unified, data-driven toolset for Unity. At its core a fast, compact, allocation-free C# binary and JSON serializer with no schema files and no reflection at runtime \u2014 backwards and forwards compatible, inspired by Protocol Buffers. Ships with editor tooling to author, validate, debug and ship your config data, and to save player progress.",
   "documentationUrl": "https://github.com/Ninjadini/Neuro",
   "changelogUrl": "https://github.com/Ninjadini/Neuro/blob/main/CHANGELOG.md",
   "licensesUrl": "https://github.com/Ninjadini/Neuro/blob/main/LICENSE.md",
@@ -27,7 +27,7 @@
   "samples": [
     {
       "displayName": "Craft Clicker Demo",
-      "description": "A small crafting game exercising most of Neuro: Referencable config types, Reference<T> links, inheritance, content validators and player progress saving. The demo is a full Unity project rather than an asset folder, so importing this only adds a note telling you where to clone and open it.",
+      "description": "A small crafting game exercising most of Neuro: Referencable config types, Reference<T> links, inheritance, content validators and player progress saving. Importing this copies NeuroCraftClicker.unitypackage into your project - double-click it to import the demo.",
       "path": "Samples~/CraftClickerDemo"
     }
   ]

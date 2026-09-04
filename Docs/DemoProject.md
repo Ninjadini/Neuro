@@ -9,7 +9,13 @@ git clone https://github.com/Ninjadini/NeuroExampleProject.git
 ```
 
 Open the cloned folder in Unity (6000.6 or newer). It pulls this package straight from git, so
-there is nothing else to set up.
+there is nothing else to set up. This is what the walkthrough below is written against.
+
+**Alternatively**, to drop the demo into a project you already have, import
+[NeuroCraftClicker.unitypackage](https://github.com/Ninjadini/Neuro/raw/main/Samples~/CraftClickerDemo/NeuroCraftClicker.unitypackage)
+via *Assets > Import Package > Custom Package…* — or grab it from *Package Manager > Neuro >
+Samples > Import*. It carries the scripts, scene, icons and content,
+but not project settings — so the render pipeline and input settings stay as your project has them.
 
  - [Scripts/CraftClicker/Model](https://github.com/Ninjadini/NeuroExampleProject/tree/main/Assets/Scripts/CraftClicker/Model/)
    * Neuro data model
