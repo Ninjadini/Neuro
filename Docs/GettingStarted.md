@@ -24,6 +24,10 @@ You can reference these items from other places via Reference<T> type - similar 
 Each reference has a RefId (uint) which is unique, and a RefName (string) which does not need to be unique.  
 RefId number is what's used to link to the references.
 RefName is used for easy identification of the item.
+> [!IMPORTANT]
+> **Only the RefId links anything.** The RefName you see next to it - in file names, in JSON, in the editor -
+> is decoration for humans and is ignored on load. Renaming an item can never unlink it.
+> [More >](#the-refname-next-to-a-refid-is-only-there-to-read)
 ```
 using Ninjadini.Neuro;
 using System.Collections.Generic;
@@ -125,6 +129,23 @@ Hovering the `RefId` field in the editor tells you the plain number. If you want
 reference drop downs, recent items, validator messages - turn on `Show Raw Ref Id Numbers` in
 `Project Settings > Ninjadini Neuro`, and ids read as `1v83 (87123)`. It is display only: file names, json and
 the id you type into the `RefId` field are always plain base36.
+
+### The RefName next to a RefId is only there to read
+Most places print the id and the name together:
+
+| Where | Looks like | What is actually read |
+|---|---|---|
+| Data file name | `4zbc-my_item.json` | `4zbc` |
+| Reference field in JSON | `"myItem": "4zbc:my_item"` | `4zbc` |
+| Enum field in JSON | `"state": "2:Crafting"` | `2` |
+| Polymorphic type field | `"-subType": "3:PlayerCharacter"` | `3` |
+
+> [!IMPORTANT]
+> Everything from the `-` or `:` onwards is **ignored on load**. Typing `"myItem": "4zbc"` by hand resolves
+> exactly the same, and renaming an item never unlinks anything - the stale names in other files simply get
+> rewritten next time those files are saved.
+
+The name is written purely so you can tell what an item is without looking it up.
 
 ### Migrating data from before base36 RefIds
 RefIds used to be written in plain decimal, so `20-wood.json` meant RefId 20 and now reads as 72. If you have

@@ -59,13 +59,11 @@ all read back as `null` on all three read calls. That mirrors the writers, which
 A bare `int`, `string`, `List<>` etc has no header of its own so there would be nothing to read it back with; those calls throw.
 Put the value in a field of a neuro object and write that instead.
 > [!TIP]
-> JSON output will print references and enum in this format `"myItem": "2:mySecondItemName"`
-> 
-> This looks like you can't change the ref name of items or it will unlink the values, but that is not the case
-> 
-> The only thing that matters is the number. You can just have `"myItem": 2` and it'll work
-> 
-> The ref name there is just so that it is easy for you to figue out what the item is.
+> JSON prints references and enums as `"myItem": "4zbc:mySecondItemName"` - only the part before the `:` is
+> read, the name is there for you. See
+> [RefName is only there to read](GettingStarted.md#the-refname-next-to-a-refid-is-only-there-to-read).
+>
+> `NeuroJsonWriter.Options.TagValuesOnly` drops the name suffixes if you want the shorter output.
 
 ### Content validator
 ```

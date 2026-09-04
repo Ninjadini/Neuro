@@ -1,45 +1,39 @@
 # Changelog
 
-All notable changes to this package are documented here.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
 ## [0.2.0]
 
+### RefIds are now base36
+RefIds are displayed, parsed and written into `NeuroData` file names in base36 (`0-9a-z`),
+so a generated id is 4 characters instead of a long number - `NeuroData/1-MyItem/4zbc-my_item.json`.
+
+**Existing data needs a one time migration:** `Tools > Neuro > Migrate RefIds to base36...`.
+See [Getting Started](Docs/GettingStarted.md#migrating-data-from-before-base36-refids).
+
 ### Added
-- Documentation for coding assistants in `Docs/AI/`, with adapter files for Claude Code
-  (`.claude/skills/neuro/`) and Cursor (`.cursor/rules/neuro.mdc`).
-- `Docs/EditorTools.md` covering the editor tools and settings.
-- Extensive binary and JSON read/write test coverage, including extreme values across the
-  full range of every supported type.
-- Support for more default types.
-- A simpler hook for external libraries to draw their own fields inside the Neuro editor.
+- `Docs/AI/` - a condensed Neuro reference for coding assistants, with Claude Code and Cursor adapters.
+- Extra data path list in Neuro settings, for loading data from more than one folder.
+- Support for more default types, including Unity ones.
+- `NeuroEditVisitor`, and a simpler hook for external libraries to draw their own fields in the editor.
 - Dragging an asset into an `AssetAddress` field now offers to make it addressable.
 
-### Changed
-- `RefId` is now displayed and parsed in base36.
-- Custom field drawers now take priority over the built-in ones by default.
-- Verified against Unity 6.5.10f1 and 6.6.
-- `LICENSE` is now `LICENSE.md` so the Unity Package Manager can display it.
-
 ### Fixed
-- Large number handling in binary and JSON.
-- Precision loss on small decimals in JSON.
-- A nested child edge case in read/write.
+- Large numbers and small decimals in JSON. Float and double output is now exact,
+  so JSON written by 0.2.0 will differ from 0.1.5 for those.
+- Writing a subclass through its base type no longer loses the type.
+- Clearer errors instead of silent misbehaviour when reading or writing an unsupported type.
 - `Assembly.Location` being null on newer Unity versions.
 
-### Removed
-- The redundant `package.json` files under `Ninjadini.Neuro/` and `Ninjadini.Neuro.Unity/`.
-  The package is installed from the repository root, so only the root manifest was ever read.
+### Changed
+- The demo moved to its own repo, [Ninjadini/NeuroExampleProject](https://github.com/Ninjadini/NeuroExampleProject),
+  and also ships as an importable sample.
+- Packaging tidy up: single root `package.json`, `LICENSE.md`, and this changelog.
 
 ## [0.1.5] and earlier
-
-This changelog starts at 0.2.0. For earlier versions see the
-[commit history](https://github.com/Ninjadini/Neuro/commits/main) and
-[tags](https://github.com/Ninjadini/Neuro/tags).
+See the [commit history](https://github.com/Ninjadini/Neuro/commits/main) and [tags](https://github.com/Ninjadini/Neuro/tags).
 
 [Unreleased]: https://github.com/Ninjadini/Neuro/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/Ninjadini/Neuro/compare/v0.1.5...v0.2.0

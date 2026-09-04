@@ -32,6 +32,9 @@ A `RefId` is always a `uint` in memory and in binary. In **file names and JSON**
 `NeuroRefId.GeneratedMinValue`..`GeneratedMaxValue` (46656..1679615) so they are always exactly 4 chars,
 and are random rather than sequential so branches do not collide.
 
+File names and JSON ref values print the id and the RefName together (`4zbc-my_item.json`,
+`"myItem": "4zbc:my_item"`); only the id resolves, everything after the `-` / `:` is ignored on load.
+
 Watch out: `20` in a file name is base36, so it is the number **72**, not 20. Every id has exactly one
 spelling. Hover the `RefId` field in the editor to see the plain number, or turn on
 `Show Raw Ref Id Numbers` in project settings to see `1v83 (87123)` everywhere. Conversions:
