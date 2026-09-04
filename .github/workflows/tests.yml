@@ -28,4 +28,16 @@ jobs:
         run: dotnet restore 'Development~/Neuro.sln'
 
       - name: Test
-        run: dotnet test 'Development~/Neuro.sln' --no-restore --nologo
+        run: >
+          dotnet test 'Development~/Neuro.sln' --no-restore --nologo
+          --logger GitHubActions
+          --logger trx
+          --results-directory ${{ github.workspace }}/testresults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ${{ github.workspace }}/testresults/**/*.trx
+          if-no-files-found: error
