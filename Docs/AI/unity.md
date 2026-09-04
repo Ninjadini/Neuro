@@ -18,7 +18,7 @@ Other menu items:
 | Menu | Does |
 |---|---|
 | `Tools > Neuro > Content Debugger` | Inspect/round-trip arbitrary neuro data, including runtime saves. |
-| `Tools > Neuro > Type Mapping Debugger` | Shows every registered type, its global id and subtype tags. |
+| `Tools > Neuro > Type Mapping Debugger` | Shows every registered type, its global id and subtype tags. The only view spanning all assemblies - the compile-time tag reports cover one assembly each. |
 | `Tools > Neuro > Reload` / `Reload + Read all data` | Re-read the JSON files after external edits. |
 | `Tools > Neuro > Migrate RefIds to base36...` | One-time migration for pre-base36 data. |
 

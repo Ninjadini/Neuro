@@ -41,7 +41,7 @@ namespace Ninjadini.Neuro.Sync
                 {
                     if (kv.Value == tag && kv.Key != typeof(TSubClass))
                     {
-                        throw new System.Exception($"{typeof(TRootType)}'s subClass tag is already registered for {kv.Key} but we are trying to register again for {typeof(TSubClass)}");
+                        throw new System.Exception($"{typeof(TRootType)}'s subClass tag is already registered for {kv.Key} but we are trying to register again for {typeof(TSubClass)}. {NeuroTagListText.Describe(_tagBySubClass, "tags")}");
                     }
                 }
             }

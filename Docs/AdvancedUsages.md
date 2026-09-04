@@ -242,6 +242,11 @@ This ensures it keeps the backward compatibility to old saved data.
 
 If you are in early stage of development, it might be ok to reuse the tags and just wipe the data to keep the tag numbers tidy.
 
+Reserved tags count as taken everywhere Neuro reports tag usage - the tag map at the top of the
+generated `NeuroTypesRegister` file, and the conflict errors - so the "next free" number it gives you
+will always skip past them. See [BackwardCompatibility.md](BackwardCompatibility.md) for what that
+looks like.
+
 
 
 

@@ -27,7 +27,7 @@ namespace Ninjadini.Neuro.Sync
                 {
                     return;
                 }
-                throw new Exception($"Global type id {typeId} conflict found between {typeof(T).FullName} and {otherType?.FullName}");
+                throw new Exception($"Global type id {typeId} conflict found between {typeof(T).FullName} and {otherType?.FullName}. {NeuroTagListText.Describe(typeIds, "global type ids")}");
             }
             typeIds[typeof(T)] = typeId;
             syncsById[typeId] = (INeuroSync neuro, uint tag, ref object value) =>

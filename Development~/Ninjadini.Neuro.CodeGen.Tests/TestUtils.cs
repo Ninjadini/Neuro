@@ -69,6 +69,25 @@ namespace Ninjadini.Neuro.CodeGen.Tests
             }
         }
 
+        /// Analyzer diagnostics only, as one string. Unlike the Expecting/Generates helpers this does
+        /// not fail on the first error - some things are only worth asserting about by their absence.
+        public static string CollectAnalyzerErrors(Compilation compilation)
+        {
+            var walker = new AnalyzerWrappedCodeWalker();
+            walker.Walk(compilation, new NeuroSourceAnalyzer());
+            return walker.GetErrorsString();
+        }
+
+        /// Generator diagnostics only, as one string.
+        public static string CollectGeneratorErrors(string source, params string[] defines)
+        {
+            var compilation = CreateCompilation(source + GetStandardSrc(), defines);
+            var errors = "";
+            new NeuroSourceGenerator().Generate(compilation, diagnostic => errors += diagnostic.GetMessage() + "\n");
+            Console.WriteLine("ERRORS: " + errors);
+            return errors;
+        }
+
         public static Compilation CreateCompilation(string source, params string[] defines)
         {
             var syntaxTree = CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview, preprocessorSymbols: defines));

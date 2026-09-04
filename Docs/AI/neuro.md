@@ -31,7 +31,8 @@ Rules the generator enforces — breaking these is a compile error, except the f
 corrupts old data (details in [data-model.md](data-model.md)):
 
 - **Tags are the wire format.** Unique per class; never reuse a removed one (`[ReservedNeuroTag(#)]`
-  tombstones it); changing a field's type means changing its tag.
+  tombstones it); changing a field's type means changing its tag. To find a free one, write `0` and read
+  the compile error - it lists the used tags and the next free number. Never scan the codebase for this.
 - Whole numbers must be `int`/`uint`/`long`/`ulong`. `byte`, `short`, `char`, `decimal` are rejected —
   varint encoding means narrow types save nothing. Enums backed by them are fine.
 - `List<T>` and `Dictionary<K,V>` only — no arrays, `HashSet` or `IReadOnlyList`. Dictionary keys must
@@ -77,7 +78,7 @@ and are **not** interchangeable with the plain calls.
 
 | Read when you need | File |
 |---|---|
-| Attributes, supported types, polymorphism, back-compat rules | [data-model.md](data-model.md) |
+| Attributes, supported types, polymorphism, back-compat rules, picking a free tag | [data-model.md](data-model.md) |
 | Read/write call matrix, JSON shape, registering third-party types, visitors, pooling, compile defines | [serialization.md](serialization.md) |
 | Neuro Editor, NeuroData files, base36 RefIds, player saves, AssetAddress, validators, build stripping | [unity.md](unity.md) |
 

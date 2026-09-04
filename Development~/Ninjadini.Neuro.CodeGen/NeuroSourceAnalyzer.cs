@@ -23,22 +23,28 @@ namespace Ninjadini.Neuro.CodeGen
         static readonly DiagnosticDescriptor UnsupportedTypeRule = new DiagnosticDescriptor("Neuro101", "Unsupported type", "Unsupported type `{0}` found @ {1}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor UnsupportedNumberTypeRule = new DiagnosticDescriptor("Neuro102", "Unsupported number type", "Unsupported number type `{0}` found @ {1}. Whole numbers are stored as variable length ints, so a narrow type saves nothing - use int, uint, long or ulong. For char use string, for decimal use double or a long of scaled units.", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor InvalidDictionaryKeyTypeRule = new DiagnosticDescriptor("Neuro101", "Invalid dictionary key type", "Unsupported dictionary key type `{0}` found @ {1}", "Syntax", DiagnosticSeverity.Error, true);
-        static readonly DiagnosticDescriptor InvalidTagRangeRule = new DiagnosticDescriptor(InvalidTagDiagnosticID, "Invalid field neuro tag", "Neuro field attribute tag must be between 0 and "+int.MaxValue+" @ {1}", "Syntax", DiagnosticSeverity.Error, true);
-        static readonly DiagnosticDescriptor FieldTagConflictRule = new DiagnosticDescriptor(FieldTagConflictDiagnosticID, "Field attribute tag already used", "Neuro field attribute tag {0} of `{1}` is already used by another field `{2}`", "Syntax", DiagnosticSeverity.Error, true);
+        static readonly DiagnosticDescriptor InvalidTagRangeRule = new DiagnosticDescriptor(InvalidTagDiagnosticID, "Invalid field neuro tag", "Neuro field attribute tag of `{0}` must be between 1 and "+int.MaxValue+". {1}", "Syntax", DiagnosticSeverity.Error, true);
+        static readonly DiagnosticDescriptor FieldTagConflictRule = new DiagnosticDescriptor(FieldTagConflictDiagnosticID, "Field attribute tag already used", "Neuro field attribute tag {0} of `{1}` is already used by another field `{2}`. {3}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor MissingClassAttributeRule = new DiagnosticDescriptor("Neuro404", "Missing neuro class attribute", "`{0}` needs neuro class attribute `[Neuro(#)]` because it's base class `{1}` is a Neuro class.", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor FastCodeGenClassAttributeRule = new DiagnosticDescriptor("Neuro406", "Missing neuro class attribute", "`{0}` has [Neuro] field(s) but no class level [Neuro(#)] attribute. " + NeuroCodeGenUtils.DefineSymbol_FastCodeGen + " is on, which requires every Neuro type to declare itself with a class level attribute.", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor MultipleBaseClassRootsRule = new DiagnosticDescriptor("Neuro405", "Multiple inheritance paths not supported", "`{0}` extends from multiple inheritance paths: `{1}` and `{2}`. This is not supported for now.", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor InvalidClassTagRangeRule = new DiagnosticDescriptor("Neuro002", "Invalid class neuro tag",  "Neuro class attribute tag must be between 0 and "+int.MaxValue+" @ {0}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor PartialClassRule = new DiagnosticDescriptor("Neuro101", "Non-partial Neuro class",  "{0} is not a partial class. It is required so Neuro can write to private fields without reflection.", "Syntax", DiagnosticSeverity.Error, true);
-        public static readonly DiagnosticDescriptor ClassTagConflictRule = new DiagnosticDescriptor("Neuro303", "Class attribute tag already used", "Neuro class attribute tag {0} of `{1}` is already used by another class `{2}`. Full list of tags: {3}", "Syntax", DiagnosticSeverity.Error, true);
-        public static readonly DiagnosticDescriptor ClassTagReservedRule = new DiagnosticDescriptor("Neuro304", "Class attribute tag reserved", "Neuro class attribute tag {0} of `{1}` is marked as reserved `[ReservedNeuroTag({0})]`. Full list of tags: {2}", "Syntax", DiagnosticSeverity.Error, true);
-        public static readonly DiagnosticDescriptor GlobalTypeConflictRule = new DiagnosticDescriptor("Neuro310", "Global type id already used", "Neuro global type id {0} of `{1}` is already used by another class `{2}`. Full list of global ids: {3}", "Syntax", DiagnosticSeverity.Error, true);
+        public static readonly DiagnosticDescriptor ClassTagConflictRule = new DiagnosticDescriptor("Neuro303", "Class attribute tag already used", "Neuro class attribute tag {0} of `{1}` is already used by another class `{2}`. {3}", "Syntax", DiagnosticSeverity.Error, true);
+        public static readonly DiagnosticDescriptor ClassTagReservedRule = new DiagnosticDescriptor("Neuro304", "Class attribute tag reserved", "Neuro class attribute tag {0} of `{1}` is marked as reserved `[ReservedNeuroTag({0})]`. {2}", "Syntax", DiagnosticSeverity.Error, true);
+        /// `[Neuro(0)]` is not a tag, it is a question - answer it with the numbers this hierarchy has
+        /// already spent so the next one can be typed straight in.
+        public static readonly DiagnosticDescriptor ClassTagNotSetRule = new DiagnosticDescriptor("Neuro305", "Class attribute tag not set", "Neuro class attribute tag of `{0}` is not set. {1}", "Syntax", DiagnosticSeverity.Error, true);
+        public static readonly DiagnosticDescriptor GlobalTypeIdNotSetRule = new DiagnosticDescriptor("Neuro313", "Global type id not set", "Neuro global type id of `{0}` is not set. {1}", "Syntax", DiagnosticSeverity.Error, true);
+        public static readonly DiagnosticDescriptor GlobalTypeConflictRule = new DiagnosticDescriptor("Neuro310", "Global type id already used", "Neuro global type id {0} of `{1}` is already used by another class `{2}`. {3}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor GlobalTypeRangeRule = new DiagnosticDescriptor("Neuro311", "Invalid global neuro type id",  "Neuro global type id must be between 0 and "+int.MaxValue+" @ {0}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor RefsGlobalTypeRule = new DiagnosticDescriptor("Neuro312", "Global neuro type attribute missing",  "Neuro global type attribute `[NeuroGlobalType(#)]` is required in `{0}` because it is an IReferencable", "Syntax", DiagnosticSeverity.Error, true);
         public static readonly DiagnosticDescriptor ExceptionThrown = new DiagnosticDescriptor("Neuro911", "Exception was thrown while generating Neuro source", "Neuro codegen exception: {0}", "Syntax", DiagnosticSeverity.Error, true);
 
         [ThreadStatic]
         static Dictionary<uint, string> tempTagDict;
+        [ThreadStatic]
+        static List<NeuroTagReport.Entry> tempTagEntries;
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(
             UnsupportedTypeRule,
@@ -55,7 +61,9 @@ namespace Ninjadini.Neuro.CodeGen
             PartialClassRule, 
             ClassTagConflictRule,
             ClassTagReservedRule,
+            ClassTagNotSetRule,
             GlobalTypeConflictRule,
+            GlobalTypeIdNotSetRule,
             GlobalTypeRangeRule,
             RefsGlobalTypeRule,
             ExceptionThrown);
@@ -175,11 +183,17 @@ namespace Ninjadini.Neuro.CodeGen
             if (tempTagDict == null)
             {
                 tempTagDict = new Dictionary<uint, string>();
+                tempTagEntries = new List<NeuroTagReport.Entry>();
             }
             else
             {
                 tempTagDict.Clear();
+                tempTagEntries.Clear();
             }
+            // Tag problems are held back until the whole class has been read: the message quotes every
+            // tag in the class, and the fields after this one have not been looked at yet. Only
+            // allocated when there is something to report, so a clean class pays nothing.
+            List<PendingTagDiagnostic> pending = null;
             var result = ClassFieldsInfo.NoNeuro;
             foreach (var fieldSymbol in classSymbol.GetMembers().OfType<IFieldSymbol>())
             {
@@ -199,6 +213,7 @@ namespace Ninjadini.Neuro.CodeGen
                         else
                         {
                             tempTagDict.Add(tag, "* reserved or deprecated *");
+                            tempTagEntries.Add(new NeuroTagReport.Entry(tag, null));
                         }
                     }
                 }
@@ -240,21 +255,66 @@ namespace Ninjadini.Neuro.CodeGen
                     var tag = NeuroCodeGenUtils.GetNeuroTag(fieldAttribute);
                     if(tag == 0 || tag >= int.MaxValue)
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(InvalidTagRangeRule, NeuroCodeGenUtils.GetLocation(fieldAttribute), fieldSymbol.ToString()));
+                        // `[Neuro(0)]` is how you ask what is free - the report tells you. Nothing is
+                        // added to the tag set, so it can't go on to look like a conflict as well.
+                        Add(ref pending, new PendingTagDiagnostic(InvalidTagRangeRule, NeuroCodeGenUtils.GetLocation(fieldAttribute), fieldSymbol.ToString()));
+                        continue;
                     }
                     if (tempTagDict.TryGetValue(tag, out var otherField))
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(FieldTagConflictRule, NeuroCodeGenUtils.GetLocation(fieldAttribute), tag, fieldSymbol.ToString(), otherField));
+                        Add(ref pending, new PendingTagDiagnostic(FieldTagConflictRule, NeuroCodeGenUtils.GetLocation(fieldAttribute), tag, fieldSymbol.ToString(), otherField));
                     }
                     else
                     {
                         tempTagDict.Add(tag, fieldSymbol.Name);
+                        tempTagEntries.Add(new NeuroTagReport.Entry(tag, fieldSymbol.Name));
                     }
                 }
             }
-            
+            if (pending != null)
+            {
+                var report = NeuroTagReport.Describe(tempTagEntries);
+                foreach (var item in pending)
+                {
+                    context.ReportDiagnostic(item.Create(report));
+                }
+            }
             tempTagDict.Clear();
+            tempTagEntries.Clear();
             return result;
+        }
+
+        static void Add(ref List<PendingTagDiagnostic> pending, PendingTagDiagnostic diagnostic)
+        {
+            if (pending == null)
+            {
+                pending = new List<PendingTagDiagnostic>();
+            }
+            pending.Add(diagnostic);
+        }
+
+        /// A tag diagnostic waiting on the used-tag report, which is only complete once every field in
+        /// the class has been read. The report is always the last message argument.
+        struct PendingTagDiagnostic
+        {
+            readonly DiagnosticDescriptor rule;
+            readonly Location location;
+            readonly object[] args;
+
+            public PendingTagDiagnostic(DiagnosticDescriptor rule_, Location location_, params object[] args_)
+            {
+                rule = rule_;
+                location = location_;
+                args = args_;
+            }
+
+            public Diagnostic Create(string report)
+            {
+                var allArgs = new object[args.Length + 1];
+                args.CopyTo(allArgs, 0);
+                allArgs[args.Length] = report;
+                return Diagnostic.Create(rule, location, allArgs);
+            }
         }
         
         public static bool HasFieldInitializer(IFieldSymbol fieldSymbol)

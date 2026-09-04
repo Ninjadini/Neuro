@@ -67,8 +67,8 @@ public class BaseEntity                     // root: has fields, so no class att
 ```
 
 A root with **no** neuro fields must declare itself: `[Neuro(1)]` on a class (non-zero),
-`[Neuro(0)]` on an interface (zero is allowed there, but converting that interface to a class later
-breaks compatibility).
+`[Neuro(0)]` on an interface (an interface is the only place zero is legal, but converting that
+interface to a class later breaks compatibility).
 
 Field tags restart at 1 in each class in the chain - they are scoped to the declaring class. Subtype
 tags are scoped to the whole inheritance tree. Multiple inheritance paths (two neuro roots) are not
@@ -83,6 +83,43 @@ Follow protobuf's rules.
 - **Breaking:** reusing a retired tag; changing a field's type without changing its tag; reusing a
   retired subtype tag; restructuring a polymorphic hierarchy.
 - Reading data with unknown tags in it is fine - they are skipped.
+
+## Picking the next free tag
+
+Do not scan the codebase for used tags - the compiler already knows them and will tell you.
+
+**Write `0` and read the error.** Zero is never valid on a field or a global type id, and on a class only
+an interface root may keep it, so writing it is already a compile error - and the error answers the
+question. (The `[assembly: Neuro]` opt-in is not a tag and is unaffected.)
+
+```csharp
+[Neuro(0)] public string myNewField;
+// Neuro301: Neuro field attribute tag of `Troop.myNewField` must be between 1 and 2147483647.
+//           Used tags: 1-2, 4. Next free: 3. Full list: 1=DisplayName; 2=Health; 4=Weapons
+```
+
+Scope of the answer differs by attribute, because the scopes differ:
+
+| Written | Error | Scope of "next free" |
+|---|---|---|
+| `[Neuro(0)]` on a field | `Neuro301` | that class's fields |
+| `[Neuro(0)]` on a subclass | `Neuro305` | the whole inheritance tree |
+| `[NeuroGlobalType(0)]` | `Neuro313` | the assembly being compiled |
+
+Conflict errors (`Neuro300`, `Neuro303`, `Neuro304`, `Neuro310`) carry the same
+`Used tags: ... Next free: ... Full list: ...` summary, and `[ReservedNeuroTag]` entries count as taken.
+
+**Without provoking an error:** every generated `NeuroTypesRegister` file opens with a tag map listing
+each root's subtype tags and every global type id, with the next free number for each. Field tags are
+not in it - they are per class, so they are already together in the file being edited.
+
+`Neuro305`/`Neuro313` and the tag map come from the code generation step, which **Unity does not show
+diagnostics for** - in Unity those two surface as `Neuro002`/`Neuro311` ("must be between 1 and ...")
+and the tag map has to be read from the generated file. `Neuro300`/`Neuro301` come from the analyzer and
+show everywhere.
+
+All of it is limited to the assembly being compiled. A global type id that looks free may be taken in
+another asmdef; `Tools > Neuro > Type Mapping Debugger` in Unity is the only view across all of them.
 
 ## Codegen errors
 
