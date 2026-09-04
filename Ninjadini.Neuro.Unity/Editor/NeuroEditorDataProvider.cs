@@ -446,7 +446,7 @@ namespace Ninjadini.Neuro.Editor
             dataFiles.Remove(dataFile);
         }
 
-        /// Moves an existing item to a different RefId and rewrites every Reference<> in the database that
+        /// Moves an existing item to a different RefId and rewrites every <c>Reference&lt;&gt;</c> in the database that
         /// pointed at the old one, so nothing is left dangling. Returns the other items that had to be updated.
         /// Throws if the new id is not free - check with GetRefIdChangeProblem() first if you want to ask first.
         public IReadOnlyList<IReferencable> ChangeRefId(NeuroDataFile dataFile, uint newRefId)
@@ -544,7 +544,7 @@ namespace Ninjadini.Neuro.Editor
             return null;
         }
 
-        /// Points every Reference<rootType> that held `oldRefId` at `newRefId`, across every item in the
+        /// Points every <c>Reference&lt;rootType&gt;</c> that held `oldRefId` at `newRefId`, across every item in the
         /// database. Returns the items that changed - they still need saving.
         List<IReferencable> RewriteReferencesTo(Type rootType, uint oldRefId, uint newRefId)
         {

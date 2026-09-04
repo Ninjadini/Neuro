@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "com.ninjadini.neuro-unity": {
-      "version": "file:/Users/luaye/Workspace/Neuro",
+      "version": "file:../../../",
       "depth": 0,
       "source": "local",
       "dependencies": {

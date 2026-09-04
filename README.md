@@ -36,6 +36,8 @@ Let's get started ⤵️
 
 ## [Advanced usages >](Docs/AdvancedUsages.md)
 
+## [Editor Tools & Settings >](Docs/EditorTools.md)
+
 ## [Editor Customisation >](Docs/EditorCustomisation.md)
 
 ## [For AI coding assistants >](Docs/AI/neuro.md)

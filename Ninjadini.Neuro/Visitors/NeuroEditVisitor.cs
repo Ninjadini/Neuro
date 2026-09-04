@@ -7,7 +7,7 @@ namespace Ninjadini.Neuro
     /// the visitor is handed is written back into the object afterwards, so it can rewrite values as it goes.
     /// NeuroVisitor is a read only walk: it hands out the contents of lists, dictionaries and nullables as
     /// copies, so writing to those there would be silently dropped. Use this one when changing the data is the
-    /// point, such as repointing every Reference<> from one RefId to another.
+    /// point, such as repointing every <c>Reference&lt;&gt;</c> from one RefId to another.
     public class NeuroEditVisitor : INeuroSync
     {
         public interface IInterface

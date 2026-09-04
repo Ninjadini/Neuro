@@ -83,6 +83,17 @@ public class MyFirstNeuroObject : Referencable
     }
 ```
 
+### Types that are not supported
+These are a compile error rather than a runtime surprise:
+- `byte`, `sbyte`, `short`, `ushort`, `char`, `decimal` — numbers are varint encoded, so a narrow type
+  saves nothing. Use `int` / `uint` / `long` / `ulong`, `string` for `char`, `double` (or a `long` of
+  scaled units) for `decimal`. Enums backed by any of them are fine.
+- Arrays, `HashSet<>`, `IReadOnlyList<>` and other collections — only `List<>` and `Dictionary<,>`.
+- Dictionary keys that aren't string, struct or enum.
+
+Also supported, in case you didn't expect them: `Guid`, `Uri`, `Version`, `DateTimeOffset`, and Unity's
+`Vector2/3/4`, `Color`, `Gradient`, `AnimationCurve`, `Rect`, `Bounds`, `LayerMask` and friends.
+
 ### See it in editor for editing the data
 - `Tools` > `Neuro` > `❖ Editor`
 - It should already have selected your first type
@@ -141,7 +152,8 @@ foreach (var theItem in table.SelectAll())
 }
 
 // Get an item by id or name
-var myItem = table.GetId(<myid>);
+var myItem = table.Get(myRefId);   // uint
+var sameItem = table.Get("myItem"); // RefName
 ```
 
 ### How to reference to other referencables
@@ -249,7 +261,7 @@ void LoadIcon(SomeObject obj)
 
 # Saving player progress
 The easiest in Unity is to use LocalNeuroContinuousSave MonoBehaviour.
-See Save() in example [CraftClickerLogic.cs](../ExampleProject~/Assets/Scripts/CraftClicker/CraftClickerLogic.cs)
+See Save() in example [CraftClickerLogic.cs](../Development~/ExampleProject/Assets/Scripts/CraftClicker/CraftClickerLogic.cs)
 
 ```
 public class MyPlayerSaveData
@@ -274,6 +286,26 @@ public class MyGameLogic : MonoBehaviour
 }
 ```
 
+### Saving without a MonoBehaviour
+Same thing, plain C#:
+```
+var save = LocalNeuroContinuousSave<MyPlayerSaveData>.CreateInPersistedData("save");
+var data = save.GetData();   // loads from disk on first call, creates a new one if there is no file
+data.PlayerLevel++;
+save.Save();                 // writes straight into the open file stream, no allocations
+save.DelayedSave(1f);        // or coalesce rapid changes into one write
+```
+It holds one file open for the life of the object, which is what makes it allocation free - so it is one
+instance per file. If loading fails, the bad file is copied to `<file>-failed<timestamp>` and you get a
+fresh object rather than an exception.
+
+For several files, or one off reads and writes, use `LocalNeuroStorage` instead - `Save(obj, name)`,
+`TryLoad<T>(name)`, `Delete(name)`, defaulting to `Application.persistentDataPath`.
+
+> [!NOTE]
+> Saves are binary and not encrypted - anyone can read and edit them. Nothing stops you writing your own
+> bytes to disk if you need more than that.
+
 
 # What's next ?
 
@@ -282,5 +314,7 @@ public class MyGameLogic : MonoBehaviour
 [Advanced usages >](AdvancedUsages.md)
 
 [BackwardCompatibility >](BackwardCompatibility.md)
+
+[Editor Tools & Settings >](EditorTools.md)
 
 [Editor Customisation >](EditorCustomisation.md)

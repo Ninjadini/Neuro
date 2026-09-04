@@ -95,7 +95,7 @@ Your validator will also be automatically included in Unity's edit mode test run
 Say you want to use an object in Neuro world, but you can not modify the code, e.g. 3rd party.
 
 You can write the 'sync' code manually. This is how Unity's build in data types such as Vector3 are registered.   
-See full example of Unity ones in this class: [NeuroDefaultUnityTypesHook.cs](Ninjadini.Neuro.Unity/RunTime/NeuroDefaultUnityTypesHook.cs)
+See full example of Unity ones in this class: [NeuroDefaultUnityTypesHook.cs](../Ninjadini.Neuro.Unity/RunTime/NeuroDefaultUnityTypesHook.cs)
 
 Short example using Unity.Mathematics.int2:
 ```
@@ -225,6 +225,25 @@ vistor.Visit(myObjToVisit, new MyCustomVisitor(refs));
 ```
 
 
+# Object pooling / zero allocations
+
+Once the buffers are warm, Neuro allocates nothing except the objects it hands back to you.
+To avoid those too, read with a pool and give the objects back when you are done with them.
+
+```
+var options = new ReaderOptions(myPool); // myPool : INeuroObjectPool
+var obj = NeuroBytesReader.Shared.Read<MyData>(bytes, options);
+
+// ... later, walks the whole object graph and returns every neuro object in it
+NeuroPoolCollector.Shared.ReturnAllToPool(obj, myPool);
+```
+
+`INeuroObjectPool` is just `T Borrow<T>()` and `void Return(object)`.
+`NeuroPoolCollector.BasicPool` is a usable default if you don't want to write one.
+
+Only worth it for data you read repeatedly - network messages, replay frames. Config data is read once.
+
+
 # Reserve / Deprecate tags
 ```
 public class MyObjectWithOldFields
@@ -316,5 +335,7 @@ If you forget one you get a compile error pointing at the type, not a silent "ty
 # What's next ?
 
 [Backward Compatibility >](BackwardCompatibility.md)
+
+[Editor Tools & Settings >](EditorTools.md)
 
 [Editor Customisation >](EditorCustomisation.md)

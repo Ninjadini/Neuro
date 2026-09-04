@@ -20,6 +20,7 @@ namespace Ninjadini.Neuro.Editor
         protected Toggle existsToggle;
         protected VisualElement fieldsParent;
         bool? openFoldout;
+        VisualElement _horizontalRow;
 
         public ObjectInspector()
         {
@@ -230,6 +231,7 @@ namespace Ninjadini.Neuro.Editor
             }
             var container = fieldsParent;
             var isStruct = type.IsValueType;
+            _horizontalRow = null;
             foreach (var fieldInfo in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
                 if (!(controller?.ShouldDrawField(fieldInfo, obj) ?? false))
@@ -244,11 +246,12 @@ namespace Ninjadini.Neuro.Editor
                     element.userData = fieldInfo;
                     ObjectInspectorFields.ApplyTooltip(element, fieldInfo, fieldInfo.FieldType);
                     ApplyStyles(fieldData, element);
-                    container.Add(element);
+                    ResolveContainer(container, fieldData).Add(element);
                 }
             }
 
             container = fieldsParent;
+            _horizontalRow = null;
             if (!isStruct)
             {
                 foreach (var propInfo in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
@@ -286,7 +289,7 @@ namespace Ninjadini.Neuro.Editor
                         element.userData = propInfo;
                         ObjectInspectorFields.ApplyTooltip(element, propInfo, propInfo.PropertyType);
                         ApplyStyles(fieldData, element);
-                        container.Add(element);
+                        ResolveContainer(container, fieldData).Add(element);
                     }
                 }
             }
@@ -310,9 +313,41 @@ namespace Ninjadini.Neuro.Editor
             }
             if (inspectorStyle?.SpaceAfter > 0)
             {
-                element.style.marginTop = inspectorStyle.SpaceAfter;
+                element.style.marginBottom = inspectorStyle.SpaceAfter;
+            }
+            if (inspectorStyle?.Horizontal > 0)
+            {
+                element.style.width = inspectorStyle.Horizontal;
+                element.style.flexGrow = 0;
+                element.style.flexShrink = 1;
+                // The default label column is wider than most horizontal fields, let it shrink to the text.
+                var label = element.Q<Label>(className: BaseField<int>.labelUssClassName);
+                if (label != null)
+                {
+                    label.style.minWidth = 0;
+                    label.style.flexBasis = StyleKeyword.Auto;
+                }
             }
             data.Controller?.ApplyStyle(data, element);
+        }
+
+        /// Fields with InspectorStyleAttribute.Horizontal set are laid out next to each other on a shared row,
+        /// until a field without it (or a new header) ends the row.
+        VisualElement ResolveContainer(VisualElement container, Data data)
+        {
+            var inspectorStyle = ObjectInspectorFields.GetVisualStyle(data.MemberInfo);
+            if (!(inspectorStyle?.Horizontal > 0))
+            {
+                _horizontalRow = null;
+                return container;
+            }
+            if (_horizontalRow == null || _horizontalRow.parent != container)
+            {
+                _horizontalRow = new VisualElement();
+                _horizontalRow.style.flexDirection = FlexDirection.Row;
+                container.Add(_horizontalRow);
+            }
+            return _horizontalRow;
         }
 
         public static Data CreateDataForField(Data data, object obj, FieldInfo fieldInfo)
@@ -342,6 +377,7 @@ namespace Ninjadini.Neuro.Editor
         {
             if (data.MemberInfo != null && data.MemberInfo.IsDefined(typeof(HeaderAttribute), true))
             {
+                _horizontalRow = null; // a header always starts a new row
                 var header = data.MemberInfo.GetCustomAttribute<HeaderAttribute>();
                 if (header.header.StartsWith(">"))
                 {

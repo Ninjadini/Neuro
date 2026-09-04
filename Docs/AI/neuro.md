@@ -82,5 +82,5 @@ and are **not** interchangeable with the plain calls.
 | Read/write call matrix, JSON shape, registering third-party types, visitors, pooling, compile defines | [serialization.md](serialization.md) |
 | Neuro Editor, NeuroData files, base36 RefIds, player saves, AssetAddress, validators, build stripping | [unity.md](unity.md) |
 
-Human prose docs are one folder up: GettingStarted, AdvancedUsages, EditorCustomisation,
-BackwardCompatibility.
+Human prose docs are one folder up: GettingStarted, AdvancedUsages, EditorTools,
+EditorCustomisation, BackwardCompatibility.
