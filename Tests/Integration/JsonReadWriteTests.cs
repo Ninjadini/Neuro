@@ -83,7 +83,7 @@ namespace Ninjadini.Neuro.IntegrationTests
             var data = GetDataForReading(Writer.Write(obj));
             EnsureNotGlobal(data);
             var copy = Reader.Read<NormalClass>(data);
-            Assert.AreEqual("123", copy.Value);
+            Assert.That(copy.Value, Is.EqualTo("123"));
         
             var copy2 = new NormalClass()
             {
@@ -91,8 +91,8 @@ namespace Ninjadini.Neuro.IntegrationTests
             };
             var copy2Instance = copy2;
             Reader.Read(data, ref copy2Instance);
-            Assert.AreEqual(copy2Instance, copy2);
-            Assert.AreEqual("123", copy2.Value);
+            Assert.That(copy2, Is.EqualTo(copy2Instance));
+            Assert.That(copy2.Value, Is.EqualTo("123"));
         }
     
         [Test]
@@ -105,7 +105,7 @@ namespace Ninjadini.Neuro.IntegrationTests
             var data = GetDataForReading(Writer.WriteObject(obj));
             EnsureNotGlobal(data);
             var copy = (NormalClass)Reader.ReadObject(data, typeof(NormalClass));
-            Assert.AreEqual("123", copy.Value);
+            Assert.That(copy.Value, Is.EqualTo("123"));
         
             var copy2 = new NormalClass()
             {
@@ -113,8 +113,8 @@ namespace Ninjadini.Neuro.IntegrationTests
             };
             var copy2Instance = copy2;
             Reader.Read(data, ref copy2Instance);
-            Assert.AreEqual(copy2Instance, copy2);
-            Assert.AreEqual("123", copy2.Value);
+            Assert.That(copy2, Is.EqualTo(copy2Instance));
+            Assert.That(copy2.Value, Is.EqualTo("123"));
         }
     
         public class NormalStruct
@@ -132,7 +132,7 @@ namespace Ninjadini.Neuro.IntegrationTests
             var data = GetDataForReading(Writer.Write(obj));
             EnsureNotGlobal(data);
             var copy = Reader.Read<NormalStruct>(data);
-            Assert.AreEqual("123", copy.Value);
+            Assert.That(copy.Value, Is.EqualTo("123"));
         
             var copy2 = new NormalStruct()
             {
@@ -140,8 +140,8 @@ namespace Ninjadini.Neuro.IntegrationTests
             };
             var copy2Instance = copy2;
             Reader.Read(data, ref copy2Instance);
-            Assert.AreEqual(copy2Instance, copy2);
-            Assert.AreEqual("123", copy2.Value);
+            Assert.That(copy2, Is.EqualTo(copy2Instance));
+            Assert.That(copy2.Value, Is.EqualTo("123"));
         }
     
         [Test]
@@ -154,7 +154,7 @@ namespace Ninjadini.Neuro.IntegrationTests
             var data = GetDataForReading(Writer.WriteObject(obj));
             EnsureNotGlobal(data);
             var copy = (NormalStruct)Reader.ReadObject(data, typeof(NormalStruct));
-            Assert.AreEqual("123", copy.Value);
+            Assert.That(copy.Value, Is.EqualTo("123"));
         
             var copy2 = new NormalStruct()
             {
@@ -162,8 +162,8 @@ namespace Ninjadini.Neuro.IntegrationTests
             };
             var copy2Instance = copy2;
             Reader.Read(data, ref copy2Instance);
-            Assert.AreEqual(copy2Instance, copy2);
-            Assert.AreEqual("123", copy2.Value);
+            Assert.That(copy2, Is.EqualTo(copy2Instance));
+            Assert.That(copy2.Value, Is.EqualTo("123"));
         }
     
         public class BaseClass
@@ -182,7 +182,7 @@ namespace Ninjadini.Neuro.IntegrationTests
             var data = GetDataForReading(Writer.Write(obj));
             EnsureNotGlobal(data);
             var copy = Reader.Read<BaseClass>(data);
-            Assert.AreEqual("123", copy.Value);
+            Assert.That(copy.Value, Is.EqualTo("123"));
         
             var copy2 = new BaseClass()
             {
@@ -190,8 +190,8 @@ namespace Ninjadini.Neuro.IntegrationTests
             };
             var copy2Instance = copy2;
             Reader.Read(data, ref copy2Instance);
-            Assert.AreEqual(copy2Instance, copy2);
-            Assert.AreEqual("123", copy2.Value);
+            Assert.That(copy2, Is.EqualTo(copy2Instance));
+            Assert.That(copy2.Value, Is.EqualTo("123"));
         }
     
         [Test]
@@ -204,7 +204,7 @@ namespace Ninjadini.Neuro.IntegrationTests
             var data = GetDataForReading(Writer.WriteObject(obj));
             EnsureNotGlobal(data);
             var copy = (BaseClass)Reader.ReadObject(data, typeof(BaseClass));
-            Assert.AreEqual("123", copy.Value);
+            Assert.That(copy.Value, Is.EqualTo("123"));
         
             var copy2 = new BaseClass()
             {
@@ -212,8 +212,8 @@ namespace Ninjadini.Neuro.IntegrationTests
             };
             var copy2Instance = copy2;
             Reader.Read(data, ref copy2Instance);
-            Assert.AreEqual(copy2Instance, copy2);
-            Assert.AreEqual("123", copy2.Value);
+            Assert.That(copy2, Is.EqualTo(copy2Instance));
+            Assert.That(copy2.Value, Is.EqualTo("123"));
         }
     
     
@@ -234,8 +234,8 @@ namespace Ninjadini.Neuro.IntegrationTests
             var data = GetDataForReading(Writer.Write(obj));
             EnsureNotGlobal(data);
             var copy = (SubClass1)Reader.Read<BaseClass>(data);
-            Assert.AreEqual("123", copy.Value);
-            Assert.AreEqual("234", copy.SubValue1);
+            Assert.That(copy.Value, Is.EqualTo("123"));
+            Assert.That(copy.SubValue1, Is.EqualTo("234"));
         
             var copy2 = new SubClass1()
             {
@@ -244,21 +244,21 @@ namespace Ninjadini.Neuro.IntegrationTests
             };
             var copy2Instance = copy2;
             Reader.Read(data, ref copy2Instance);
-            Assert.AreEqual(copy2Instance, copy2);
-            Assert.AreEqual("123", copy2.Value);
-            Assert.AreEqual("234", copy2.SubValue1);
+            Assert.That(copy2, Is.EqualTo(copy2Instance));
+            Assert.That(copy2.Value, Is.EqualTo("123"));
+            Assert.That(copy2.SubValue1, Is.EqualTo("234"));
 
             copy2.Value = copy2.SubValue1 = "xx";
             var copyBase = (BaseClass)copy2;
             Reader.Read(data, ref copyBase);
-            Assert.AreEqual(copy2Instance, copy2);
-            Assert.AreEqual("123", copy2.Value);
-            Assert.AreEqual("234", copy2.SubValue1);
+            Assert.That(copy2, Is.EqualTo(copy2Instance));
+            Assert.That(copy2.Value, Is.EqualTo("123"));
+            Assert.That(copy2.SubValue1, Is.EqualTo("234"));
         
         
             var copy3 = Reader.Read<SubClass1>(data);
-            Assert.AreEqual("123", copy3.Value);
-            Assert.AreEqual("234", copy3.SubValue1);
+            Assert.That(copy3.Value, Is.EqualTo("123"));
+            Assert.That(copy3.SubValue1, Is.EqualTo("234"));
         }
     
         [Test]
@@ -272,8 +272,8 @@ namespace Ninjadini.Neuro.IntegrationTests
             var data = GetDataForReading(Writer.WriteObject(obj));
             EnsureNotGlobal(data);
             var copy = (SubClass1)Reader.ReadObject(data, typeof(BaseClass));
-            Assert.AreEqual("123", copy.Value);
-            Assert.AreEqual("234", copy.SubValue1);
+            Assert.That(copy.Value, Is.EqualTo("123"));
+            Assert.That(copy.SubValue1, Is.EqualTo("234"));
         
             var copy2 = new SubClass1()
             {
@@ -282,20 +282,20 @@ namespace Ninjadini.Neuro.IntegrationTests
             };
             var copy2Instance = (object)copy2;
             Reader.ReadObject(data, typeof(BaseClass), ref copy2Instance);
-            Assert.AreEqual(copy2Instance, copy2);
-            Assert.AreEqual("123", copy2.Value);
-            Assert.AreEqual("234", copy2.SubValue1);
+            Assert.That(copy2, Is.EqualTo(copy2Instance));
+            Assert.That(copy2.Value, Is.EqualTo("123"));
+            Assert.That(copy2.SubValue1, Is.EqualTo("234"));
 
             copy2.Value = copy2.SubValue1 = "xx";
             Reader.ReadObject(data, typeof(SubClass1), ref copy2Instance);
-            Assert.AreEqual(copy2Instance, copy2);
-            Assert.AreEqual("123", copy2.Value);
-            Assert.AreEqual("234", copy2.SubValue1);
+            Assert.That(copy2, Is.EqualTo(copy2Instance));
+            Assert.That(copy2.Value, Is.EqualTo("123"));
+            Assert.That(copy2.SubValue1, Is.EqualTo("234"));
         
         
             var copy3 = (SubClass1)Reader.ReadObject(data, typeof(SubClass1));
-            Assert.AreEqual("123", copy3.Value);
-            Assert.AreEqual("234", copy3.SubValue1);
+            Assert.That(copy3.Value, Is.EqualTo("123"));
+            Assert.That(copy3.SubValue1, Is.EqualTo("234"));
         
         }
 
@@ -319,7 +319,7 @@ namespace Ninjadini.Neuro.IntegrationTests
             EnsureGlobal(data, 103);
 
             var copy = (NormalGlobalClass) Reader.ReadGlobalTyped(data);
-            Assert.AreEqual("123", copy.Value);
+            Assert.That(copy.Value, Is.EqualTo("123"));
         }
     
 
@@ -343,7 +343,7 @@ namespace Ninjadini.Neuro.IntegrationTests
             EnsureGlobal(data, 104);
 
             var copy = (GlobalBaseClass) Reader.ReadGlobalTyped(data);
-            Assert.AreEqual("123", copy.Value);
+            Assert.That(copy.Value, Is.EqualTo("123"));
         }
 
         [Neuro(2)]
@@ -367,8 +367,8 @@ namespace Ninjadini.Neuro.IntegrationTests
             EnsureGlobal(data, 104);
 
             var copy = (GlobalSubClass) Reader.ReadGlobalTyped(data);
-            Assert.AreEqual("123", copy.Value);
-            Assert.AreEqual("234", copy.SubValue1);
+            Assert.That(copy.Value, Is.EqualTo("123"));
+            Assert.That(copy.SubValue1, Is.EqualTo("234"));
         }
     }
 }

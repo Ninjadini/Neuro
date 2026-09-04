@@ -62,12 +62,12 @@ namespace Ninjadini.Neuro.IntegrationTests
         static void AssertPoly(PolyBase expected, PolyBase actual)
         {
             Assert.IsNotNull(actual);
-            Assert.AreEqual(expected.GetType(), actual.GetType(), "sub type was not preserved");
-            Assert.AreEqual(expected.Id, actual.Id);
-            if (expected is PolySmallTag a) Assert.AreEqual(a.Value, ((PolySmallTag)actual).Value);
-            if (expected is PolyTag127 b) Assert.AreEqual(b.Value, ((PolyTag127)actual).Value);
-            if (expected is PolyTag128 c) Assert.AreEqual(c.Value, ((PolyTag128)actual).Value);
-            if (expected is PolyBigTag d) Assert.AreEqual(d.Value, ((PolyBigTag)actual).Value);
+            Assert.That(actual.GetType(), Is.EqualTo(expected.GetType()), "sub type was not preserved");
+            Assert.That(actual.Id, Is.EqualTo(expected.Id));
+            if (expected is PolySmallTag a) Assert.That(((PolySmallTag)actual).Value, Is.EqualTo(a.Value));
+            if (expected is PolyTag127 b) Assert.That(((PolyTag127)actual).Value, Is.EqualTo(b.Value));
+            if (expected is PolyTag128 c) Assert.That(((PolyTag128)actual).Value, Is.EqualTo(c.Value));
+            if (expected is PolyBigTag d) Assert.That(((PolyBigTag)actual).Value, Is.EqualTo(d.Value));
         }
 
         [TestCaseSource(nameof(PolyValues))]
@@ -81,7 +81,7 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var src = new PolyBox { List = new List<PolyBase> { null, new PolyBase { Id = 1 }, new PolyBigTag { Id = 2, Value = "x" }, null } };
             var copy = Bin(src);
-            Assert.AreEqual(4, copy.List.Count);
+            Assert.That(copy.List.Count, Is.EqualTo(4));
             Assert.IsNull(copy.List[0]);
             AssertPoly(src.List[1], copy.List[1]);
             AssertPoly(src.List[2], copy.List[2]);
@@ -93,7 +93,7 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var src = new PolyBox { List = new List<PolyBase> { null, new PolyBase { Id = 1 }, new PolyBigTag { Id = 2, Value = "x" }, null } };
             var copy = Jsn(src);
-            Assert.AreEqual(4, copy.List.Count);
+            Assert.That(copy.List.Count, Is.EqualTo(4));
             Assert.IsNull(copy.List[0]);
             AssertPoly(src.List[1], copy.List[1]);
             AssertPoly(src.List[2], copy.List[2]);

@@ -24,13 +24,13 @@ namespace Ninjadini.Neuro.IntegrationTests
             Console.WriteLine("Json:" + json);
         
             var copyBinary = new NeuroBytesReader().Read<TypeWithBool>(bytes.ToArray(), new ReaderOptions());
-        
-            Assert.AreEqual(src.value1, copyBinary.value1);
-            Assert.AreEqual(src.value2, copyBinary.value2);
+
+            Assert.That(copyBinary.value1, Is.EqualTo(src.value1));
+            Assert.That(copyBinary.value2, Is.EqualTo(src.value2));
             
             var copyJson = new NeuroJsonReader().Read<TypeWithBool>(json, new ReaderOptions());
-            Assert.AreEqual(src.value1, copyJson.value1);
-            Assert.AreEqual(src.value2, copyJson.value2);
+            Assert.That(copyJson.value1, Is.EqualTo(src.value1));
+            Assert.That(copyJson.value2, Is.EqualTo(src.value2));
         }
 
         public partial class TypeWithBool
@@ -58,17 +58,17 @@ namespace Ninjadini.Neuro.IntegrationTests
             Console.WriteLine("Json:" + json);
         
             var copyBinary = new NeuroBytesReader().Read<TypeWithInt>(bytes.ToArray(), new ReaderOptions());
-        
-            Assert.AreEqual(src.value1, copyBinary.value1);
-            Assert.AreEqual(src.value2, copyBinary.value2);
-            Assert.AreEqual(src.value3, copyBinary.value3);
-            Assert.AreEqual(src.value4, copyBinary.value4);
+
+            Assert.That(copyBinary.value1, Is.EqualTo(src.value1));
+            Assert.That(copyBinary.value2, Is.EqualTo(src.value2));
+            Assert.That(copyBinary.value3, Is.EqualTo(src.value3));
+            Assert.That(copyBinary.value4, Is.EqualTo(src.value4));
             
             var copyJson = new NeuroJsonReader().Read<TypeWithInt>(json, new ReaderOptions());
-            Assert.AreEqual(src.value1, copyJson.value1);
-            Assert.AreEqual(src.value2, copyJson.value2);
-            Assert.AreEqual(src.value3, copyJson.value3);
-            Assert.AreEqual(src.value4, copyJson.value4);
+            Assert.That(copyJson.value1, Is.EqualTo(src.value1));
+            Assert.That(copyJson.value2, Is.EqualTo(src.value2));
+            Assert.That(copyJson.value3, Is.EqualTo(src.value3));
+            Assert.That(copyJson.value4, Is.EqualTo(src.value4));
         }
 
         public partial class TypeWithInt
@@ -97,15 +97,15 @@ namespace Ninjadini.Neuro.IntegrationTests
             Console.WriteLine("Json:" + json);
         
             var copyBinary = new NeuroBytesReader().Read<TypeWithUint>(bytes.ToArray(), new ReaderOptions());
-        
-            Assert.AreEqual(src.value1, copyBinary.value1);
-            Assert.AreEqual(src.value2, copyBinary.value2);
-            Assert.AreEqual(src.value3, copyBinary.value3);
+
+            Assert.That(copyBinary.value1, Is.EqualTo(src.value1));
+            Assert.That(copyBinary.value2, Is.EqualTo(src.value2));
+            Assert.That(copyBinary.value3, Is.EqualTo(src.value3));
             
             var copyJson = new NeuroJsonReader().Read<TypeWithUint>(json, new ReaderOptions());
-            Assert.AreEqual(src.value1, copyJson.value1);
-            Assert.AreEqual(src.value2, copyJson.value2);
-            Assert.AreEqual(src.value3, copyJson.value3);
+            Assert.That(copyJson.value1, Is.EqualTo(src.value1));
+            Assert.That(copyJson.value2, Is.EqualTo(src.value2));
+            Assert.That(copyJson.value3, Is.EqualTo(src.value3));
         }
 
         public partial class TypeWithUint
@@ -134,16 +134,16 @@ namespace Ninjadini.Neuro.IntegrationTests
             Console.WriteLine("Json:" + json);
             
             var copyBinary = new NeuroBytesReader().Read<TypeWithFloat>(bytes.ToArray(), new ReaderOptions());
-            Assert.AreEqual(src.value1, copyBinary.value1);
-            Assert.AreEqual(src.value2, copyBinary.value2);
-            Assert.AreEqual(src.value3, copyBinary.value3);
-            Assert.AreEqual(src.value4, copyBinary.value4);
+            Assert.That(copyBinary.value1, Is.EqualTo(src.value1));
+            Assert.That(copyBinary.value2, Is.EqualTo(src.value2));
+            Assert.That(copyBinary.value3, Is.EqualTo(src.value3));
+            Assert.That(copyBinary.value4, Is.EqualTo(src.value4));
             
             var copyJson = new NeuroJsonReader().Read<TypeWithFloat>(json, new ReaderOptions());
-            Assert.AreEqual(src.value1, copyJson.value1);
-            Assert.AreEqual(src.value2, copyJson.value2);
-            Assert.AreEqual(src.value3, copyJson.value3);
-            Assert.AreEqual(src.value4, copyJson.value4);
+            Assert.That(copyJson.value1, Is.EqualTo(src.value1));
+            Assert.That(copyJson.value2, Is.EqualTo(src.value2));
+            Assert.That(copyJson.value3, Is.EqualTo(src.value3));
+            Assert.That(copyJson.value4, Is.EqualTo(src.value4));
         }
 
         public partial class TypeWithFloat
@@ -173,16 +173,16 @@ namespace Ninjadini.Neuro.IntegrationTests
             Console.WriteLine("Json:" + json);
             
             var copyBinary = new NeuroBytesReader().Read<TypeWithDouble>(bytes.ToArray(), new ReaderOptions());
-            Assert.AreEqual(src.value1, copyBinary.value1);
-            Assert.AreEqual(src.value2, copyBinary.value2);
-            Assert.AreEqual(src.value3, copyBinary.value3);
-            Assert.AreEqual(src.value4, copyBinary.value4);
+            Assert.That(copyBinary.value1, Is.EqualTo(src.value1));
+            Assert.That(copyBinary.value2, Is.EqualTo(src.value2));
+            Assert.That(copyBinary.value3, Is.EqualTo(src.value3));
+            Assert.That(copyBinary.value4, Is.EqualTo(src.value4));
             
             var copyJson = new NeuroJsonReader().Read<TypeWithDouble>(json, new ReaderOptions());
-            Assert.AreEqual(src.value1, copyJson.value1);
-            Assert.AreEqual(src.value2, copyJson.value2);
-            Assert.AreEqual(src.value3, copyJson.value3);
-            Assert.AreEqual(src.value4, copyJson.value4);
+            Assert.That(copyJson.value1, Is.EqualTo(src.value1));
+            Assert.That(copyJson.value2, Is.EqualTo(src.value2));
+            Assert.That(copyJson.value3, Is.EqualTo(src.value3));
+            Assert.That(copyJson.value4, Is.EqualTo(src.value4));
         }
 
         public partial class TypeWithDouble
@@ -210,14 +210,14 @@ namespace Ninjadini.Neuro.IntegrationTests
             Console.WriteLine("Json:" + json);
             
             var copyBinary = new NeuroBytesReader().Read<TypeWithFlagEnums>(bytes.ToArray(), new ReaderOptions());
-            Assert.AreEqual(src.value1, copyBinary.value1);
-            Assert.AreEqual(src.value2, copyBinary.value2);
-            Assert.AreEqual(src.value3, copyBinary.value3);
+            Assert.That(copyBinary.value1, Is.EqualTo(src.value1));
+            Assert.That(copyBinary.value2, Is.EqualTo(src.value2));
+            Assert.That(copyBinary.value3, Is.EqualTo(src.value3));
             
             var copyJson = new NeuroJsonReader().Read<TypeWithFlagEnums>(json, new ReaderOptions());
-            Assert.AreEqual(src.value1, copyJson.value1);
-            Assert.AreEqual(src.value2, copyJson.value2);
-            Assert.AreEqual(src.value3, copyJson.value3);
+            Assert.That(copyJson.value1, Is.EqualTo(src.value1));
+            Assert.That(copyJson.value2, Is.EqualTo(src.value2));
+            Assert.That(copyJson.value3, Is.EqualTo(src.value3));
         }
         
         public partial class TypeWithFlagEnums
@@ -254,17 +254,17 @@ namespace Ninjadini.Neuro.IntegrationTests
             Console.WriteLine("Json:" + json);
         
             var copyBinary = new NeuroBytesReader().Read<TypeWithGUID>(bytes.ToArray(), new ReaderOptions());
-        
-            Assert.AreEqual(src.value1, copyBinary.value1);
-            Assert.AreEqual(src.value2, copyBinary.value2);
-            Assert.AreEqual(src.value3, copyBinary.value3);
-            Assert.AreEqual(src.value4, copyBinary.value4);
+
+            Assert.That(copyBinary.value1, Is.EqualTo(src.value1));
+            Assert.That(copyBinary.value2, Is.EqualTo(src.value2));
+            Assert.That(copyBinary.value3, Is.EqualTo(src.value3));
+            Assert.That(copyBinary.value4, Is.EqualTo(src.value4));
             
             var copyJson = new NeuroJsonReader().Read<TypeWithGUID>(json, new ReaderOptions());
-            Assert.AreEqual(src.value1, copyJson.value1);
-            Assert.AreEqual(src.value2, copyJson.value2);
-            Assert.AreEqual(src.value3, copyJson.value3);
-            Assert.AreEqual(src.value4, copyJson.value4);
+            Assert.That(copyJson.value1, Is.EqualTo(src.value1));
+            Assert.That(copyJson.value2, Is.EqualTo(src.value2));
+            Assert.That(copyJson.value3, Is.EqualTo(src.value3));
+            Assert.That(copyJson.value4, Is.EqualTo(src.value4));
         }
 
         public partial class TypeWithGUID
@@ -295,17 +295,17 @@ namespace Ninjadini.Neuro.IntegrationTests
             Console.WriteLine("Json:" + json);
         
             var copyBinary = new NeuroBytesReader().Read<TypeWithDateTime>(bytes.ToArray(), new ReaderOptions());
-        
-            Assert.AreEqual(src.value1, copyBinary.value1);
-            Assert.AreEqual(src.value2, copyBinary.value2);
-            Assert.AreEqual(src.value3, copyBinary.value3);
-            Assert.AreEqual(src.value4, copyBinary.value4);
+
+            Assert.That(copyBinary.value1, Is.EqualTo(src.value1));
+            Assert.That(copyBinary.value2, Is.EqualTo(src.value2));
+            Assert.That(copyBinary.value3, Is.EqualTo(src.value3));
+            Assert.That(copyBinary.value4, Is.EqualTo(src.value4));
             
             var copyJson = new NeuroJsonReader().Read<TypeWithDateTime>(json, new ReaderOptions());
-            Assert.AreEqual(src.value1, copyJson.value1);
-            Assert.AreEqual(src.value2, copyJson.value2);
-            Assert.AreEqual(src.value3, copyJson.value3);
-            Assert.AreEqual(src.value4, copyJson.value4);
+            Assert.That(copyJson.value1, Is.EqualTo(src.value1));
+            Assert.That(copyJson.value2, Is.EqualTo(src.value2));
+            Assert.That(copyJson.value3, Is.EqualTo(src.value3));
+            Assert.That(copyJson.value4, Is.EqualTo(src.value4));
         }
         
         
@@ -328,11 +328,11 @@ namespace Ninjadini.Neuro.IntegrationTests
             var copy = new NeuroBytesReader().Read<NestedClass>(bytes.ToArray(), new ReaderOptions());
 
             var child = (SubTestClass2)copy.BaseClassObj;
-            Assert.AreEqual(123, child.Id);
-            Assert.AreEqual("name", child.Name);
-            Assert.AreEqual(345, ((SubTestClass1)child.Child).Id);
-            Assert.AreEqual("child", ((SubTestClass1)child.Child).Name);
-            Assert.AreEqual("childValue", ((SubTestClass1)child.Child).Value);
+            Assert.That(child.Id, Is.EqualTo(123));
+            Assert.That(child.Name, Is.EqualTo("name"));
+            Assert.That(((SubTestClass1)child.Child).Id, Is.EqualTo(345));
+            Assert.That(((SubTestClass1)child.Child).Name, Is.EqualTo("child"));
+            Assert.That(((SubTestClass1)child.Child).Value, Is.EqualTo("childValue"));
         }
 
         public class NestedClass

@@ -33,7 +33,7 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var copy = Bin(new ListBox { Ints = new List<int>() });
             Assert.IsNotNull(copy.Ints, "empty list came back null");
-            Assert.AreEqual(0, copy.Ints.Count);
+            Assert.That(copy.Ints.Count, Is.EqualTo(0));
         }
 
         [Test]
@@ -41,49 +41,49 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var copy = Jsn(new ListBox { Ints = new List<int>() });
             Assert.IsNotNull(copy.Ints, "empty list came back null");
-            Assert.AreEqual(0, copy.Ints.Count);
+            Assert.That(copy.Ints.Count, Is.EqualTo(0));
         }
 
         [Test]
         public void List_ExtremeInts_Binary()
         {
             var src = new ListBox { Ints = new List<int> { int.MinValue, -1, 0, 1, int.MaxValue } };
-            CollectionAssert.AreEqual(src.Ints, Bin(src).Ints);
+            Assert.That(Bin(src).Ints, Is.EqualTo(src.Ints).AsCollection);
         }
 
         [Test]
         public void List_ExtremeInts_Json()
         {
             var src = new ListBox { Ints = new List<int> { int.MinValue, -1, 0, 1, int.MaxValue } };
-            CollectionAssert.AreEqual(src.Ints, Jsn(src).Ints);
+            Assert.That(Jsn(src).Ints, Is.EqualTo(src.Ints).AsCollection);
         }
 
         [Test]
         public void List_ExtremeFloats_Binary()
         {
             var src = new ListBox { Floats = new List<float> { float.MinValue, -0f, 0f, float.Epsilon, float.MaxValue, float.NaN, float.PositiveInfinity, float.NegativeInfinity } };
-            CollectionAssert.AreEqual(src.Floats, Bin(src).Floats);
+            Assert.That(Bin(src).Floats, Is.EqualTo(src.Floats).AsCollection);
         }
 
         [Test]
         public void List_ExtremeFloats_Json()
         {
             var src = new ListBox { Floats = new List<float> { float.MinValue, -0f, 0f, float.Epsilon, float.MaxValue, float.NaN, float.PositiveInfinity, float.NegativeInfinity } };
-            CollectionAssert.AreEqual(src.Floats, Jsn(src).Floats);
+            Assert.That(Jsn(src).Floats, Is.EqualTo(src.Floats).AsCollection);
         }
 
         [Test]
         public void List_StringsWithNullsAndEmpties_Binary()
         {
             var src = new ListBox { Strings = new List<string> { null, "", "a", "with \"quote\"", "line\nbreak", null } };
-            CollectionAssert.AreEqual(src.Strings, Bin(src).Strings);
+            Assert.That(Bin(src).Strings, Is.EqualTo(src.Strings).AsCollection);
         }
 
         [Test]
         public void List_StringsWithNullsAndEmpties_Json()
         {
             var src = new ListBox { Strings = new List<string> { null, "", "a", "with \"quote\"", "line\nbreak", null } };
-            CollectionAssert.AreEqual(src.Strings, Jsn(src).Strings);
+            Assert.That(Jsn(src).Strings, Is.EqualTo(src.Strings).AsCollection);
         }
 
         [Test]
@@ -91,9 +91,9 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var src = new ListBox { Children = new List<ChildBox> { null, new ChildBox { Id = 1 }, null } };
             var copy = Bin(src);
-            Assert.AreEqual(3, copy.Children.Count);
+            Assert.That(copy.Children.Count, Is.EqualTo(3));
             Assert.IsNull(copy.Children[0]);
-            Assert.AreEqual(1, copy.Children[1].Id);
+            Assert.That(copy.Children[1].Id, Is.EqualTo(1));
             Assert.IsNull(copy.Children[2]);
         }
 
@@ -102,9 +102,9 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var src = new ListBox { Children = new List<ChildBox> { null, new ChildBox { Id = 1 }, null } };
             var copy = Jsn(src);
-            Assert.AreEqual(3, copy.Children.Count);
+            Assert.That(copy.Children.Count, Is.EqualTo(3));
             Assert.IsNull(copy.Children[0]);
-            Assert.AreEqual(1, copy.Children[1].Id);
+            Assert.That(copy.Children[1].Id, Is.EqualTo(1));
             Assert.IsNull(copy.Children[2]);
         }
 
@@ -113,7 +113,7 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var src = new ListBox { Ints = new List<int>() };
             for (var i = 0; i < 100000; i++) src.Ints.Add(i);
-            CollectionAssert.AreEqual(src.Ints, Bin(src).Ints);
+            Assert.That(Bin(src).Ints, Is.EqualTo(src.Ints).AsCollection);
         }
 
         [Test]
@@ -121,7 +121,7 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var src = new ListBox { Ints = new List<int>() };
             for (var i = 0; i < 100000; i++) src.Ints.Add(i);
-            CollectionAssert.AreEqual(src.Ints, Jsn(src).Ints);
+            Assert.That(Jsn(src).Ints, Is.EqualTo(src.Ints).AsCollection);
         }
 
 // ---------------------------------------------------------------------------------------------------- dictionaries
@@ -144,7 +144,7 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var copy = Bin(new DictBox { IntKeys = new Dictionary<int, string>() });
             Assert.IsNotNull(copy.IntKeys, "empty dictionary came back null");
-            Assert.AreEqual(0, copy.IntKeys.Count);
+            Assert.That(copy.IntKeys.Count, Is.EqualTo(0));
         }
 
         [Test]
@@ -152,7 +152,7 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var copy = Jsn(new DictBox { IntKeys = new Dictionary<int, string>() });
             Assert.IsNotNull(copy.IntKeys, "empty dictionary came back null");
-            Assert.AreEqual(0, copy.IntKeys.Count);
+            Assert.That(copy.IntKeys.Count, Is.EqualTo(0));
         }
 
         static Dictionary<int, string> ExtremeIntKeyed() => new Dictionary<int, string>
@@ -164,14 +164,14 @@ namespace Ninjadini.Neuro.IntegrationTests
         public void Dict_ExtremeIntKeys_Binary()
         {
             var src = new DictBox { IntKeys = ExtremeIntKeyed() };
-            CollectionAssert.AreEquivalent(src.IntKeys, Bin(src).IntKeys);
+            Assert.That(Bin(src).IntKeys, Is.EquivalentTo(src.IntKeys));
         }
 
         [Test]
         public void Dict_ExtremeIntKeys_Json()
         {
             var src = new DictBox { IntKeys = ExtremeIntKeyed() };
-            CollectionAssert.AreEquivalent(src.IntKeys, Jsn(src).IntKeys);
+            Assert.That(Jsn(src).IntKeys, Is.EquivalentTo(src.IntKeys));
         }
 
         static Dictionary<string, string> AwkwardStringKeyed() => new Dictionary<string, string>
@@ -193,42 +193,42 @@ namespace Ninjadini.Neuro.IntegrationTests
         public void Dict_AwkwardStringKeys_Binary()
         {
             var src = new DictBox { StringKeys = AwkwardStringKeyed() };
-            CollectionAssert.AreEquivalent(src.StringKeys, Bin(src).StringKeys);
+            Assert.That(Bin(src).StringKeys, Is.EquivalentTo(src.StringKeys));
         }
 
         [Test]
         public void Dict_AwkwardStringKeys_Json()
         {
             var src = new DictBox { StringKeys = AwkwardStringKeyed() };
-            CollectionAssert.AreEquivalent(src.StringKeys, Jsn(src).StringKeys);
+            Assert.That(Jsn(src).StringKeys, Is.EquivalentTo(src.StringKeys));
         }
 
         [Test]
         public void Dict_NullValues_Binary()
         {
             var src = new DictBox { IntKeys = new Dictionary<int, string> { { 1, null }, { 2, "" }, { 3, "x" } } };
-            CollectionAssert.AreEquivalent(src.IntKeys, Bin(src).IntKeys);
+            Assert.That(Bin(src).IntKeys, Is.EquivalentTo(src.IntKeys));
         }
 
         [Test]
         public void Dict_NullValues_Json()
         {
             var src = new DictBox { IntKeys = new Dictionary<int, string> { { 1, null }, { 2, "" }, { 3, "x" } } };
-            CollectionAssert.AreEquivalent(src.IntKeys, Jsn(src).IntKeys);
+            Assert.That(Jsn(src).IntKeys, Is.EquivalentTo(src.IntKeys));
         }
 
         [Test]
         public void Dict_ExtremeEnumKeys_Binary()
         {
             var src = new DictBox { EnumKeys = new Dictionary<ExtremeEnum, int> { { ExtremeEnum.Min, 1 }, { ExtremeEnum.Max, 2 }, { ExtremeEnum.Zero, 3 } } };
-            CollectionAssert.AreEquivalent(src.EnumKeys, Bin(src).EnumKeys);
+            Assert.That(Bin(src).EnumKeys, Is.EquivalentTo(src.EnumKeys));
         }
 
         [Test]
         public void Dict_ExtremeEnumKeys_Json()
         {
             var src = new DictBox { EnumKeys = new Dictionary<ExtremeEnum, int> { { ExtremeEnum.Min, 1 }, { ExtremeEnum.Max, 2 }, { ExtremeEnum.Zero, 3 } } };
-            CollectionAssert.AreEquivalent(src.EnumKeys, Jsn(src).EnumKeys);
+            Assert.That(Jsn(src).EnumKeys, Is.EquivalentTo(src.EnumKeys));
         }
     }
 }

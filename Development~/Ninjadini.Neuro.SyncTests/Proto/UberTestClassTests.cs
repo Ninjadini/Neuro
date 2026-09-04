@@ -119,7 +119,7 @@ namespace Ninjadini.Neuro.SyncTests
             testObj.DictionaryIntObj.Clear();
             TestClone(testObj);
             var bytes = NeuroBytesWriter.Shared.Write(testObj);
-            Assert.AreEqual(2, bytes.Length);
+            Assert.That(bytes.Length, Is.EqualTo(2));
         }
         
         [Test]
@@ -133,7 +133,7 @@ namespace Ninjadini.Neuro.SyncTests
             Console.WriteLine(RawProtoReader.GetDebugString(bytes));
             
             var target = NeuroBytesReader.Shared.Read<UberTestClassWithJustLastItem>(writer.GetCurrentBytesChunk(), new ReaderOptions());
-            Assert.AreEqual(src.LastItem, target.LastItem);
+            Assert.That(target.LastItem, Is.EqualTo(src.LastItem));
         }
         
         [Test]
@@ -181,7 +181,7 @@ namespace Ninjadini.Neuro.SyncTests
                 if (testSkipping)
                 {
                     var skipTarget = NeuroBytesReader.Shared.Read<UberTestClassWithJustLastItem>(writer.GetCurrentBytesChunk(), new ReaderOptions());
-                    Assert.AreEqual(src.LastItem, skipTarget.LastItem);
+                    Assert.That(skipTarget.LastItem, Is.EqualTo(src.LastItem));
                 }
             }
 

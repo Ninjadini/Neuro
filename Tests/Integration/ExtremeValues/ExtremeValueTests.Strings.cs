@@ -45,14 +45,14 @@ namespace Ninjadini.Neuro.IntegrationTests
             // with U+FFFD. Json keeps it because it never leaves UTF-16. Switching the wire format to UTF-16
             // would preserve it, at the cost of doubling every ascii string - not worth it for malformed input.
             var src = new StringBox { Value = "lone surrogate: \ud800" };
-            Assert.AreEqual("lone surrogate: \ufffd", Bin(src).Value, "binary");
-            Assert.AreEqual("lone surrogate: \ud800", Jsn(src).Value, "json");
+            Assert.That(Bin(src).Value, Is.EqualTo("lone surrogate: \ufffd"), "binary");
+            Assert.That(Jsn(src).Value, Is.EqualTo("lone surrogate: \ud800"), "json");
         }
 
         [TestCaseSource(nameof(StringValues))]
-        public void String_Binary(string v) => Assert.AreEqual(v, Bin(new StringBox { Value = v }).Value);
+        public void String_Binary(string v) => Assert.That(Bin(new StringBox { Value = v }).Value, Is.EqualTo(v));
 
         [TestCaseSource(nameof(StringValues))]
-        public void String_Json(string v) => Assert.AreEqual(v, Jsn(new StringBox { Value = v }).Value);
+        public void String_Json(string v) => Assert.That(Jsn(new StringBox { Value = v }).Value, Is.EqualTo(v));
     }
 }

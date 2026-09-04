@@ -1,3 +1,7 @@
+// Documentation-style demo of Neuro features. Several fields exist purely to show how they are
+// declared and are read/written by generated Neuro code, so the compiler sees them as unused.
+#pragma warning disable CS0169, CS0649
+
 using System;
 using System.Collections.Generic;
 using System.Numerics;

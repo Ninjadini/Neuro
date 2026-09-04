@@ -383,20 +383,4 @@ using Ninjadini.Neuro;
 "
         );
     }
-
-// TestSketches
-    [Neuro(1)]
-    class TestClass
-    {
-        [Neuro(1)] public int Id;
-        [Neuro(2)] public int Name;
-    }
-    public class NeuroAttribute : System.Attribute
-    {
-        public uint Tag;
-        public NeuroAttribute(uint tag)
-        {
-            Tag = tag;
-        }
-    }
 }

@@ -19,16 +19,16 @@ namespace Ninjadini.Neuro.IntegrationTests
         void AssertIsDog(TopLevelAnimal value)
         {
             Assert.IsInstanceOf<TopLevelDog>(value);
-            Assert.AreEqual(4, value.Legs);
-            Assert.AreEqual(7, ((TopLevelDog)value).Barks);
+            Assert.That(value.Legs, Is.EqualTo(4));
+            Assert.That(((TopLevelDog)value).Barks, Is.EqualTo(7));
         }
 
         void AssertIsPuppy(TopLevelAnimal value)
         {
             Assert.IsInstanceOf<TopLevelPuppy>(value);
-            Assert.AreEqual(4, value.Legs);
-            Assert.AreEqual(1, ((TopLevelPuppy)value).Barks);
-            Assert.AreEqual(12, ((TopLevelPuppy)value).Weeks);
+            Assert.That(value.Legs, Is.EqualTo(4));
+            Assert.That(((TopLevelPuppy)value).Barks, Is.EqualTo(1));
+            Assert.That(((TopLevelPuppy)value).Weeks, Is.EqualTo(12));
         }
 
         // ---- sub class written through a base class generic param ----
@@ -82,7 +82,7 @@ namespace Ninjadini.Neuro.IntegrationTests
             ITopLevelThing value = new TopLevelThing() { Value = 5 };
             var result = BinReader.Read<ITopLevelThing>(BinWriter.Write(value).ToArray());
             Assert.IsInstanceOf<TopLevelThing>(result);
-            Assert.AreEqual(5, ((TopLevelThing)result).Value);
+            Assert.That(((TopLevelThing)result).Value, Is.EqualTo(5));
         }
 
         [Test]
@@ -91,7 +91,7 @@ namespace Ninjadini.Neuro.IntegrationTests
             ITopLevelThing value = new TopLevelThing() { Value = 5 };
             var result = JsonReader.Read<ITopLevelThing>(JsonWriter.Write(value));
             Assert.IsInstanceOf<TopLevelThing>(result);
-            Assert.AreEqual(5, ((TopLevelThing)result).Value);
+            Assert.That(((TopLevelThing)result).Value, Is.EqualTo(5));
         }
 
         [Test]
@@ -99,13 +99,13 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var viaGeneric = BinWriter.Write(MakeDog()).ToArray();
             var viaObject = BinWriter.WriteObject(MakeDog()).ToArray();
-            CollectionAssert.AreEqual(viaObject, viaGeneric);
+            Assert.That(viaGeneric, Is.EqualTo(viaObject).AsCollection);
         }
 
         [Test]
         public void Json_WriteAsBaseTypeMatchesWriteObject()
         {
-            Assert.AreEqual(JsonWriter.WriteObject(MakeDog()), JsonWriter.Write(MakeDog()));
+            Assert.That(JsonWriter.Write(MakeDog()), Is.EqualTo(JsonWriter.WriteObject(MakeDog())));
         }
 
         // ---- base class instances still round trip without a tag ----
@@ -115,8 +115,8 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var value = new TopLevelAnimal() { Legs = 2 };
             var result = BinReader.Read<TopLevelAnimal>(BinWriter.Write(value).ToArray());
-            Assert.AreEqual(typeof(TopLevelAnimal), result.GetType());
-            Assert.AreEqual(2, result.Legs);
+            Assert.That(result.GetType(), Is.EqualTo(typeof(TopLevelAnimal)));
+            Assert.That(result.Legs, Is.EqualTo(2));
         }
 
         [Test]
@@ -124,8 +124,8 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var value = new TopLevelAnimal() { Legs = 2 };
             var result = JsonReader.Read<TopLevelAnimal>(JsonWriter.Write(value));
-            Assert.AreEqual(typeof(TopLevelAnimal), result.GetType());
-            Assert.AreEqual(2, result.Legs);
+            Assert.That(result.GetType(), Is.EqualTo(typeof(TopLevelAnimal)));
+            Assert.That(result.Legs, Is.EqualTo(2));
         }
 
         [Test]
@@ -142,10 +142,10 @@ namespace Ninjadini.Neuro.IntegrationTests
         public void NullWritesDoNotThrow()
         {
             TopLevelAnimal value = null;
-            Assert.AreEqual(0, BinWriter.Write(value).Length);
-            Assert.AreEqual("null", JsonWriter.Write(value));
-            Assert.AreEqual("null", JsonWriter.WriteObject(null));
-            Assert.AreEqual("null", JsonWriter.WriteGlobalTyped(null));
+            Assert.That(BinWriter.Write(value).Length, Is.EqualTo(0));
+            Assert.That(JsonWriter.Write(value), Is.EqualTo("null"));
+            Assert.That(JsonWriter.WriteObject(null), Is.EqualTo("null"));
+            Assert.That(JsonWriter.WriteGlobalTyped(null), Is.EqualTo("null"));
         }
 
         // ---- types that can not stand on their own ----
@@ -275,8 +275,8 @@ namespace Ninjadini.Neuro.IntegrationTests
             var first = BinWriter.Write(new TopLevelDog { Legs = 1, Barks = 111 }).ToArray();
             var second = BinWriter.Write(new TopLevelDog { Legs = 2, Barks = 222 }).ToArray();
 
-            Assert.AreEqual(111, ((TopLevelDog)BinReader.Read<TopLevelAnimal>(first)).Barks);
-            Assert.AreEqual(222, ((TopLevelDog)BinReader.Read<TopLevelAnimal>(second)).Barks);
+            Assert.That(((TopLevelDog)BinReader.Read<TopLevelAnimal>(first)).Barks, Is.EqualTo(111));
+            Assert.That(((TopLevelDog)BinReader.Read<TopLevelAnimal>(second)).Barks, Is.EqualTo(222));
         }
     }
 

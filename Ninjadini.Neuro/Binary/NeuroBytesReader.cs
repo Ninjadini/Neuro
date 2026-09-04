@@ -251,14 +251,9 @@ namespace Ninjadini.Neuro
             internal NeuroBytesReader reader;
             internal int namePos;
             internal BytesChunk contentByteChunk;
-            private IReferencable data;
             
             public IReferencable Load(uint refId)
             {
-                if (data != null)
-                {
-                    return data;
-                }
                 var obj = (IReferencable)reader.ReadGlobalTypeChild(type, contentByteChunk, reader.Options);
                 obj.RefId = refId;
                 obj.RefName = GetRefName(refId);
@@ -269,10 +264,6 @@ namespace Ninjadini.Neuro
             private string _refName;
             public string GetRefName(uint refId)
             {
-                if (data != null)
-                {
-                    return data.RefName;
-                }
                 if (_refName == null)
                 {
                     reader.proto.Set(contentByteChunk.Bytes, namePos);

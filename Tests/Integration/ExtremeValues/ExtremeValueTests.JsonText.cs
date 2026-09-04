@@ -69,40 +69,40 @@ namespace Ninjadini.Neuro.IntegrationTests
         public void Read_StandardEscapes()
         {
             var copy = ReadJson<StringBox>(@"{""Value"": ""a\tb\rc\bd\fe\/f\""g\\h""}");
-            Assert.AreEqual("a\tb\rc\bd\fe/f\"g\\h", copy.Value);
+            Assert.That(copy.Value, Is.EqualTo("a\tb\rc\bd\fe/f\"g\\h"));
         }
 
         [Test]
         public void Read_UnicodeEscapes()
         {
             var copy = ReadJson<StringBox>(@"{""Value"": ""\u0041\u00e9\u4E2D""}");
-            Assert.AreEqual("A\u00e9\u4e2d", copy.Value);
+            Assert.That(copy.Value, Is.EqualTo("A\u00e9\u4e2d"));
         }
 
         [Test]
         public void Read_SurrogatePairEscape()
         {
             var copy = ReadJson<StringBox>(@"{""Value"": ""\ud83d\ude00""}");
-            Assert.AreEqual("\U0001F600", copy.Value);
+            Assert.That(copy.Value, Is.EqualTo("\U0001F600"));
         }
 
         [Test]
         public void Read_EscapedQuoteAtEndOfString()
         {
-            Assert.AreEqual("say \"hi\"", ReadJson<StringBox>(@"{""Value"": ""say \""hi\""""}").Value);
+            Assert.That(ReadJson<StringBox>(@"{""Value"": ""say \""hi\""""}").Value, Is.EqualTo("say \"hi\""));
         }
 
         [Test]
         public void Read_BackslashAtEndOfString()
         {
-            Assert.AreEqual("ends with \\", ReadJson<StringBox>(@"{""Value"": ""ends with \\""}").Value);
-            Assert.AreEqual("\\", ReadJson<StringBox>(@"{""Value"": ""\\""}").Value);
+            Assert.That(ReadJson<StringBox>(@"{""Value"": ""ends with \\""}").Value, Is.EqualTo("ends with \\"));
+            Assert.That(ReadJson<StringBox>(@"{""Value"": ""\\""}").Value, Is.EqualTo("\\"));
         }
 
         [Test]
         public void Read_QuotedNullIsAString()
         {
-            Assert.AreEqual("null", ReadJson<StringBox>(@"{""Value"": ""null""}").Value);
+            Assert.That(ReadJson<StringBox>(@"{""Value"": ""null""}").Value, Is.EqualTo("null"));
         }
 
         [Test]
@@ -122,7 +122,7 @@ namespace Ninjadini.Neuro.IntegrationTests
         [TestCase("-Infinity", float.NegativeInfinity)]
         public void Read_FloatSpecialValues(string written, float expected)
         {
-            Assert.AreEqual(expected, ReadJson<FloatBox>(@"{""Value"": " + written + "}").Value);
+            Assert.That(ReadJson<FloatBox>(@"{""Value"": " + written + "}").Value, Is.EqualTo(expected));
         }
 
         [TestCase("NaN", double.NaN)]
@@ -130,7 +130,7 @@ namespace Ninjadini.Neuro.IntegrationTests
         [TestCase("-Infinity", double.NegativeInfinity)]
         public void Read_DoubleSpecialValues(string written, double expected)
         {
-            Assert.AreEqual(expected, ReadJson<DoubleBox>(@"{""Value"": " + written + "}").Value);
+            Assert.That(ReadJson<DoubleBox>(@"{""Value"": " + written + "}").Value, Is.EqualTo(expected));
         }
 
         [TestCase("1e3", 1000f)]
@@ -139,7 +139,7 @@ namespace Ninjadini.Neuro.IntegrationTests
         [TestCase("0.0000001", 0.0000001f)]
         public void Read_ExponentNotation(string written, float expected)
         {
-            Assert.AreEqual(expected, ReadJson<FloatBox>(@"{""Value"": " + written + "}").Value);
+            Assert.That(ReadJson<FloatBox>(@"{""Value"": " + written + "}").Value, Is.EqualTo(expected));
         }
 
         [Test]
@@ -150,9 +150,9 @@ namespace Ninjadini.Neuro.IntegrationTests
             try
             {
                 CultureInfo.CurrentCulture = new CultureInfo("de-DE");
-                Assert.AreEqual(1.5f, ReadJson<FloatBox>(@"{""Value"": 1.5}").Value);
-                Assert.AreEqual(-1234.5678d, ReadJson<DoubleBox>(@"{""Value"": -1234.5678}").Value);
-                Assert.AreEqual(1.5f, Jsn(new FloatBox { Value = 1.5f }).Value);
+                Assert.That(ReadJson<FloatBox>(@"{""Value"": 1.5}").Value, Is.EqualTo(1.5f));
+                Assert.That(ReadJson<DoubleBox>(@"{""Value"": -1234.5678}").Value, Is.EqualTo(-1234.5678d));
+                Assert.That(Jsn(new FloatBox { Value = 1.5f }).Value, Is.EqualTo(1.5f));
             }
             finally
             {

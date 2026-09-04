@@ -43,10 +43,10 @@ namespace Ninjadini.Neuro.IntegrationTests
         };
 
         [TestCaseSource(nameof(EnumValues))]
-        public void Enum_Binary(ExtremeEnum v) => Assert.AreEqual(v, Bin(new EnumBox { Value = v }).Value);
+        public void Enum_Binary(ExtremeEnum v) => Assert.That(Bin(new EnumBox { Value = v }).Value, Is.EqualTo(v));
 
         [TestCaseSource(nameof(EnumValues))]
-        public void Enum_Json(ExtremeEnum v) => Assert.AreEqual(v, Jsn(new EnumBox { Value = v }).Value);
+        public void Enum_Json(ExtremeEnum v) => Assert.That(Jsn(new EnumBox { Value = v }).Value, Is.EqualTo(v));
 
         static readonly ExtremeFlagEnum[] FlagEnumValues =
         {
@@ -55,9 +55,9 @@ namespace Ninjadini.Neuro.IntegrationTests
         };
 
         [TestCaseSource(nameof(FlagEnumValues))]
-        public void FlagEnum_Binary(ExtremeFlagEnum v) => Assert.AreEqual(v, Bin(new FlagEnumBox { Value = v }).Value);
+        public void FlagEnum_Binary(ExtremeFlagEnum v) => Assert.That(Bin(new FlagEnumBox { Value = v }).Value, Is.EqualTo(v));
 
         [TestCaseSource(nameof(FlagEnumValues))]
-        public void FlagEnum_Json(ExtremeFlagEnum v) => Assert.AreEqual(v, Jsn(new FlagEnumBox { Value = v }).Value);
+        public void FlagEnum_Json(ExtremeFlagEnum v) => Assert.That(Jsn(new FlagEnumBox { Value = v }).Value, Is.EqualTo(v));
     }
 }

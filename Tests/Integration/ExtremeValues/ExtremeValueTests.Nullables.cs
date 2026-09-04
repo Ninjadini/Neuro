@@ -46,11 +46,11 @@ namespace Ninjadini.Neuro.IntegrationTests
             // a nullable holding the type's default is the classic trap - 0 must not come back as null.
             var src = new NullableBox { Int = 0, Float = 0f, Date = default(DateTime), Enum = ExtremeEnum.Zero, Bool = false };
             var copy = Bin(src);
-            Assert.AreEqual(0, copy.Int);
-            Assert.AreEqual(0f, copy.Float);
-            Assert.AreEqual(default(DateTime), copy.Date);
-            Assert.AreEqual(ExtremeEnum.Zero, copy.Enum);
-            Assert.AreEqual(false, copy.Bool);
+            Assert.That(copy.Int, Is.EqualTo(0));
+            Assert.That(copy.Float, Is.EqualTo(0f));
+            Assert.That(copy.Date, Is.EqualTo(default(DateTime)));
+            Assert.That(copy.Enum, Is.EqualTo(ExtremeEnum.Zero));
+            Assert.That(copy.Bool, Is.EqualTo(false));
         }
 
         [Test]
@@ -58,11 +58,11 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var src = new NullableBox { Int = 0, Float = 0f, Date = default(DateTime), Enum = ExtremeEnum.Zero, Bool = false };
             var copy = Jsn(src);
-            Assert.AreEqual(0, copy.Int);
-            Assert.AreEqual(0f, copy.Float);
-            Assert.AreEqual(default(DateTime), copy.Date);
-            Assert.AreEqual(ExtremeEnum.Zero, copy.Enum);
-            Assert.AreEqual(false, copy.Bool);
+            Assert.That(copy.Int, Is.EqualTo(0));
+            Assert.That(copy.Float, Is.EqualTo(0f));
+            Assert.That(copy.Date, Is.EqualTo(default(DateTime)));
+            Assert.That(copy.Enum, Is.EqualTo(ExtremeEnum.Zero));
+            Assert.That(copy.Bool, Is.EqualTo(false));
         }
 
         [Test]
@@ -70,11 +70,11 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var src = new NullableBox { Int = int.MinValue, Float = float.NaN, Date = DateTime.MaxValue, Enum = ExtremeEnum.Max, Bool = true };
             var copy = Bin(src);
-            Assert.AreEqual(int.MinValue, copy.Int);
-            Assert.AreEqual(float.NaN, copy.Float);
+            Assert.That(copy.Int, Is.EqualTo(int.MinValue));
+            Assert.That(copy.Float, Is.EqualTo(float.NaN));
             AssertStoredResolution(DateTime.MaxValue, copy.Date.Value);
-            Assert.AreEqual(ExtremeEnum.Max, copy.Enum);
-            Assert.AreEqual(true, copy.Bool);
+            Assert.That(copy.Enum, Is.EqualTo(ExtremeEnum.Max));
+            Assert.That(copy.Bool, Is.EqualTo(true));
         }
 
         [Test]
@@ -82,11 +82,11 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var src = new NullableBox { Int = int.MinValue, Float = float.NaN, Date = DateTime.MaxValue, Enum = ExtremeEnum.Max, Bool = true };
             var copy = Jsn(src);
-            Assert.AreEqual(int.MinValue, copy.Int);
-            Assert.AreEqual(float.NaN, copy.Float);
+            Assert.That(copy.Int, Is.EqualTo(int.MinValue));
+            Assert.That(copy.Float, Is.EqualTo(float.NaN));
             AssertStoredResolution(DateTime.MaxValue, copy.Date.Value);
-            Assert.AreEqual(ExtremeEnum.Max, copy.Enum);
-            Assert.AreEqual(true, copy.Bool);
+            Assert.That(copy.Enum, Is.EqualTo(ExtremeEnum.Max));
+            Assert.That(copy.Bool, Is.EqualTo(true));
         }
 
 
@@ -121,16 +121,16 @@ namespace Ninjadini.Neuro.IntegrationTests
         public void NullableStruct_Extremes_Binary()
         {
             var copy = Bin(new NullableStructBox { Value = new ExtremeStruct { Id = int.MinValue, Name = "x" } });
-            Assert.AreEqual(int.MinValue, copy.Value.Value.Id);
-            Assert.AreEqual("x", copy.Value.Value.Name);
+            Assert.That(copy.Value.Value.Id, Is.EqualTo(int.MinValue));
+            Assert.That(copy.Value.Value.Name, Is.EqualTo("x"));
         }
 
         [Test]
         public void NullableStruct_Extremes_Json()
         {
             var copy = Jsn(new NullableStructBox { Value = new ExtremeStruct { Id = int.MinValue, Name = "x" } });
-            Assert.AreEqual(int.MinValue, copy.Value.Value.Id);
-            Assert.AreEqual("x", copy.Value.Value.Name);
+            Assert.That(copy.Value.Value.Id, Is.EqualTo(int.MinValue));
+            Assert.That(copy.Value.Value.Name, Is.EqualTo("x"));
         }
     }
 }

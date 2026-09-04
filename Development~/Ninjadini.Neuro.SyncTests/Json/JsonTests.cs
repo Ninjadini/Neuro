@@ -111,7 +111,7 @@ namespace Ninjadini.Neuro.SyncTests
             var json = NeuroJsonWriter.Shared.WriteGlobalTyped(globalTyped);
             Console.WriteLine(json);
 
-            Assert.AreEqual("{\n    \"-globalType\": \"11:ReferencableClass\",\n}", json);
+            Assert.That(json, Is.EqualTo("{\n    \"-globalType\": \"11:ReferencableClass\",\n}"));
         }
         
         [Test]
@@ -125,10 +125,10 @@ namespace Ninjadini.Neuro.SyncTests
             var json = NeuroJsonWriter.Shared.WriteGlobalTyped(globalTyped);
             Console.WriteLine(json);
 
-            Assert.AreEqual("{\n    \"-globalType\": \"11:ReferencableClass\",\n    \"Name\": \"HELLO\"\n}", json);
+            Assert.That(json, Is.EqualTo("{\n    \"-globalType\": \"11:ReferencableClass\",\n    \"Name\": \"HELLO\"\n}"));
             
             var copy = NeuroJsonReader.Shared.ReadGlobalTyped(json, new ReaderOptions()) as ReferencableClass;
-            Assert.AreEqual(obj.Name, copy.Name);
+            Assert.That(copy.Name, Is.EqualTo(obj.Name));
         }
         
         [Test]
@@ -145,9 +145,9 @@ namespace Ninjadini.Neuro.SyncTests
             Console.WriteLine(json);
 
             var copy = NeuroJsonReader.Shared.ReadGlobalTyped(json, new ReaderOptions()) as SubTestClass1;
-            Assert.AreEqual(obj.Id, copy.Id);
-            Assert.AreEqual(obj.Name, copy.Name);
-            Assert.AreEqual(obj.NumValue, copy.NumValue);
+            Assert.That(copy.Id, Is.EqualTo(obj.Id));
+            Assert.That(copy.Name, Is.EqualTo(obj.Name));
+            Assert.That(copy.NumValue, Is.EqualTo(obj.NumValue));
         }
 
         [Test]
@@ -168,7 +168,7 @@ namespace Ninjadini.Neuro.SyncTests
 
             var copyBytes = NeuroBytesWriter.Shared.Write(testObj).ToArray();
             var copy = NeuroBytesReader.Shared.Read<UberTestClass>(copyBytes, new ReaderOptions());
-            Assert.AreEqual(12.345f, copy.SingleNumber.Number);
+            Assert.That(copy.SingleNumber.Number, Is.EqualTo(12.345f));
             //Assert.IsTrue(Math.Abs(12.345f - copy.SingleNumber.Number) < 0.0001f);
         }
 
@@ -239,11 +239,11 @@ namespace Ninjadini.Neuro.SyncTests
             var neuroJson = NeuroJsonWriter.Shared.Write(obj);
             var copy = NeuroJsonReader.Shared.Read<StringTest>(neuroJson);
             Console.WriteLine(copy.String);
-            Assert.AreEqual(obj.String, copy.String);
+            Assert.That(copy.String, Is.EqualTo(obj.String));
             
             var referenceJson = JsonConvert.SerializeObject(obj, Formatting.Indented);
             neuroJson = neuroJson.Replace(NeuroJsonWriter.SingleIndent, "  ");
-            Assert.AreEqual(referenceJson, neuroJson);
+            Assert.That(neuroJson, Is.EqualTo(referenceJson));
         }
 
         void Test(UberTestClass testObj, NeuroReferences references = null)
@@ -260,26 +260,26 @@ namespace Ninjadini.Neuro.SyncTests
         [Test]
         public void FloatWriter()
         {
-            Assert.AreEqual("0", new StringBuilder().AppendNum(0f).ToString());
-            Assert.AreEqual("123", new StringBuilder().AppendNum(123f).ToString());
-            Assert.AreEqual("0.1", new StringBuilder().AppendNum(0.1f).ToString());
-            Assert.AreEqual("0.0001", new StringBuilder().AppendNum(0.0001f).ToString());
-            Assert.AreEqual("0.00001", new StringBuilder().AppendNum(0.00001f).ToString());
-            Assert.AreEqual("0.0002", new StringBuilder().AppendNum(0.0002f).ToString());
-            Assert.AreEqual("0.00002", new StringBuilder().AppendNum(0.00002f).ToString());
-            Assert.AreEqual("0.123", new StringBuilder().AppendNum(0.123f).ToString());
-            Assert.AreEqual("0.0123", new StringBuilder().AppendNum(0.0123f).ToString());
-            Assert.AreEqual("0.00123", new StringBuilder().AppendNum(0.00123f).ToString());
-            Assert.AreEqual("123.456", new StringBuilder().AppendNum(123.456f).ToString());
+            Assert.That(new StringBuilder().AppendNum(0f).ToString(), Is.EqualTo("0"));
+            Assert.That(new StringBuilder().AppendNum(123f).ToString(), Is.EqualTo("123"));
+            Assert.That(new StringBuilder().AppendNum(0.1f).ToString(), Is.EqualTo("0.1"));
+            Assert.That(new StringBuilder().AppendNum(0.0001f).ToString(), Is.EqualTo("0.0001"));
+            Assert.That(new StringBuilder().AppendNum(0.00001f).ToString(), Is.EqualTo("0.00001"));
+            Assert.That(new StringBuilder().AppendNum(0.0002f).ToString(), Is.EqualTo("0.0002"));
+            Assert.That(new StringBuilder().AppendNum(0.00002f).ToString(), Is.EqualTo("0.00002"));
+            Assert.That(new StringBuilder().AppendNum(0.123f).ToString(), Is.EqualTo("0.123"));
+            Assert.That(new StringBuilder().AppendNum(0.0123f).ToString(), Is.EqualTo("0.0123"));
+            Assert.That(new StringBuilder().AppendNum(0.00123f).ToString(), Is.EqualTo("0.00123"));
+            Assert.That(new StringBuilder().AppendNum(123.456f).ToString(), Is.EqualTo("123.456"));
             // the fast path widens its decimal places as needed rather than truncating.
-            Assert.AreEqual("0.000123456", new StringBuilder().AppendNum(0.000123456f).ToString());
-            Assert.AreEqual("0.00000001", new StringBuilder().AppendNum(1e-8f).ToString());
-            Assert.AreEqual("0.000000001", new StringBuilder().AppendNum(1e-9f).ToString());
+            Assert.That(new StringBuilder().AppendNum(0.000123456f).ToString(), Is.EqualTo("0.000123456"));
+            Assert.That(new StringBuilder().AppendNum(1e-8f).ToString(), Is.EqualTo("0.00000001"));
+            Assert.That(new StringBuilder().AppendNum(1e-9f).ToString(), Is.EqualTo("0.000000001"));
             // past the widest step it falls back to exact formatting.
-            Assert.AreEqual("1E-45", new StringBuilder().AppendNum(float.Epsilon).ToString());
-            Assert.AreEqual("100000000", new StringBuilder().AppendNum(1e8f).ToString());
-            Assert.AreEqual("1E+09", new StringBuilder().AppendNum(1e9f).ToString());
-            Assert.AreEqual("1E+10", new StringBuilder().AppendNum(1e10f).ToString());
+            Assert.That(new StringBuilder().AppendNum(float.Epsilon).ToString(), Is.EqualTo("1E-45"));
+            Assert.That(new StringBuilder().AppendNum(1e8f).ToString(), Is.EqualTo("100000000"));
+            Assert.That(new StringBuilder().AppendNum(1e9f).ToString(), Is.EqualTo("1E+09"));
+            Assert.That(new StringBuilder().AppendNum(1e10f).ToString(), Is.EqualTo("1E+10"));
         }
         
         [Test]
@@ -328,35 +328,35 @@ namespace Ninjadini.Neuro.SyncTests
         public void DecimalsThatRoundUpToAWholeCarryOver()
         {
             // exact mode just widens until it fits, no rounding up needed.
-            Assert.AreEqual("0.999999", new StringBuilder().AppendNum(0.999999f).ToString());
+            Assert.That(new StringBuilder().AppendNum(0.999999f).ToString(), Is.EqualTo("0.999999"));
             // the fixed places of presentation mode do round up, and that has to carry into the whole part.
-            Assert.AreEqual("1", new StringBuilder().AppendNum(0.999999f, 2).ToString());
-            Assert.AreEqual("1.00", new StringBuilder().AppendNum(0.999999f, 2, 2).ToString());
+            Assert.That(new StringBuilder().AppendNum(0.999999f, 2).ToString(), Is.EqualTo("1"));
+            Assert.That(new StringBuilder().AppendNum(0.999999f, 2, 2).ToString(), Is.EqualTo("1.00"));
         }
 
         [Test]
         public void DoubleWrite()
         {
-            Assert.AreEqual("0", new StringBuilder().AppendNum(0).ToString());
-            Assert.AreEqual("123", new StringBuilder().AppendNum(123).ToString());
-            Assert.AreEqual("0.1", new StringBuilder().AppendNum(0.1).ToString());
-            Assert.AreEqual("0.00001", new StringBuilder().AppendNum(0.00001).ToString());
-            Assert.AreEqual("0.000001", new StringBuilder().AppendNum(0.000001).ToString());
-            Assert.AreEqual("0.00002", new StringBuilder().AppendNum(0.00002).ToString());
-            Assert.AreEqual("0.000002", new StringBuilder().AppendNum(0.000002).ToString());
+            Assert.That(new StringBuilder().AppendNum(0).ToString(), Is.EqualTo("0"));
+            Assert.That(new StringBuilder().AppendNum(123).ToString(), Is.EqualTo("123"));
+            Assert.That(new StringBuilder().AppendNum(0.1).ToString(), Is.EqualTo("0.1"));
+            Assert.That(new StringBuilder().AppendNum(0.00001).ToString(), Is.EqualTo("0.00001"));
+            Assert.That(new StringBuilder().AppendNum(0.000001).ToString(), Is.EqualTo("0.000001"));
+            Assert.That(new StringBuilder().AppendNum(0.00002).ToString(), Is.EqualTo("0.00002"));
+            Assert.That(new StringBuilder().AppendNum(0.000002).ToString(), Is.EqualTo("0.000002"));
             // the fast path widens its decimal places as needed rather than truncating.
-            Assert.AreEqual("0.0000002", new StringBuilder().AppendNum(0.0000002).ToString());
-            Assert.AreEqual("0.000000000000001", new StringBuilder().AppendNum(1E-15).ToString());
+            Assert.That(new StringBuilder().AppendNum(0.0000002).ToString(), Is.EqualTo("0.0000002"));
+            Assert.That(new StringBuilder().AppendNum(1E-15).ToString(), Is.EqualTo("0.000000000000001"));
             // past the widest step it falls back to exact formatting.
-            Assert.AreEqual("1E-300", new StringBuilder().AppendNum(1E-300).ToString());
-            Assert.AreEqual("0.123", new StringBuilder().AppendNum(0.123).ToString());
-            Assert.AreEqual("0.0123", new StringBuilder().AppendNum(0.0123).ToString());
-            Assert.AreEqual("0.00123", new StringBuilder().AppendNum(0.00123).ToString());
-            Assert.AreEqual("10000.00123", new StringBuilder().AppendNum(10000.00123).ToString());
-            Assert.AreEqual("27788615228878552", new StringBuilder().AppendNum(27788615228878552).ToString());
-            Assert.AreEqual("277886152288785536", new StringBuilder().AppendNum(2.7788615228878553E+17).ToString());
-            Assert.AreEqual("2.778861522887855E+18", new StringBuilder().AppendNum(2.7788615228878553E+18).ToString());
-            Assert.AreEqual("2.7788615228878553E+19", new StringBuilder().AppendNum(2.7788615228878553E+19).ToString());
+            Assert.That(new StringBuilder().AppendNum(1E-300).ToString(), Is.EqualTo("1E-300"));
+            Assert.That(new StringBuilder().AppendNum(0.123).ToString(), Is.EqualTo("0.123"));
+            Assert.That(new StringBuilder().AppendNum(0.0123).ToString(), Is.EqualTo("0.0123"));
+            Assert.That(new StringBuilder().AppendNum(0.00123).ToString(), Is.EqualTo("0.00123"));
+            Assert.That(new StringBuilder().AppendNum(10000.00123).ToString(), Is.EqualTo("10000.00123"));
+            Assert.That(new StringBuilder().AppendNum(27788615228878552).ToString(), Is.EqualTo("27788615228878552"));
+            Assert.That(new StringBuilder().AppendNum(2.7788615228878553E+17).ToString(), Is.EqualTo("277886152288785536"));
+            Assert.That(new StringBuilder().AppendNum(2.7788615228878553E+18).ToString(), Is.EqualTo("2.778861522887855E+18"));
+            Assert.That(new StringBuilder().AppendNum(2.7788615228878553E+19).ToString(), Is.EqualTo("2.7788615228878553E+19"));
         }
     }
 }

@@ -22,10 +22,10 @@ namespace Ninjadini.Neuro.IntegrationTests
         static readonly uint[] ReferenceIds = { 0u, 1u, 127u, 128u, int.MaxValue, 2147483648u, uint.MaxValue };
 
         [TestCaseSource(nameof(ReferenceIds))]
-        public void Reference_Binary(uint id) => Assert.AreEqual(id, Bin(new ReferenceBox { Value = id }).Value.RefId);
+        public void Reference_Binary(uint id) => Assert.That(Bin(new ReferenceBox { Value = id }).Value.RefId, Is.EqualTo(id));
 
         [TestCaseSource(nameof(ReferenceIds))]
-        public void Reference_Json(uint id) => Assert.AreEqual(id, Jsn(new ReferenceBox { Value = id }).Value.RefId);
+        public void Reference_Json(uint id) => Assert.That(Jsn(new ReferenceBox { Value = id }).Value.RefId, Is.EqualTo(id));
 
 
 // ---------------------------------------------------------------------------------------------------- references in collections
@@ -49,8 +49,8 @@ namespace Ninjadini.Neuro.IntegrationTests
 
         static void AssertRefCollection(RefCollectionBox a, RefCollectionBox b)
         {
-            CollectionAssert.AreEqual(a.List, b.List);
-            CollectionAssert.AreEquivalent(a.Keys, b.Keys);
+            Assert.That(b.List, Is.EqualTo(a.List).AsCollection);
+            Assert.That(b.Keys, Is.EquivalentTo(a.Keys));
         }
 
         [Test]

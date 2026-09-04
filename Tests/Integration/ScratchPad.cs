@@ -35,7 +35,7 @@ namespace Ninjadini.Neuro.IntegrationTests
             var copiedObj = WriteBinary_AndReadBack(srcObj);
             
             Console.WriteLine("Num = "+copiedObj.MyNum);
-            Assert.AreEqual(srcObj.MyNum, copiedObj.MyNum);
+            Assert.That(copiedObj.MyNum, Is.EqualTo(srcObj.MyNum));
         }
     }
 

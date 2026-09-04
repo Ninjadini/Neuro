@@ -43,7 +43,7 @@ namespace Ninjadini.Neuro.SyncTests
             {
                 Id = 1234
             }) as SubClassOf_EmptyBaseClass;
-            Assert.AreEqual(1234, result.Id);
+            Assert.That(result.Id, Is.EqualTo(1234));
         }
 
         EmptyBaseClass TestEmptyBaseClassWith(EmptyBaseClass obj)
@@ -53,9 +53,9 @@ namespace Ninjadini.Neuro.SyncTests
             testObj.EmptyBaseClass = obj;
             testObj.After = 456;
             var result = TestUtils.CloneViaBinary(testObj, true);
-            Assert.AreEqual(testObj.Before, result.Before);
-            Assert.AreEqual(obj?.GetType(), result.EmptyBaseClass?.GetType());
-            Assert.AreEqual(testObj.After, result.After);
+            Assert.That(result.Before, Is.EqualTo(testObj.Before));
+            Assert.That(result.EmptyBaseClass?.GetType(), Is.EqualTo(obj?.GetType()));
+            Assert.That(result.After, Is.EqualTo(testObj.After));
             return result.EmptyBaseClass;
         }
 
@@ -91,8 +91,8 @@ namespace Ninjadini.Neuro.SyncTests
             {
                 Id = 123
             }) as SubClass;
-            Assert.AreEqual(123, result.Id);
-            Assert.AreEqual(0, result.SubId);
+            Assert.That(result.Id, Is.EqualTo(123));
+            Assert.That(result.SubId, Is.EqualTo(0));
         }
 
         [Test]
@@ -102,8 +102,8 @@ namespace Ninjadini.Neuro.SyncTests
             {
                 SubId = 123
             }) as SubClass;
-            Assert.AreEqual(123, result.SubId);
-            Assert.AreEqual(0, result.Id);
+            Assert.That(result.SubId, Is.EqualTo(123));
+            Assert.That(result.Id, Is.EqualTo(0));
         }
 
         [Test]
@@ -114,8 +114,8 @@ namespace Ninjadini.Neuro.SyncTests
                 Id = 1234,
                 SubId = 2345
             }) as SubClass;
-            Assert.AreEqual(1234, result.Id);
-            Assert.AreEqual(2345, result.SubId);
+            Assert.That(result.Id, Is.EqualTo(1234));
+            Assert.That(result.SubId, Is.EqualTo(2345));
         }
 
         [Test]
@@ -127,9 +127,9 @@ namespace Ninjadini.Neuro.SyncTests
                 SubId = 22,
                 SubSubId = 33
             }) as SubSubClass;
-            Assert.AreEqual(11, result.Id);
-            Assert.AreEqual(22, result.SubId);
-            Assert.AreEqual(33, result.SubSubId);
+            Assert.That(result.Id, Is.EqualTo(11));
+            Assert.That(result.SubId, Is.EqualTo(22));
+            Assert.That(result.SubSubId, Is.EqualTo(33));
         }
         
         BaseClass TestBaseClassWith(BaseClass obj, bool testSkipping = true)
@@ -139,14 +139,14 @@ namespace Ninjadini.Neuro.SyncTests
             testObj.BaseClass = obj;
             testObj.After = 456;
             var result = TestUtils.CloneViaBinary(testObj, out var bytes, true);
-            Assert.AreEqual(testObj.Before, result.Before);
-            Assert.AreEqual(obj?.GetType(), result.BaseClass?.GetType());
-            Assert.AreEqual(testObj.After, result.After);
+            Assert.That(result.Before, Is.EqualTo(testObj.Before));
+            Assert.That(result.BaseClass?.GetType(), Is.EqualTo(obj?.GetType()));
+            Assert.That(result.After, Is.EqualTo(testObj.After));
 
             if (testSkipping)
             {
                 var skippedObj = NeuroBytesReader.Shared.Read<ClassForSkipping>(bytes, new ReaderOptions());
-                Assert.AreEqual(testObj.After, skippedObj.After);
+                Assert.That(skippedObj.After, Is.EqualTo(testObj.After));
             }
             return result.BaseClass;
         }
@@ -167,7 +167,7 @@ namespace Ninjadini.Neuro.SyncTests
         public void Interface_SubClassWithNoData()
         {
             var result = TestInterfaceClassWith(new ClassInterface()) as ClassInterface;
-            Assert.AreEqual(0, result.SubId);
+            Assert.That(result.SubId, Is.EqualTo(0));
         }
 
         [Test]
@@ -177,7 +177,7 @@ namespace Ninjadini.Neuro.SyncTests
             {
                 SubId = 1234
             }) as ClassInterface;
-            Assert.AreEqual(1234, result.SubId);
+            Assert.That(result.SubId, Is.EqualTo(1234));
         }
 
         [Test]
@@ -189,9 +189,9 @@ namespace Ninjadini.Neuro.SyncTests
                 SubId = 234
             };
             var resultObj = TestUtils.CloneViaBinary(srcObj, true);
-            Assert.AreEqual(srcObj.GetType(), resultObj.GetType());
-            Assert.AreEqual(srcObj.Id, resultObj.Id);
-            Assert.AreEqual(srcObj.SubId, resultObj.SubId);
+            Assert.That(resultObj.GetType(), Is.EqualTo(srcObj.GetType()));
+            Assert.That(resultObj.Id, Is.EqualTo(srcObj.Id));
+            Assert.That(resultObj.SubId, Is.EqualTo(srcObj.SubId));
         }
         
         IInterface TestInterfaceClassWith(IInterface obj, bool testSkipping = true)
@@ -201,14 +201,14 @@ namespace Ninjadini.Neuro.SyncTests
             testObj.Interface = obj;
             testObj.After = 456;
             var result = TestUtils.CloneViaBinary(testObj, out var bytes, true);
-            Assert.AreEqual(testObj.Before, result.Before);
-            Assert.AreEqual(obj?.GetType(), result.Interface?.GetType());
-            Assert.AreEqual(testObj.After, result.After);
+            Assert.That(result.Before, Is.EqualTo(testObj.Before));
+            Assert.That(result.Interface?.GetType(), Is.EqualTo(obj?.GetType()));
+            Assert.That(result.After, Is.EqualTo(testObj.After));
 
             if (testSkipping)
             {
                 var skippedObj = NeuroBytesReader.Shared.Read<ClassForSkipping>(bytes, new ReaderOptions());
-                Assert.AreEqual(testObj.After, skippedObj.After);
+                Assert.That(skippedObj.After, Is.EqualTo(testObj.After));
             }
             return result.Interface;
         }

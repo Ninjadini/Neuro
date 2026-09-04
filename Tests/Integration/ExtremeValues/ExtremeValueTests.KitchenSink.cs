@@ -58,23 +58,23 @@ namespace Ninjadini.Neuro.IntegrationTests
 
         static void AssertSink(KitchenSink a, KitchenSink b)
         {
-            Assert.AreEqual(a.Bool, b.Bool, nameof(a.Bool));
-            Assert.AreEqual(a.Int, b.Int, nameof(a.Int));
-            Assert.AreEqual(a.UInt, b.UInt, nameof(a.UInt));
-            Assert.AreEqual(a.Long, b.Long, nameof(a.Long));
-            Assert.AreEqual(a.ULong, b.ULong, nameof(a.ULong));
-            Assert.AreEqual(a.Float, b.Float, nameof(a.Float));
-            Assert.AreEqual(a.Double, b.Double, nameof(a.Double));
-            Assert.AreEqual(a.String, b.String, nameof(a.String));
+            Assert.That(b.Bool, Is.EqualTo(a.Bool), nameof(a.Bool));
+            Assert.That(b.Int, Is.EqualTo(a.Int), nameof(a.Int));
+            Assert.That(b.UInt, Is.EqualTo(a.UInt), nameof(a.UInt));
+            Assert.That(b.Long, Is.EqualTo(a.Long), nameof(a.Long));
+            Assert.That(b.ULong, Is.EqualTo(a.ULong), nameof(a.ULong));
+            Assert.That(b.Float, Is.EqualTo(a.Float), nameof(a.Float));
+            Assert.That(b.Double, Is.EqualTo(a.Double), nameof(a.Double));
+            Assert.That(b.String, Is.EqualTo(a.String), nameof(a.String));
             AssertStoredResolution(a.Date, b.Date);
             AssertStoredResolution(a.Time, b.Time);
-            Assert.AreEqual(a.Guid, b.Guid, nameof(a.Guid));
-            Assert.AreEqual(a.Enum, b.Enum, nameof(a.Enum));
-            Assert.AreEqual(a.FlagEnum, b.FlagEnum, nameof(a.FlagEnum));
-            Assert.AreEqual(a.Struct.Id, b.Struct.Id, nameof(a.Struct));
-            Assert.AreEqual(a.Struct.Name, b.Struct.Name, nameof(a.Struct));
-            Assert.AreEqual(a.Ref.RefId, b.Ref.RefId, nameof(a.Ref));
-            Assert.AreEqual(a.Color.ToArgb(), b.Color.ToArgb(), nameof(a.Color));
+            Assert.That(b.Guid, Is.EqualTo(a.Guid), nameof(a.Guid));
+            Assert.That(b.Enum, Is.EqualTo(a.Enum), nameof(a.Enum));
+            Assert.That(b.FlagEnum, Is.EqualTo(a.FlagEnum), nameof(a.FlagEnum));
+            Assert.That(b.Struct.Id, Is.EqualTo(a.Struct.Id), nameof(a.Struct));
+            Assert.That(b.Struct.Name, Is.EqualTo(a.Struct.Name), nameof(a.Struct));
+            Assert.That(b.Ref.RefId, Is.EqualTo(a.Ref.RefId), nameof(a.Ref));
+            Assert.That(b.Color.ToArgb(), Is.EqualTo(a.Color.ToArgb()), nameof(a.Color));
             AssertStoredResolution(a.DateOffset, b.DateOffset);
         }
 
@@ -105,7 +105,7 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var src = new DateTimeBox { Value = DateTime.MaxValue };
             new NeuroBytesWriter().Write(src);
-            Assert.AreEqual(DateTime.MaxValue, src.Value, "writing changed the object that was written");
+            Assert.That(src.Value, Is.EqualTo(DateTime.MaxValue), "writing changed the object that was written");
         }
 
         [Test]
@@ -113,7 +113,7 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var src = new DateTimeBox { Value = DateTime.MaxValue };
             new NeuroJsonWriter().Write(src);
-            Assert.AreEqual(DateTime.MaxValue, src.Value, "writing changed the object that was written");
+            Assert.That(src.Value, Is.EqualTo(DateTime.MaxValue), "writing changed the object that was written");
         }
 
         [Test]
@@ -121,7 +121,7 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var src = new TimeSpanBox { Value = TimeSpan.MinValue };
             new NeuroBytesWriter().Write(src);
-            Assert.AreEqual(TimeSpan.MinValue, src.Value, "writing changed the object that was written");
+            Assert.That(src.Value, Is.EqualTo(TimeSpan.MinValue), "writing changed the object that was written");
         }
 
         [Test]
@@ -129,7 +129,7 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var src = new TimeSpanBox { Value = TimeSpan.MinValue };
             new NeuroJsonWriter().Write(src);
-            Assert.AreEqual(TimeSpan.MinValue, src.Value, "writing changed the object that was written");
+            Assert.That(src.Value, Is.EqualTo(TimeSpan.MinValue), "writing changed the object that was written");
         }
 
         [Test]
@@ -138,7 +138,7 @@ namespace Ninjadini.Neuro.IntegrationTests
             var src = MaxedOutSink();
             var first = new NeuroBytesWriter().Write(src).ToArray();
             var second = new NeuroBytesWriter().Write(src).ToArray();
-            CollectionAssert.AreEqual(first, second, "writing the same object twice gave different bytes");
+            Assert.That(second, Is.EqualTo(first).AsCollection, "writing the same object twice gave different bytes");
         }
 
         [Test]
@@ -147,7 +147,7 @@ namespace Ninjadini.Neuro.IntegrationTests
             var src = MaxedOutSink();
             var first = new NeuroJsonWriter().Write(src);
             var second = new NeuroJsonWriter().Write(src);
-            Assert.AreEqual(first, second, "writing the same object twice gave different json");
+            Assert.That(second, Is.EqualTo(first), "writing the same object twice gave different json");
         }
     }
 }

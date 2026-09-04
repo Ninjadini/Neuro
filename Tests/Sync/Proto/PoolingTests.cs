@@ -52,13 +52,13 @@ namespace Ninjadini.Neuro.SyncTests
 
             var pool = new TestPool();
             new NeuroPoolCollector().ReturnAllToPool(container, pool);
-            Assert.AreEqual(5, pool.AllObjects.Count);
+            Assert.That(pool.AllObjects.Count, Is.EqualTo(5));
             Assert.IsTrue(pool.AllObjects.Contains(child1));
             Assert.IsTrue(pool.AllObjects.Contains(child2));
             Assert.IsTrue(pool.AllObjects.Contains(container));
             Assert.IsTrue(pool.AllObjects.Contains(container2));
             Assert.IsTrue(pool.AllObjects.Contains(child3));
-            Assert.AreEqual(0, container.Children.Count);
+            Assert.That(container.Children.Count, Is.EqualTo(0));
             Assert.IsNull(container.Child1);
             Assert.IsNull(container.Child2);
             Assert.IsNull(container2.Child1);
@@ -81,14 +81,14 @@ namespace Ninjadini.Neuro.SyncTests
             
             var pool = new TestPool();
             new NeuroPoolCollector().ReturnAllToPool(container, pool);
-            Assert.AreEqual(6, pool.AllObjects.Count);
+            Assert.That(pool.AllObjects.Count, Is.EqualTo(6));
             Assert.IsTrue(pool.AllObjects.Contains(child1));
             Assert.IsTrue(pool.AllObjects.Contains(child2));
             Assert.IsTrue(pool.AllObjects.Contains(container));
             Assert.IsTrue(pool.AllObjects.Contains(container2));
             Assert.IsTrue(pool.AllObjects.Contains(child3));
             Assert.IsTrue(pool.AllObjects.Contains(child4));
-            Assert.AreEqual(0, container.Children.Count);
+            Assert.That(container.Children.Count, Is.EqualTo(0));
             Assert.IsNull(container.Child1);
             Assert.IsNull(container.Child2);
             Assert.IsNull(container2.Child1);

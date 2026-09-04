@@ -548,7 +548,6 @@ namespace Ninjadini.Neuro.CodeGen
             public bool HasPrivateFields;
             public bool IsPoolable;
             public uint GlobalTypeId;
-            public Location Location;
             public List<FieldToGenerate> Fields = new List<FieldToGenerate>();
         }
             

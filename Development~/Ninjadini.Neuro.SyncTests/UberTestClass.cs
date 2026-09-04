@@ -388,89 +388,89 @@ namespace Ninjadini.Neuro.SyncTests
 
         public static void TestAllValuesMatch(UberTestClass a, UberTestClass b)
         {
-            Assert.AreEqual(a.Id, b.Id);
-            Assert.AreEqual(a.Float, b.Float);
-            Assert.AreEqual(a.Name, b.Name);
-            Assert.AreEqual(a.Date, b.Date);
-            Assert.AreEqual(a.TimeSpan, b.TimeSpan);
-            Assert.AreEqual(a.Enum, b.Enum);
-            Assert.AreEqual(a.FlagEnum, b.FlagEnum);
-            
-            Assert.AreEqual(a.ClassObj?.Id, b.ClassObj?.Id);
-            Assert.AreEqual(a.ClassObj?.Name, b.ClassObj?.Name);
+            Assert.That(b.Id, Is.EqualTo(a.Id));
+            Assert.That(b.Float, Is.EqualTo(a.Float));
+            Assert.That(b.Name, Is.EqualTo(a.Name));
+            Assert.That(b.Date, Is.EqualTo(a.Date));
+            Assert.That(b.TimeSpan, Is.EqualTo(a.TimeSpan));
+            Assert.That(b.Enum, Is.EqualTo(a.Enum));
+            Assert.That(b.FlagEnum, Is.EqualTo(a.FlagEnum));
+
+            Assert.That(b.ClassObj?.Id, Is.EqualTo(a.ClassObj?.Id));
+            Assert.That(b.ClassObj?.Name, Is.EqualTo(a.ClassObj?.Name));
             //Assert.AreEqual(a.Interface is TestInterfaceImp1 imp1 ? imp1.NumValue : -1, b.Interface is TestInterfaceImp1 imp2 ? imp2.NumValue : -1);
-            
-            
-            Assert.AreEqual(a.Struct.Id, b.Struct.Id);
-            Assert.AreEqual(a.Struct.Name, b.Struct.Name);
-            
-            Assert.AreEqual(a.ListInt?.Count, b.ListInt?.Count);
+
+
+            Assert.That(b.Struct.Id, Is.EqualTo(a.Struct.Id));
+            Assert.That(b.Struct.Name, Is.EqualTo(a.Struct.Name));
+
+            Assert.That(b.ListInt?.Count, Is.EqualTo(a.ListInt?.Count));
             if (a.ListInt?.Count > 0)
             {
-                Assert.AreEqual(a.ListInt[0], b.ListInt[0]);
+                Assert.That(b.ListInt[0], Is.EqualTo(a.ListInt[0]));
             }
-            
-            Assert.AreEqual(a.ListEnum?.Count, b.ListEnum?.Count);
+
+            Assert.That(b.ListEnum?.Count, Is.EqualTo(a.ListEnum?.Count));
             if (a.ListEnum?.Count > 0)
             {
-                Assert.AreEqual(a.ListEnum[0], b.ListEnum[0]);
+                Assert.That(b.ListEnum[0], Is.EqualTo(a.ListEnum[0]));
             }
-            Assert.AreEqual(a.ListStruct?.Count, b.ListStruct?.Count);
+            Assert.That(b.ListStruct?.Count, Is.EqualTo(a.ListStruct?.Count));
             if (a.ListStruct?.Count > 0)
             {
-                Assert.AreEqual(a.ListStruct[0], b.ListStruct[0]);
+                Assert.That(b.ListStruct[0], Is.EqualTo(a.ListStruct[0]));
             }
-            Assert.AreEqual(a.ListClass?.Count, b.ListClass?.Count);
+            Assert.That(b.ListClass?.Count, Is.EqualTo(a.ListClass?.Count));
             if (a.ListClass?.Count > 0)
             {
                 for(var i = 0; i < a.ListClass.Count; i++)
                 {
-                    Assert.AreEqual(a.ListClass[i]?.Id, b.ListClass[i]?.Id);
-                    Assert.AreEqual(a.ListClass[i]?.Name, b.ListClass[i]?.Name);
+                    Assert.That(b.ListClass[i]?.Id, Is.EqualTo(a.ListClass[i]?.Id));
+                    Assert.That(b.ListClass[i]?.Name, Is.EqualTo(a.ListClass[i]?.Name));
                 }
             }
 
             if (a.ListBaseClasses?.Count > 0)
             {
-                Assert.AreEqual(a.ListBaseClasses.Count, b.ListBaseClasses.Count);
+                Assert.That(b.ListBaseClasses.Count, Is.EqualTo(a.ListBaseClasses.Count));
                 for (int i = 0, l = a.ListBaseClasses.Count; i < l; i++)
                 {
                     var ai = a.ListBaseClasses[i];
                     var bi = b.ListBaseClasses[i];
-                    Assert.AreEqual(ai != null, bi != null);
+                    Assert.That(bi != null, Is.EqualTo(ai != null));
                     if (ai != null)
                     {
-                        Assert.AreEqual(ai.GetType(), bi.GetType());
-                        Assert.AreEqual(ai.Id, bi.Id);
-                        Assert.AreEqual(ai.Name, bi.Name);
+                        Assert.That(bi.GetType(), Is.EqualTo(ai.GetType()));
+                        Assert.That(bi.Id, Is.EqualTo(ai.Id));
+                        Assert.That(bi.Name, Is.EqualTo(ai.Name));
                         var ais = ai as SubTestClass1;
                         if (ais != null)
                         {
                             var bis = ai as SubTestClass1;
-                            Assert.AreEqual(ais.NumValue, bis.NumValue);
-                            Assert.AreEqual(ais.Value, bis.Value);
+                            Assert.That(bis.NumValue, Is.EqualTo(ais.NumValue));
+                            Assert.That(bis.Value, Is.EqualTo(ais.Value));
                         }
                     }
                 }
             }
 
-            Assert.AreEqual(a.Referencable.RefId, b.Referencable.RefId);
-            Assert.AreEqual(a.SingleNumber.Number, b.SingleNumber.Number);
+            Assert.That(b.Referencable.RefId, Is.EqualTo(a.Referencable.RefId));
+            Assert.That(b.SingleNumber.Number, Is.EqualTo(a.SingleNumber.Number));
             
             if (a.DictionaryIntStr != null)
             {
-                CollectionAssert.AreEquivalent(a.DictionaryIntStr.ToList(), b.DictionaryIntStr.ToList());
+                Assert.That(b.DictionaryIntStr.ToList(), Is.EquivalentTo(a.DictionaryIntStr.ToList()));
             }
-            
-            Assert.AreEqual(a.DictionaryIntObj.Count, b.DictionaryIntObj.Count);
+
+            Assert.That(b.DictionaryIntObj.Count, Is.EqualTo(a.DictionaryIntObj.Count));
             foreach (var kv in a.DictionaryIntObj)
             {
                 if (b.DictionaryIntObj.TryGetValue(kv.Key, out var bValue))
                 {
                     if (kv.Value != null)
                     {
-                        Assert.AreEqual(kv.Value.Id, bValue.Id);
-                        Assert.AreEqual(kv.Value.Name, bValue.Name);
+                        Assert.That(bValue.Id, Is.EqualTo(kv.Value.Id));
+                        Assert.That(bValue.Name, Is.EqualTo(kv.Value.Name));
                     }
                     else
                     {
@@ -485,7 +485,7 @@ namespace Ninjadini.Neuro.SyncTests
 
             if (a.DictionaryStringObj != null)
             {
-                Assert.AreEqual(a.DictionaryStringObj.Count, b.DictionaryStringObj.Count);
+                Assert.That(b.DictionaryStringObj.Count, Is.EqualTo(a.DictionaryStringObj.Count));
                 foreach (var kv in a.DictionaryStringObj)
                 {
                     if (b.DictionaryStringObj.TryGetValue(kv.Key, out var bValue))
@@ -501,7 +501,7 @@ namespace Ninjadini.Neuro.SyncTests
             
             if (a.DictionaryRefObj != null)
             {
-                Assert.AreEqual(a.DictionaryRefObj.Count, b.DictionaryRefObj.Count);
+                Assert.That(b.DictionaryRefObj.Count, Is.EqualTo(a.DictionaryRefObj.Count));
                 foreach (var kv in a.DictionaryRefObj)
                 {
                     if (b.DictionaryRefObj.TryGetValue(kv.Key, out var bValue))
@@ -514,42 +514,42 @@ namespace Ninjadini.Neuro.SyncTests
                     }
                 }
             }
-            
-            Assert.AreEqual(a.BaseClassObj?.GetType(), b.BaseClassObj?.GetType());
+
+            Assert.That(b.BaseClassObj?.GetType(), Is.EqualTo(a.BaseClassObj?.GetType()));
             if (a.BaseClassObj != null)
             {
-                Assert.AreEqual(a.BaseClassObj.Id, b.BaseClassObj.Id);
-                Assert.AreEqual(a.BaseClassObj.Name, b.BaseClassObj.Name);
+                Assert.That(b.BaseClassObj.Id, Is.EqualTo(a.BaseClassObj.Id));
+                Assert.That(b.BaseClassObj.Name, Is.EqualTo(a.BaseClassObj.Name));
 
                 if (a.BaseClassObj is SubTestClass1 asub)
                 {
                     var bsub = (SubTestClass1)b.BaseClassObj;
-                    Assert.AreEqual(asub.NumValue, bsub.NumValue);
-                    Assert.AreEqual(asub.Value, bsub.Value);
+                    Assert.That(bsub.NumValue, Is.EqualTo(asub.NumValue));
+                    Assert.That(bsub.Value, Is.EqualTo(asub.Value));
                 }
             }
-            
-            Assert.AreEqual(a.NullableId, b.NullableId);
-            Assert.AreEqual(a.NullableDate, b.NullableDate);
-            Assert.AreEqual(a.NullableStr, b.NullableStr);
-            Assert.AreEqual(a.NullableEnum, b.NullableEnum);
-            
-            Assert.AreEqual(a.LastItem, b.LastItem);
+
+            Assert.That(b.NullableId, Is.EqualTo(a.NullableId));
+            Assert.That(b.NullableDate, Is.EqualTo(a.NullableDate));
+            Assert.That(b.NullableStr, Is.EqualTo(a.NullableStr));
+            Assert.That(b.NullableEnum, Is.EqualTo(a.NullableEnum));
+
+            Assert.That(b.LastItem, Is.EqualTo(a.LastItem));
         }
 
         static void TestSame(BaseTestClass1 a, BaseTestClass1 b)
         {
-            Assert.AreEqual(a == null, b == null);
+            Assert.That(b == null, Is.EqualTo(a == null));
             if (a == null)
             {
                 return;
             }
-            Assert.AreEqual(a.Id, b.Id);
-            Assert.AreEqual(a.Name, b.Name);
+            Assert.That(b.Id, Is.EqualTo(a.Id));
+            Assert.That(b.Name, Is.EqualTo(a.Name));
             if (a is SubTestClass1 subTestClassA && b is SubTestClass1 subTestClassB)
             {
-                Assert.AreEqual(subTestClassA.NumValue, subTestClassB.NumValue);
-                Assert.AreEqual(subTestClassA.Value, subTestClassB.Value);
+                Assert.That(subTestClassB.NumValue, Is.EqualTo(subTestClassA.NumValue));
+                Assert.That(subTestClassB.Value, Is.EqualTo(subTestClassA.Value));
             }
             else if(a.GetType() != b.GetType())
             {

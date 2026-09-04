@@ -31,7 +31,7 @@ namespace Ninjadini.Neuro.IntegrationTests
             for (var i = 0; i < depth; i++)
             {
                 Assert.IsNotNull(cursor, $"ran out of nesting at depth {i}");
-                Assert.AreEqual(i, cursor.Depth);
+                Assert.That(cursor.Depth, Is.EqualTo(i));
                 cursor = cursor.Child;
             }
             Assert.IsNull(cursor, "more nesting than expected");
@@ -76,7 +76,7 @@ namespace Ninjadini.Neuro.IntegrationTests
             // a subclass that declares [Neuro(tag)] is opting in, so it works even with no members of its own.
             var copy = Bin(new PolyBox { Value = new PolyNoFields { Id = 5 } });
             Assert.IsInstanceOf<PolyNoFields>(copy.Value);
-            Assert.AreEqual(5, copy.Value.Id);
+            Assert.That(copy.Value.Id, Is.EqualTo(5));
         }
 
         public partial class BigTagBox
@@ -94,12 +94,12 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var src = new BigTagBox { First = 1, Tag127 = 2, Tag128 = 3, Tag16383 = 4, Tag16384 = 5, TagBig = 6 };
             var copy = Bin(src);
-            Assert.AreEqual(1, copy.First);
-            Assert.AreEqual(2, copy.Tag127);
-            Assert.AreEqual(3, copy.Tag128);
-            Assert.AreEqual(4, copy.Tag16383);
-            Assert.AreEqual(5, copy.Tag16384);
-            Assert.AreEqual(6, copy.TagBig);
+            Assert.That(copy.First, Is.EqualTo(1));
+            Assert.That(copy.Tag127, Is.EqualTo(2));
+            Assert.That(copy.Tag128, Is.EqualTo(3));
+            Assert.That(copy.Tag16383, Is.EqualTo(4));
+            Assert.That(copy.Tag16384, Is.EqualTo(5));
+            Assert.That(copy.TagBig, Is.EqualTo(6));
         }
 
         [Test]
@@ -107,12 +107,12 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var src = new BigTagBox { First = 1, Tag127 = 2, Tag128 = 3, Tag16383 = 4, Tag16384 = 5, TagBig = 6 };
             var copy = Jsn(src);
-            Assert.AreEqual(1, copy.First);
-            Assert.AreEqual(2, copy.Tag127);
-            Assert.AreEqual(3, copy.Tag128);
-            Assert.AreEqual(4, copy.Tag16383);
-            Assert.AreEqual(5, copy.Tag16384);
-            Assert.AreEqual(6, copy.TagBig);
+            Assert.That(copy.First, Is.EqualTo(1));
+            Assert.That(copy.Tag127, Is.EqualTo(2));
+            Assert.That(copy.Tag128, Is.EqualTo(3));
+            Assert.That(copy.Tag16383, Is.EqualTo(4));
+            Assert.That(copy.Tag16384, Is.EqualTo(5));
+            Assert.That(copy.TagBig, Is.EqualTo(6));
         }
     }
 }

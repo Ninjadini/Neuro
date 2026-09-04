@@ -77,12 +77,12 @@ namespace Ninjadini.Neuro.IntegrationTests
         public void AssertEquals(UberTestObject other)
         {
             Assert.NotNull(other);
-        
-            Assert.AreEqual(Id, other.Id);
+
+            Assert.That(other.Id, Is.EqualTo(Id));
             Assert.LessOrEqual(Math.Abs(Float - other.Float), 0.00001f);
-            Assert.AreEqual(Name, other.Name);
-            Assert.AreEqual(Date, other.Date);
-            Assert.AreEqual(TimeSpan, other.TimeSpan);
+            Assert.That(other.Name, Is.EqualTo(Name));
+            Assert.That(other.Date, Is.EqualTo(Date));
+            Assert.That(other.TimeSpan, Is.EqualTo(TimeSpan));
         }
     }
 

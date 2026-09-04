@@ -22,14 +22,14 @@ namespace Ninjadini.Neuro.SyncTests
 
             new NeuroEditVisitor().Visit(obj, new Rewriter(1, 999));
 
-            Assert.AreEqual(999u, obj.Single.RefId, "plain field");
-            Assert.AreEqual(999u, obj.List[0].RefId, "list item");
-            Assert.AreEqual(999u, obj.Nullable.Value.RefId, "nullable");
-            Assert.AreEqual(999u, obj.Dict[5].RefId, "dictionary value");
-            Assert.AreEqual(999u, obj.Child.Single.RefId, "nested child field");
-            Assert.AreEqual(999u, obj.Child.List[0].RefId, "nested child list item");
-            Assert.AreEqual(999u, obj.ChildList[0].Single.RefId, "field of a child in a list");
-            Assert.AreEqual(999u, obj.ChildList[0].List[0].RefId, "list inside a child in a list");
+            Assert.That(obj.Single.RefId, Is.EqualTo(999u), "plain field");
+            Assert.That(obj.List[0].RefId, Is.EqualTo(999u), "list item");
+            Assert.That(obj.Nullable.Value.RefId, Is.EqualTo(999u), "nullable");
+            Assert.That(obj.Dict[5].RefId, Is.EqualTo(999u), "dictionary value");
+            Assert.That(obj.Child.Single.RefId, Is.EqualTo(999u), "nested child field");
+            Assert.That(obj.Child.List[0].RefId, Is.EqualTo(999u), "nested child list item");
+            Assert.That(obj.ChildList[0].Single.RefId, Is.EqualTo(999u), "field of a child in a list");
+            Assert.That(obj.ChildList[0].List[0].RefId, Is.EqualTo(999u), "list inside a child in a list");
         }
 
         [Test]
@@ -39,11 +39,11 @@ namespace Ninjadini.Neuro.SyncTests
 
             new NeuroEditVisitor().Visit(obj, new Rewriter(1, 999));
 
-            Assert.AreEqual(2u, obj.Single.RefId);
-            Assert.AreEqual(2u, obj.List[0].RefId);
-            Assert.AreEqual(2u, obj.Nullable.Value.RefId);
-            Assert.AreEqual(2u, obj.Dict[5].RefId);
-            Assert.AreEqual(2u, obj.ChildList[0].List[0].RefId);
+            Assert.That(obj.Single.RefId, Is.EqualTo(2u));
+            Assert.That(obj.List[0].RefId, Is.EqualTo(2u));
+            Assert.That(obj.Nullable.Value.RefId, Is.EqualTo(2u));
+            Assert.That(obj.Dict[5].RefId, Is.EqualTo(2u));
+            Assert.That(obj.ChildList[0].List[0].RefId, Is.EqualTo(2u));
         }
 
         [Test]
@@ -56,10 +56,10 @@ namespace Ninjadini.Neuro.SyncTests
 
             new NeuroVisitor().Visit(obj, new ReadOnlyProbe());
 
-            Assert.AreEqual(1u, obj.List[0].RefId);
-            Assert.AreEqual(1u, obj.Nullable.Value.RefId);
-            Assert.AreEqual(1u, obj.Dict[5].RefId);
-            Assert.AreEqual(1u, obj.Child.List[0].RefId);
+            Assert.That(obj.List[0].RefId, Is.EqualTo(1u));
+            Assert.That(obj.Nullable.Value.RefId, Is.EqualTo(1u));
+            Assert.That(obj.Dict[5].RefId, Is.EqualTo(1u));
+            Assert.That(obj.Child.List[0].RefId, Is.EqualTo(1u));
         }
 
         [Test]
@@ -71,12 +71,12 @@ namespace Ninjadini.Neuro.SyncTests
 
             new NeuroEditVisitor().Visit(obj, new Rewriter(0, 0));
 
-            Assert.AreEqual(1u, obj.Single.RefId);
-            Assert.AreEqual(1u, obj.List[0].RefId);
-            Assert.AreEqual(1u, obj.Dict[5].RefId);
-            Assert.AreEqual(1, obj.Dict.Count);
-            Assert.AreSame(listBefore, obj.List);
-            Assert.AreSame(dictBefore, obj.Dict);
+            Assert.That(obj.Single.RefId, Is.EqualTo(1u));
+            Assert.That(obj.List[0].RefId, Is.EqualTo(1u));
+            Assert.That(obj.Dict[5].RefId, Is.EqualTo(1u));
+            Assert.That(obj.Dict.Count, Is.EqualTo(1));
+            Assert.That(obj.List, Is.SameAs(listBefore));
+            Assert.That(obj.Dict, Is.SameAs(dictBefore));
         }
 
         static RewriteTestClass NewObjWithAllRefsPointingAt(uint refId)

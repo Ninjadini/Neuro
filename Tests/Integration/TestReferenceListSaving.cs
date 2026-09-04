@@ -45,10 +45,10 @@ namespace Ninjadini.Neuro.IntegrationTests
             Console.WriteLine("Binary:" + RawProtoReader.GetDebugString(bytes));
         
             new NeuroBytesReader().ReadReferencesListInto(refs, bytes);
-        
-            Assert.AreEqual("1", refs.Get<MyRefObject1>(1u).Name);
-            Assert.AreEqual("2", refs.Get<MyRefObject1>(2u).Name);
-            Assert.AreEqual("4", refs.Get<MyRefObject2>(2u).Name);
+
+            Assert.That(refs.Get<MyRefObject1>(1u).Name, Is.EqualTo("1"));
+            Assert.That(refs.Get<MyRefObject1>(2u).Name, Is.EqualTo("2"));
+            Assert.That(refs.Get<MyRefObject2>(2u).Name, Is.EqualTo("4"));
         }
 
         [NeuroGlobalType(111)]

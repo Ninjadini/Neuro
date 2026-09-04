@@ -31,11 +31,11 @@ namespace Ninjadini.Neuro.SyncTests
 
             var updated = RewriteAcrossDatabase(typeof(ReferencableClass), 5, 4000);
 
-            Assert.AreEqual(4000u, holderA.Single.RefId);
-            Assert.AreEqual(4000u, holderA.List[0].RefId);
-            Assert.AreEqual(4000u, holderB.Single.RefId);
-            Assert.AreEqual(6u, holderC.Single.RefId, "an item pointing at a different id must be left alone");
-            CollectionAssert.AreEquivalent(new object[] { holderA, holderB }, updated);
+            Assert.That(holderA.Single.RefId, Is.EqualTo(4000u));
+            Assert.That(holderA.List[0].RefId, Is.EqualTo(4000u));
+            Assert.That(holderB.Single.RefId, Is.EqualTo(4000u));
+            Assert.That(holderC.Single.RefId, Is.EqualTo(6u), "an item pointing at a different id must be left alone");
+            Assert.That(updated, Is.EquivalentTo(new object[] { holderA, holderB }));
             Assert.NotNull(target);
             Assert.NotNull(other);
         }
@@ -51,8 +51,8 @@ namespace Ninjadini.Neuro.SyncTests
 
             var updated = RewriteAcrossDatabase(typeof(RefHolder), 7, 4000);
 
-            Assert.AreEqual(4000u, selfRef.OtherTypeRef.RefId);
-            CollectionAssert.AreEquivalent(new object[] { selfRef }, updated);
+            Assert.That(selfRef.OtherTypeRef.RefId, Is.EqualTo(4000u));
+            Assert.That(updated, Is.EquivalentTo(new object[] { selfRef }));
         }
 
         [Test]
@@ -65,8 +65,8 @@ namespace Ninjadini.Neuro.SyncTests
 
             RewriteAcrossDatabase(typeof(ReferencableClass), 5, 4000);
 
-            Assert.AreEqual(4000u, holder.Single.RefId);
-            Assert.AreEqual(5u, holder.OtherTypeRef.RefId, "a Reference<> to a different type must be left alone");
+            Assert.That(holder.Single.RefId, Is.EqualTo(4000u));
+            Assert.That(holder.OtherTypeRef.RefId, Is.EqualTo(5u), "a Reference<> to a different type must be left alone");
         }
 
         [Test]
@@ -77,7 +77,7 @@ namespace Ninjadini.Neuro.SyncTests
             var updated = RewriteAcrossDatabase(typeof(ReferencableClass), 999, 4000);
 
             Assert.IsEmpty(updated);
-            Assert.AreEqual(5u, holder.Single.RefId);
+            Assert.That(holder.Single.RefId, Is.EqualTo(5u));
         }
 
         List<IReferencable> RewriteAcrossDatabase(System.Type rootType, uint oldRefId, uint newRefId)

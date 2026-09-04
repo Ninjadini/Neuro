@@ -57,23 +57,23 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var withTicks = new DateTime(2024, 6, 5, 4, 3, 2, 1, DateTimeKind.Utc).AddTicks(1234);
             var expected = new DateTime(2024, 6, 5, 4, 3, 2, 1, DateTimeKind.Utc);
-            Assert.AreEqual(expected, Bin(new DateTimeBox { Value = withTicks }).Value);
-            Assert.AreEqual(expected, Jsn(new DateTimeBox { Value = withTicks }).Value);
+            Assert.That(Bin(new DateTimeBox { Value = withTicks }).Value, Is.EqualTo(expected));
+            Assert.That(Jsn(new DateTimeBox { Value = withTicks }).Value, Is.EqualTo(expected));
         }
 
         [Test]
         public void TimeSpan_SubMillisecondIsIntentionallyDropped()
         {
-            Assert.AreEqual(TimeSpan.Zero, Bin(new TimeSpanBox { Value = new TimeSpan(9999) }).Value);
-            Assert.AreEqual(TimeSpan.Zero, Jsn(new TimeSpanBox { Value = new TimeSpan(9999) }).Value);
-            Assert.AreEqual(TimeSpan.FromMilliseconds(1), Bin(new TimeSpanBox { Value = new TimeSpan(10001) }).Value);
+            Assert.That(Bin(new TimeSpanBox { Value = new TimeSpan(9999) }).Value, Is.EqualTo(TimeSpan.Zero));
+            Assert.That(Jsn(new TimeSpanBox { Value = new TimeSpan(9999) }).Value, Is.EqualTo(TimeSpan.Zero));
+            Assert.That(Bin(new TimeSpanBox { Value = new TimeSpan(10001) }).Value, Is.EqualTo(TimeSpan.FromMilliseconds(1)));
         }
 
         [TestCaseSource(nameof(DateTimeValues))]
-        public void DateTime_Kind_Binary(DateTime v) => Assert.AreEqual(v.Kind, Bin(new DateTimeBox { Value = v }).Value.Kind);
+        public void DateTime_Kind_Binary(DateTime v) => Assert.That(Bin(new DateTimeBox { Value = v }).Value.Kind, Is.EqualTo(v.Kind));
 
         [TestCaseSource(nameof(DateTimeValues))]
-        public void DateTime_Kind_Json(DateTime v) => Assert.AreEqual(v.Kind, Jsn(new DateTimeBox { Value = v }).Value.Kind);
+        public void DateTime_Kind_Json(DateTime v) => Assert.That(Jsn(new DateTimeBox { Value = v }).Value.Kind, Is.EqualTo(v.Kind));
 
 // ---------------------------------------------------------------------------------------------------- DateTimeOffset
 
@@ -102,7 +102,7 @@ namespace Ninjadini.Neuro.IntegrationTests
 
         static void AssertStoredResolution(DateTimeOffset expected, DateTimeOffset actual)
         {
-            Assert.AreEqual(expected.Offset, actual.Offset, $"offset of {expected:O} was not preserved (got {actual:O})");
+            Assert.That(actual.Offset, Is.EqualTo(expected.Offset), $"offset of {expected:O} was not preserved (got {actual:O})");
             var lost = Math.Abs((expected - actual).Ticks);
             Assert.Less(lost, TimeSpan.TicksPerMillisecond,
                 $"expected {expected:O} to survive to the millisecond, got {actual:O}");
@@ -121,8 +121,8 @@ namespace Ninjadini.Neuro.IntegrationTests
             // be skipped by the writer's default check if that were the only test.
             var sameInstantAsDefault = new DateTimeOffset(1, 1, 1, 5, 0, 0, TimeSpan.FromHours(5));
             Assert.IsTrue(sameInstantAsDefault.Equals(default(DateTimeOffset)), "premise of this test changed");
-            Assert.AreEqual(TimeSpan.FromHours(5), Bin(new DateTimeOffsetBox { Value = sameInstantAsDefault }).Value.Offset);
-            Assert.AreEqual(TimeSpan.FromHours(5), Jsn(new DateTimeOffsetBox { Value = sameInstantAsDefault }).Value.Offset);
+            Assert.That(Bin(new DateTimeOffsetBox { Value = sameInstantAsDefault }).Value.Offset, Is.EqualTo(TimeSpan.FromHours(5)));
+            Assert.That(Jsn(new DateTimeOffsetBox { Value = sameInstantAsDefault }).Value.Offset, Is.EqualTo(TimeSpan.FromHours(5)));
         }
 
         [Test]
@@ -130,8 +130,8 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var withTicks = new DateTimeOffset(2024, 6, 5, 4, 3, 2, 1, TimeSpan.FromHours(2)).AddTicks(1234);
             var expected = new DateTimeOffset(2024, 6, 5, 4, 3, 2, 1, TimeSpan.FromHours(2));
-            Assert.AreEqual(expected, Bin(new DateTimeOffsetBox { Value = withTicks }).Value);
-            Assert.AreEqual(expected, Jsn(new DateTimeOffsetBox { Value = withTicks }).Value);
+            Assert.That(Bin(new DateTimeOffsetBox { Value = withTicks }).Value, Is.EqualTo(expected));
+            Assert.That(Jsn(new DateTimeOffsetBox { Value = withTicks }).Value, Is.EqualTo(expected));
         }
 
         [Test]
@@ -160,7 +160,7 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             // anything not in our own 29 char shape falls through to the framework parser.
             var copy = ReadJson<DateTimeOffsetBox>(@"{""Value"": ""2024-06-05T04:03:02.0010000+05:30""}");
-            Assert.AreEqual(new DateTimeOffset(2024, 6, 5, 4, 3, 2, 1, new TimeSpan(5, 30, 0)), copy.Value);
+            Assert.That(copy.Value, Is.EqualTo(new DateTimeOffset(2024, 6, 5, 4, 3, 2, 1, new TimeSpan(5, 30, 0))));
         }
 
         [Test]
@@ -168,7 +168,7 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             var src = new DateTimeOffsetBox { Value = DateTimeOffset.MaxValue };
             new NeuroBytesWriter().Write(src);
-            Assert.AreEqual(DateTimeOffset.MaxValue, src.Value, "writing changed the object that was written");
+            Assert.That(src.Value, Is.EqualTo(DateTimeOffset.MaxValue), "writing changed the object that was written");
         }
 
 // ---------------------------------------------------------------------------------------------------- TimeSpan

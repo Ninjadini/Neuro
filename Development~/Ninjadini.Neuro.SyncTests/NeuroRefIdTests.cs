@@ -27,7 +27,7 @@ namespace Ninjadini.Neuro.SyncTests
         [TestCase(uint.MaxValue, "1z141z3")]
         public void ToStringCases(uint id, string expected)
         {
-            Assert.AreEqual(expected, NeuroRefId.ToString(id));
+            Assert.That(NeuroRefId.ToString(id), Is.EqualTo(expected));
         }
 
         [Test]
@@ -40,7 +40,7 @@ namespace Ninjadini.Neuro.SyncTests
                 var text = NeuroRefId.ToString(id);
                 Assert.IsFalse(seen.ContainsKey(text), $"`{text}` is two different ids");
                 seen[text] = id;
-                Assert.AreEqual(id, NeuroRefId.Parse(text));
+                Assert.That(NeuroRefId.Parse(text), Is.EqualTo(id));
             }
         }
 
@@ -50,13 +50,13 @@ namespace Ninjadini.Neuro.SyncTests
             // exhaustive over the generated range plus the boundaries around it
             for (var id = 0u; id < 60000; id++)
             {
-                Assert.AreEqual(id, NeuroRefId.Parse(NeuroRefId.ToString(id)), "id " + id);
+                Assert.That(NeuroRefId.Parse(NeuroRefId.ToString(id)), Is.EqualTo(id), "id " + id);
             }
             for (var id = NeuroRefId.GeneratedMaxValue - 10000; id <= NeuroRefId.GeneratedMaxValue + 10; id++)
             {
-                Assert.AreEqual(id, NeuroRefId.Parse(NeuroRefId.ToString(id)), "id " + id);
+                Assert.That(NeuroRefId.Parse(NeuroRefId.ToString(id)), Is.EqualTo(id), "id " + id);
             }
-            Assert.AreEqual(uint.MaxValue, NeuroRefId.Parse(NeuroRefId.ToString(uint.MaxValue)));
+            Assert.That(NeuroRefId.Parse(NeuroRefId.ToString(uint.MaxValue)), Is.EqualTo(uint.MaxValue));
         }
 
         [Test]
@@ -65,7 +65,7 @@ namespace Ninjadini.Neuro.SyncTests
             // this is the whole point of the range - every generated id is exactly 4 chars, no exceptions
             for (var id = NeuroRefId.GeneratedMinValue; id <= NeuroRefId.GeneratedMaxValue; id++)
             {
-                Assert.AreEqual(4, NeuroRefId.ToString(id).Length, "id " + id);
+                Assert.That(NeuroRefId.ToString(id).Length, Is.EqualTo(4), "id " + id);
             }
         }
 
@@ -80,18 +80,18 @@ namespace Ninjadini.Neuro.SyncTests
         {
             // GeneratedMaxValue bounds where new ids come from, not what the encoding can represent -
             // an id set by hand above it still writes as base36.
-            Assert.AreEqual("zzzz", NeuroRefId.ToString(NeuroRefId.GeneratedMaxValue));
-            Assert.AreEqual("10000", NeuroRefId.ToString(NeuroRefId.GeneratedMaxValue + 1));
-            Assert.AreEqual("1z141z3", NeuroRefId.ToString(uint.MaxValue));
-            Assert.AreEqual(uint.MaxValue, NeuroRefId.Parse("1z141z3"));
+            Assert.That(NeuroRefId.ToString(NeuroRefId.GeneratedMaxValue), Is.EqualTo("zzzz"));
+            Assert.That(NeuroRefId.ToString(NeuroRefId.GeneratedMaxValue + 1), Is.EqualTo("10000"));
+            Assert.That(NeuroRefId.ToString(uint.MaxValue), Is.EqualTo("1z141z3"));
+            Assert.That(NeuroRefId.Parse("1z141z3"), Is.EqualTo(uint.MaxValue));
         }
 
         [Test]
         public void EverythingIsReadAsBase36()
         {
-            Assert.AreEqual(1u, NeuroRefId.Parse("1"));
-            Assert.AreEqual(72u, NeuroRefId.Parse("20"), "`20` is base36 now, not the decimal 20");
-            Assert.AreEqual(1296u, NeuroRefId.Parse("100"));
+            Assert.That(NeuroRefId.Parse("1"), Is.EqualTo(1u));
+            Assert.That(NeuroRefId.Parse("20"), Is.EqualTo(72u), "`20` is base36 now, not the decimal 20");
+            Assert.That(NeuroRefId.Parse("100"), Is.EqualTo(1296u));
         }
 
         [TestCase("1", 1u)]
@@ -105,7 +105,7 @@ namespace Ninjadini.Neuro.SyncTests
         {
             // what the migration uses to work out what an old file name or id actually meant
             Assert.IsTrue(NeuroRefId.TryParseLegacy(text, out var id));
-            Assert.AreEqual(expected, id);
+            Assert.That(id, Is.EqualTo(expected));
         }
 
         [Test]
@@ -118,14 +118,14 @@ namespace Ninjadini.Neuro.SyncTests
                 var oldText = original.ToString();
                 Assert.IsTrue(NeuroRefId.TryParse(oldText, out var misread));
                 Assert.IsTrue(NeuroRefId.TryParseLegacy(NeuroRefId.ToString(misread), out var recovered));
-                Assert.AreEqual(original, recovered, "old text " + oldText);
+                Assert.That(recovered, Is.EqualTo(original), "old text " + oldText);
             }
         }
 
         [Test]
         public void ParsesUpperCase()
         {
-            Assert.AreEqual(NeuroRefId.Parse("1v83"), NeuroRefId.Parse("1V83"));
+            Assert.That(NeuroRefId.Parse("1V83"), Is.EqualTo(NeuroRefId.Parse("1v83")));
         }
 
         [TestCase("")]
@@ -174,10 +174,10 @@ namespace Ninjadini.Neuro.SyncTests
             var json = new NeuroJsonWriter().Write(testObj, refs);
             var result = new NeuroJsonReader().Read<RefIdTestClass>(json);
 
-            Assert.AreEqual(87123u, result.Ref.RefId);
-            Assert.AreEqual(20u, result.Refs[0].RefId);
-            Assert.AreEqual(1679615u, result.Refs[1].RefId);
-            Assert.AreEqual(46656u, result.Refs[2].RefId);
+            Assert.That(result.Ref.RefId, Is.EqualTo(87123u));
+            Assert.That(result.Refs[0].RefId, Is.EqualTo(20u));
+            Assert.That(result.Refs[1].RefId, Is.EqualTo(1679615u));
+            Assert.That(result.Refs[2].RefId, Is.EqualTo(46656u));
         }
 
         [Test]
@@ -191,7 +191,7 @@ namespace Ninjadini.Neuro.SyncTests
 
             var json = new NeuroJsonWriter().Write(testObj, refs);
             Assert.IsTrue(json.Contains("\"1v83:my_item\""), json);
-            Assert.AreEqual(87123u, new NeuroJsonReader().Read<RefIdTestClass>(json).Ref.RefId);
+            Assert.That(new NeuroJsonReader().Read<RefIdTestClass>(json).Ref.RefId, Is.EqualTo(87123u));
         }
 
         [Test]
@@ -199,9 +199,9 @@ namespace Ninjadini.Neuro.SyncTests
         {
             // The writer quotes every RefId, but hand written json may not. Whenever an unquoted token gets
             // past the json tokenizer at all, it has to mean the same id as the quoted form.
-            Assert.AreEqual(ReadRef("\"20\""), ReadRef("20"), "all digits");
-            Assert.AreEqual(72u, ReadRef("20"), "`20` is base36, so 72 - quoted or not");
-            Assert.AreEqual(ReadRef("\"1e83\""), ReadRef("1e83"), "`e` is both a base36 digit and a json exponent");
+            Assert.That(ReadRef("20"), Is.EqualTo(ReadRef("\"20\"")), "all digits");
+            Assert.That(ReadRef("20"), Is.EqualTo(72u), "`20` is base36, so 72 - quoted or not");
+            Assert.That(ReadRef("1e83"), Is.EqualTo(ReadRef("\"1e83\"")), "`e` is both a base36 digit and a json exponent");
         }
 
         [TestCase("k", Description = "leading letter")]
@@ -211,7 +211,7 @@ namespace Ninjadini.Neuro.SyncTests
             // Not a regression to fix in the reader - `1v83` bare is simply not json. It is worth pinning down
             // because RefIds usually have letters in them now, so hand editing without quotes will hit this.
             Assert.Throws<Exception>(() => ReadRef(unquoted));
-            Assert.AreEqual(NeuroRefId.Parse(unquoted), ReadRef("\"" + unquoted + "\""), "quoted is fine");
+            Assert.That(ReadRef("\"" + unquoted + "\""), Is.EqualTo(NeuroRefId.Parse(unquoted)), "quoted is fine");
         }
 
         static uint ReadRef(string jsonToken)

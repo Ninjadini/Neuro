@@ -14,6 +14,11 @@
     <ItemGroup>
       <PackageReference Include="Microsoft.CodeAnalysis" Version="3.8.0" />
     </ItemGroup>
+    <ItemGroup>
+      <!-- Analyzer release tracking (RS2008): every diagnostic id must be listed here. -->
+      <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+      <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+    </ItemGroup>
     <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition=" '$(Configuration)' == 'Release' ">
         <Exec Command="cp $(TargetPath) $(ProjectDir)../../Ninjadini.Neuro/CodeGen/netstandard2.0" />
     </Target>

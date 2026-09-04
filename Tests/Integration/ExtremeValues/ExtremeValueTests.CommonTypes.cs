@@ -24,10 +24,10 @@ namespace Ninjadini.Neuro.IntegrationTests
         }
 
         [TestCaseSource(nameof(GuidValues))]
-        public void Guid_Binary(Guid v) => Assert.AreEqual(v, Bin(new GuidBox { Value = v }).Value);
+        public void Guid_Binary(Guid v) => Assert.That(Bin(new GuidBox { Value = v }).Value, Is.EqualTo(v));
 
         [TestCaseSource(nameof(GuidValues))]
-        public void Guid_Json(Guid v) => Assert.AreEqual(v, Jsn(new GuidBox { Value = v }).Value);
+        public void Guid_Json(Guid v) => Assert.That(Jsn(new GuidBox { Value = v }).Value, Is.EqualTo(v));
 
 // ---------------------------------------------------------------------------------------------------- Uri / Version
 
@@ -52,10 +52,10 @@ namespace Ninjadini.Neuro.IntegrationTests
         }
 
         [TestCaseSource(nameof(UriValues))]
-        public void Uri_Binary(Uri v) => Assert.AreEqual(v, Bin(new UriBox { Value = v }).Value);
+        public void Uri_Binary(Uri v) => Assert.That(Bin(new UriBox { Value = v }).Value, Is.EqualTo(v));
 
         [TestCaseSource(nameof(UriValues))]
-        public void Uri_Json(Uri v) => Assert.AreEqual(v, Jsn(new UriBox { Value = v }).Value);
+        public void Uri_Json(Uri v) => Assert.That(Jsn(new UriBox { Value = v }).Value, Is.EqualTo(v));
 
         [Test]
         public void Uri_Null_RoundTrips()
@@ -69,8 +69,8 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             // ToString() would normalise the escaping, OriginalString does not.
             var src = new Uri("https://example.com/a%20b%2Fc");
-            Assert.AreEqual(src.OriginalString, Bin(new UriBox { Value = src }).Value.OriginalString);
-            Assert.AreEqual(src.OriginalString, Jsn(new UriBox { Value = src }).Value.OriginalString);
+            Assert.That(Bin(new UriBox { Value = src }).Value.OriginalString, Is.EqualTo(src.OriginalString));
+            Assert.That(Jsn(new UriBox { Value = src }).Value.OriginalString, Is.EqualTo(src.OriginalString));
         }
 
         static IEnumerable<TestCaseData> VersionValues()
@@ -83,19 +83,19 @@ namespace Ninjadini.Neuro.IntegrationTests
         }
 
         [TestCaseSource(nameof(VersionValues))]
-        public void Version_Binary(Version v) => Assert.AreEqual(v, Bin(new VersionBox { Value = v }).Value);
+        public void Version_Binary(Version v) => Assert.That(Bin(new VersionBox { Value = v }).Value, Is.EqualTo(v));
 
         [TestCaseSource(nameof(VersionValues))]
-        public void Version_Json(Version v) => Assert.AreEqual(v, Jsn(new VersionBox { Value = v }).Value);
+        public void Version_Json(Version v) => Assert.That(Jsn(new VersionBox { Value = v }).Value, Is.EqualTo(v));
 
         [Test]
         public void Version_KeepsComponentCount()
         {
             // "1.2" must not come back as "1.2.0.0" - Build and Revision stay unset at -1.
             var copy = Bin(new VersionBox { Value = new Version(1, 2) }).Value;
-            Assert.AreEqual(-1, copy.Build);
-            Assert.AreEqual(-1, copy.Revision);
-            Assert.AreEqual("1.2", copy.ToString());
+            Assert.That(copy.Build, Is.EqualTo(-1));
+            Assert.That(copy.Revision, Is.EqualTo(-1));
+            Assert.That(copy.ToString(), Is.EqualTo("1.2"));
         }
 
         [Test]
@@ -151,9 +151,9 @@ namespace Ninjadini.Neuro.IntegrationTests
         }
 
         [TestCaseSource(nameof(ColorValues))]
-        public void Color_Binary(Color v) => Assert.AreEqual(v.ToArgb(), Bin(new ColorBox { Value = v }).Value.ToArgb());
+        public void Color_Binary(Color v) => Assert.That(Bin(new ColorBox { Value = v }).Value.ToArgb(), Is.EqualTo(v.ToArgb()));
 
         [TestCaseSource(nameof(ColorValues))]
-        public void Color_Json(Color v) => Assert.AreEqual(v.ToArgb(), Jsn(new ColorBox { Value = v }).Value.ToArgb());
+        public void Color_Json(Color v) => Assert.That(Jsn(new ColorBox { Value = v }).Value.ToArgb(), Is.EqualTo(v.ToArgb()));
     }
 }

@@ -51,32 +51,32 @@ namespace Ninjadini.Neuro.SyncTests
             testObj.Refs1.Add(references.Get<ReferencableClass>(1u));
             testObj.Refs2.Add(references.Get<ReferencableClass>(2u));
             testObj.Refs2.Add(references.Get<ReferencableClass>(1u));
-            
-            Assert.AreEqual(1, testObj.Ref1.RefId);
-            Assert.AreEqual(ref1, testObj.Ref1.GetValue(references));
-            Assert.AreEqual(0, testObj.Ref2.RefId);
-            Assert.AreEqual(null, testObj.Ref2.GetValue(references));
-            
-            Assert.AreEqual(3, testObj.Refs1.Count);
-            Assert.AreEqual(3, testObj.Refs1[0].RefId);
-            Assert.AreEqual(2, testObj.Refs1[1].RefId);
-            Assert.AreEqual(1, testObj.Refs1[2].RefId);
-            Assert.AreEqual(ref3, testObj.Refs1[0].GetValue(references));
-            Assert.AreEqual(ref2, testObj.Refs1[1].GetValue(references));
-            Assert.AreEqual(ref1,testObj.Refs1[2].GetValue(references));
-            
-            
-            Assert.AreEqual(2, testObj.Refs2.Count);
-            Assert.AreEqual(2, testObj.Refs2[0].RefId);
-            Assert.AreEqual(1, testObj.Refs2[1].RefId);
-            Assert.AreEqual(ref2, testObj.Refs2[0].GetValue(references));
-            Assert.AreEqual(ref1, testObj.Refs2[1].GetValue(references));
+
+            Assert.That(testObj.Ref1.RefId, Is.EqualTo(1));
+            Assert.That(testObj.Ref1.GetValue(references), Is.EqualTo(ref1));
+            Assert.That(testObj.Ref2.RefId, Is.EqualTo(0));
+            Assert.That(testObj.Ref2.GetValue(references), Is.EqualTo(null));
+
+            Assert.That(testObj.Refs1.Count, Is.EqualTo(3));
+            Assert.That(testObj.Refs1[0].RefId, Is.EqualTo(3));
+            Assert.That(testObj.Refs1[1].RefId, Is.EqualTo(2));
+            Assert.That(testObj.Refs1[2].RefId, Is.EqualTo(1));
+            Assert.That(testObj.Refs1[0].GetValue(references), Is.EqualTo(ref3));
+            Assert.That(testObj.Refs1[1].GetValue(references), Is.EqualTo(ref2));
+            Assert.That(testObj.Refs1[2].GetValue(references), Is.EqualTo(ref1));
+
+
+            Assert.That(testObj.Refs2.Count, Is.EqualTo(2));
+            Assert.That(testObj.Refs2[0].RefId, Is.EqualTo(2));
+            Assert.That(testObj.Refs2[1].RefId, Is.EqualTo(1));
+            Assert.That(testObj.Refs2[0].GetValue(references), Is.EqualTo(ref2));
+            Assert.That(testObj.Refs2[1].GetValue(references), Is.EqualTo(ref1));
 
             testObj.Refs1.Remove(references.Get<ReferencableClass>(2u));
             testObj.Refs1.Remove(ref1);
-            Assert.AreEqual(1, testObj.Refs1.Count);
-            Assert.AreEqual(3, testObj.Refs1[0].RefId);
-            Assert.AreEqual(ref3, testObj.Refs1[0].GetValue(references));
+            Assert.That(testObj.Refs1.Count, Is.EqualTo(1));
+            Assert.That(testObj.Refs1[0].RefId, Is.EqualTo(3));
+            Assert.That(testObj.Refs1[0].GetValue(references), Is.EqualTo(ref3));
         }
 
         private static bool _registered;
@@ -94,6 +94,7 @@ namespace Ninjadini.Neuro.SyncTests
                 neuro.Sync(10, nameof(value.Refs1), ref value.Refs1);
                 neuro.Sync(11, nameof(value.Refs2), ref value.Refs2);
             });
+            _registered = true;
         }
 
         class RefTestClass

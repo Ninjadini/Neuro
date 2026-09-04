@@ -1,0 +1,7 @@
+root = true
+
+[*.cs]
+# NUnit.Analyzers 3.10's DisposeFieldsAndPropertiesInTearDownAnalyzer throws
+# 'Syntax node is not within syntax tree' on our source-generated partials, which surfaces
+# as AD0001. Turning its only rule off stops Roslyn from running that analyzer.
+dotnet_diagnostic.NUnit1032.severity = none

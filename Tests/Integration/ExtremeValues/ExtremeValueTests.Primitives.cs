@@ -13,10 +13,10 @@ namespace Ninjadini.Neuro.IntegrationTests
         }
 
         [TestCase(true), TestCase(false)]
-        public void Bool_Binary(bool v) => Assert.AreEqual(v, Bin(new BoolBox { Value = v }).Value);
+        public void Bool_Binary(bool v) => Assert.That(Bin(new BoolBox { Value = v }).Value, Is.EqualTo(v));
 
         [TestCase(true), TestCase(false)]
-        public void Bool_Json(bool v) => Assert.AreEqual(v, Jsn(new BoolBox { Value = v }).Value);
+        public void Bool_Json(bool v) => Assert.That(Jsn(new BoolBox { Value = v }).Value, Is.EqualTo(v));
 
 // ---------------------------------------------------------------------------------------------------- int
 
@@ -34,10 +34,10 @@ namespace Ninjadini.Neuro.IntegrationTests
         };
 
         [TestCaseSource(nameof(IntValues))]
-        public void Int_Binary(int v) => Assert.AreEqual(v, Bin(new IntBox { Value = v }).Value);
+        public void Int_Binary(int v) => Assert.That(Bin(new IntBox { Value = v }).Value, Is.EqualTo(v));
 
         [TestCaseSource(nameof(IntValues))]
-        public void Int_Json(int v) => Assert.AreEqual(v, Jsn(new IntBox { Value = v }).Value);
+        public void Int_Json(int v) => Assert.That(Jsn(new IntBox { Value = v }).Value, Is.EqualTo(v));
 
 // ---------------------------------------------------------------------------------------------------- uint
 
@@ -52,10 +52,10 @@ namespace Ninjadini.Neuro.IntegrationTests
         };
 
         [TestCaseSource(nameof(UIntValues))]
-        public void UInt_Binary(uint v) => Assert.AreEqual(v, Bin(new UIntBox { Value = v }).Value);
+        public void UInt_Binary(uint v) => Assert.That(Bin(new UIntBox { Value = v }).Value, Is.EqualTo(v));
 
         [TestCaseSource(nameof(UIntValues))]
-        public void UInt_Json(uint v) => Assert.AreEqual(v, Jsn(new UIntBox { Value = v }).Value);
+        public void UInt_Json(uint v) => Assert.That(Jsn(new UIntBox { Value = v }).Value, Is.EqualTo(v));
 
 // ---------------------------------------------------------------------------------------------------- long
 
@@ -72,10 +72,10 @@ namespace Ninjadini.Neuro.IntegrationTests
         };
 
         [TestCaseSource(nameof(LongValues))]
-        public void Long_Binary(long v) => Assert.AreEqual(v, Bin(new LongBox { Value = v }).Value);
+        public void Long_Binary(long v) => Assert.That(Bin(new LongBox { Value = v }).Value, Is.EqualTo(v));
 
         [TestCaseSource(nameof(LongValues))]
-        public void Long_Json(long v) => Assert.AreEqual(v, Jsn(new LongBox { Value = v }).Value);
+        public void Long_Json(long v) => Assert.That(Jsn(new LongBox { Value = v }).Value, Is.EqualTo(v));
 
 // ---------------------------------------------------------------------------------------------------- ulong
 
@@ -91,10 +91,10 @@ namespace Ninjadini.Neuro.IntegrationTests
         };
 
         [TestCaseSource(nameof(ULongValues))]
-        public void ULong_Binary(ulong v) => Assert.AreEqual(v, Bin(new ULongBox { Value = v }).Value);
+        public void ULong_Binary(ulong v) => Assert.That(Bin(new ULongBox { Value = v }).Value, Is.EqualTo(v));
 
         [TestCaseSource(nameof(ULongValues))]
-        public void ULong_Json(ulong v) => Assert.AreEqual(v, Jsn(new ULongBox { Value = v }).Value);
+        public void ULong_Json(ulong v) => Assert.That(Jsn(new ULongBox { Value = v }).Value, Is.EqualTo(v));
 
 // ---------------------------------------------------------------------------------------------------- float
 
@@ -116,10 +116,10 @@ namespace Ninjadini.Neuro.IntegrationTests
         };
 
         [TestCaseSource(nameof(FloatValues))]
-        public void Float_Binary(float v) => Assert.AreEqual(v, Bin(new FloatBox { Value = v }).Value);
+        public void Float_Binary(float v) => Assert.That(Bin(new FloatBox { Value = v }).Value, Is.EqualTo(v));
 
         [TestCaseSource(nameof(FloatValues))]
-        public void Float_Json(float v) => Assert.AreEqual(v, Jsn(new FloatBox { Value = v }).Value);
+        public void Float_Json(float v) => Assert.That(Jsn(new FloatBox { Value = v }).Value, Is.EqualTo(v));
 
         [Test, Ignore("Accepted limitation: -0f equals 0f, so the writer's default value check skips the field " +
                       "and the sign bit is lost. Fixing it means sign aware comparison in the default check for " +
@@ -127,14 +127,14 @@ namespace Ninjadini.Neuro.IntegrationTests
         public void Float_NegativeZero_KeepsSignBit_Binary()
         {
             var copy = Bin(new FloatBox { Value = -0f });
-            Assert.AreEqual(BitConverter.SingleToInt32Bits(-0f), BitConverter.SingleToInt32Bits(copy.Value));
+            Assert.That(BitConverter.SingleToInt32Bits(copy.Value), Is.EqualTo(BitConverter.SingleToInt32Bits(-0f)));
         }
 
         [Test, Ignore("Accepted limitation, see the binary variant above.")]
         public void Float_NegativeZero_KeepsSignBit_Json()
         {
             var copy = Jsn(new FloatBox { Value = -0f });
-            Assert.AreEqual(BitConverter.SingleToInt32Bits(-0f), BitConverter.SingleToInt32Bits(copy.Value));
+            Assert.That(BitConverter.SingleToInt32Bits(copy.Value), Is.EqualTo(BitConverter.SingleToInt32Bits(-0f)));
         }
 
 // ---------------------------------------------------------------------------------------------------- double
@@ -157,9 +157,9 @@ namespace Ninjadini.Neuro.IntegrationTests
         };
 
         [TestCaseSource(nameof(DoubleValues))]
-        public void Double_Binary(double v) => Assert.AreEqual(v, Bin(new DoubleBox { Value = v }).Value);
+        public void Double_Binary(double v) => Assert.That(Bin(new DoubleBox { Value = v }).Value, Is.EqualTo(v));
 
         [TestCaseSource(nameof(DoubleValues))]
-        public void Double_Json(double v) => Assert.AreEqual(v, Jsn(new DoubleBox { Value = v }).Value);
+        public void Double_Json(double v) => Assert.That(Jsn(new DoubleBox { Value = v }).Value, Is.EqualTo(v));
     }
 }
