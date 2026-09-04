@@ -1,21 +1,28 @@
 # Demo Project
 
-Easiest is to open the demo project in Unity
+Easiest is to open the demo project in Unity.
 
-Located in [Development~/ExampleProject](../Development~/ExampleProject/) folder.
+It lives in its own repository: [Ninjadini/NeuroExampleProject](https://github.com/Ninjadini/NeuroExampleProject)
 
- - [Scripts/CraftClicker/Model](../Development~/ExampleProject/Assets/Scripts/CraftClicker/Model/)
+```
+git clone https://github.com/Ninjadini/NeuroExampleProject.git
+```
+
+Open the cloned folder in Unity (6000.6 or newer). It pulls this package straight from git, so
+there is nothing else to set up.
+
+ - [Scripts/CraftClicker/Model](https://github.com/Ninjadini/NeuroExampleProject/tree/main/Assets/Scripts/CraftClicker/Model/)
    * Neuro data model
-- [Scripts/CraftClicker/CraftClickerLogic.cs](../Development~/ExampleProject/Assets/Scripts/CraftClicker/CraftClickerLogic.cs)
+- [Scripts/CraftClicker/CraftClickerLogic.cs](https://github.com/Ninjadini/NeuroExampleProject/blob/main/Assets/Scripts/CraftClicker/CraftClickerLogic.cs)
   * The logic code to load previous data... Modify+save data when the user perform interactions.
-- [Scripts/CraftClicker/CraftClickerUI.cs](../Development~/ExampleProject/Assets/Scripts/CraftClicker/UI/CraftClickerUI.cs)
+- [Scripts/CraftClicker/CraftClickerUI.cs](https://github.com/Ninjadini/NeuroExampleProject/blob/main/Assets/Scripts/CraftClicker/UI/CraftClickerUI.cs)
   * UI code to display the state of the 'game'
 
-- [Scripts/CraftClicker/Editor/](../Development~/ExampleProject/Assets/Scripts/CraftClicker/Editor/)
+- [Scripts/CraftClicker/Editor/](https://github.com/Ninjadini/NeuroExampleProject/tree/main/Assets/Scripts/CraftClicker/Editor/)
     * Editor tooling scripts such as content validators and content debugger
 
 
-- [Scripts/CraftClicker/Editor/CraftClickerAIContentCopier.cs](../Development~/ExampleProject/Assets/Scripts/CraftClicker/Editor/CraftClickerAIContentCopier.cs)
+- [Scripts/CraftClicker/Editor/CraftClickerAIContentCopier.cs](https://github.com/Ninjadini/NeuroExampleProject/blob/main/Assets/Scripts/CraftClicker/Editor/CraftClickerAIContentCopier.cs)
     * AI tool to generate the content and copy back the result to neuro data
     * Open the window via Tools > CraftClicker > AI content copier 
 

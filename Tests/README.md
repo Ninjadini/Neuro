@@ -5,5 +5,5 @@ These test sources live inside the package so Unity's Test Runner can compile th
 with `<Compile Include>` links rather than keeping a second copy.
 
 Unity only compiles a package's `Tests/` folder when the consuming project opts in, so this costs
-nothing to anyone who just adds the package. `Development~/ExampleProject` opts in via `"testables"`
-in its `Packages/manifest.json`.
+nothing to anyone who just adds the package. The [example project](https://github.com/Ninjadini/NeuroExampleProject)
+opts in via `"testables"` in its `Packages/manifest.json`.

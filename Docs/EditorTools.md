@@ -29,7 +29,7 @@ Set *Format* to JSON or Binary to match. For data written with `WriteGlobalTyped
 
 You can add your own sources by subclassing `NeuroContentDebugger.ContentProvider` - the demo project
 does this in
-[CraftClickerGameSaveContentProvider.cs](../Development~/ExampleProject/Assets/Scripts/CraftClicker/Editor/CraftClickerGameSaveContentProvider.cs).
+[CraftClickerGameSaveContentProvider.cs](https://github.com/Ninjadini/NeuroExampleProject/blob/main/Assets/Scripts/CraftClicker/Editor/CraftClickerGameSaveContentProvider.cs).
 
 ## Project Settings > Ninjadini ❖ Neuro
 

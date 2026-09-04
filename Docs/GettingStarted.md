@@ -268,7 +268,7 @@ void LoadIcon(SomeObject obj)
 
 # Saving player progress
 The easiest in Unity is to use LocalNeuroContinuousSave MonoBehaviour.
-See Save() in example [CraftClickerLogic.cs](../Development~/ExampleProject/Assets/Scripts/CraftClicker/CraftClickerLogic.cs)
+See Save() in example [CraftClickerLogic.cs](https://github.com/Ninjadini/NeuroExampleProject/blob/main/Assets/Scripts/CraftClicker/CraftClickerLogic.cs)
 
 ```
 public class MyPlayerSaveData

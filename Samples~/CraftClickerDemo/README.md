@@ -5,13 +5,14 @@ assets, so it cannot be imported here. It needs its own `ProjectSettings` (URP r
 assets, Input System actions) and a `NeuroData/` folder that lives at the project root, outside
 `Assets/`.
 
-Get it by cloning the repository and opening the project directly:
+It lives in its own repository. Clone it and open the folder directly:
 
 ```
-git clone https://github.com/Ninjadini/Neuro.git
+git clone https://github.com/Ninjadini/NeuroExampleProject.git
 ```
 
-Then open `Development~/ExampleProject/` in Unity (6000.6 or newer).
+Then open the cloned folder in Unity (6000.6 or newer). It pulls this package from git
+automatically, so there is nothing else to set up.
 
 It is a small idle/crafting game that exercises most of Neuro in one place: `Referencable` config
 types, `Reference<T>` links, status effects via inheritance, content validators, player progress
