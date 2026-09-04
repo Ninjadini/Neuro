@@ -55,7 +55,7 @@ namespace Ninjadini.Neuro.Editor
                     }
                     else
                     {
-                        btn.text = $"[{refObj.referencable.GetType().Name}] {refObj.referencable.TryGetIdAndName()} > {refObj.path}";
+                        btn.text = $"[{refObj.referencable.GetType().Name}] {NeuroEditorUtils.DisplayIdAndName(refObj.referencable)} > {refObj.path}";
                     }
                     btn.style.unityTextAlign = TextAnchor.MiddleLeft;
                     var localRefObj = refObj.referencable;

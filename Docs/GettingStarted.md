@@ -11,12 +11,23 @@ https://youtu.be/AZOHbK-prHo
 > To target a specific tag / release - to be safe from surprise API changes, use this format:  
 `https://github.com/Ninjadini/Neuro.git#v0.1.2`
 
+> [!TIP]
+> To run Neuro's own tests inside your project, add the package to `testables` in your
+> project's `Packages/manifest.json` — they then appear in `Window` > `General` > `Test Runner`:
+> ```json
+> "testables": [ "com.ninjadini.neuro-unity" ]
+> ```
+
 ### Your first Neuro reference type
 They are essentially your ScriptableObjects that hold some config data.  
 You can reference these items from other places via Reference<T> type - similar to linking objects in Unity, e.g. linking a Material to a Renderer's material field.  
 Each reference has a RefId (uint) which is unique, and a RefName (string) which does not need to be unique.  
 RefId number is what's used to link to the references.
 RefName is used for easy identification of the item.
+> [!IMPORTANT]
+> **Only the RefId links anything.** The RefName you see next to it - in file names, in JSON, in the editor -
+> is decoration for humans and is ignored on load. Renaming an item can never unlink it.
+> [More >](#the-refname-next-to-a-refid-is-only-there-to-read)
 ```
 using Ninjadini.Neuro;
 using System.Collections.Generic;
@@ -83,6 +94,17 @@ public class MyFirstNeuroObject : Referencable
     }
 ```
 
+### Types that are not supported
+These are a compile error rather than a runtime surprise:
+- `byte`, `sbyte`, `short`, `ushort`, `char`, `decimal` — numbers are varint encoded, so a narrow type
+  saves nothing. Use `int` / `uint` / `long` / `ulong`, `string` for `char`, `double` (or a `long` of
+  scaled units) for `decimal`. Enums backed by any of them are fine.
+- Arrays, `HashSet<>`, `IReadOnlyList<>` and other collections — only `List<>` and `Dictionary<,>`.
+- Dictionary keys that aren't string, struct or enum.
+
+Also supported, in case you didn't expect them: `Guid`, `Uri`, `Version`, `DateTimeOffset`, and Unity's
+`Vector2/3/4`, `Color`, `Gradient`, `AnimationCurve`, `Rect`, `Bounds`, `LayerMask` and friends.
+
 ### See it in editor for editing the data
 - `Tools` > `Neuro` > `❖ Editor`
 - It should already have selected your first type
@@ -90,6 +112,62 @@ public class MyFirstNeuroObject : Referencable
 - Note that all items has a unique uint `RefId` and string `RefName`
 - This is reflected in the JSON file name
 - You can see the location of the file by clicking `⊙ File`
+
+### RefIds in file names and JSON
+A new item's `RefId` is a random number rather than the next number up, so that two people adding items on
+separate branches do not both take the same id and conflict on merge.
+
+In memory and in the binary format a `RefId` is always a `uint`. In file names and in JSON it is written in
+base36 (`0-9a-z`), which keeps a generated id down to 4 characters - `NeuroData/1-MyItem/4zbc-my_item.json`.
+The generated range is picked so that every generated id is exactly 4 base36 chars and costs 3 bytes in the
+binary format. base36 rather than base62 because data file names have to survive a case insensitive file system.
+
+Every id has exactly one spelling and every spelling is one id. Note that `20` is base36, so it is the number
+72 - not 20. Only the text changes; the id is the same `uint` everywhere else.
+
+Hovering the `RefId` field in the editor tells you the plain number. If you want to see it everywhere - the
+reference drop downs, recent items, validator messages - turn on `Show Raw Ref Id Numbers` in
+`Project Settings > Ninjadini Neuro`, and ids read as `1v83 (87123)`. It is display only: file names, json and
+the id you type into the `RefId` field are always plain base36.
+
+### The RefName next to a RefId is only there to read
+Most places print the id and the name together:
+
+| Where | Looks like | What is actually read |
+|---|---|---|
+| Data file name | `4zbc-my_item.json` | `4zbc` |
+| Reference field in JSON | `"myItem": "4zbc:my_item"` | `4zbc` |
+| Enum field in JSON | `"state": "2:Crafting"` | `2` |
+| Polymorphic type field | `"-subType": "3:PlayerCharacter"` | `3` |
+
+> [!IMPORTANT]
+> Everything from the `-` or `:` onwards is **ignored on load**. Typing `"myItem": "4zbc"` by hand resolves
+> exactly the same, and renaming an item never unlinks anything - the stale names in other files simply get
+> rewritten next time those files are saved.
+
+The name is written purely so you can tell what an item is without looking it up.
+
+### Migrating data from before base36 RefIds
+RefIds used to be written in plain decimal, so `20-wood.json` meant RefId 20 and now reads as 72. If you have
+data from that version, Neuro warns you on load, and `Tools > Neuro > Migrate RefIds to base36...` converts it.
+
+The migration keeps the id numbers exactly as they are and only changes how they are spelled, so ids held
+outside the JSON - in save games, prefabs, or hard coded in your code - keep pointing at the same items.
+
+It can only be run once, and it says so if you try again. A name made only of digits is a valid base36 id
+(RefId 72 is `20`), so there is no way to tell a converted file from an unconverted one by looking at it - which
+is why the project records that it has been done. Commit your data before running it.
+
+### Changing an item's RefId
+Type a new id into the `RefId` field at the top of the editor and press enter. You will be asked to confirm, and
+told how many other items reference this one.
+
+On confirm Neuro checks the id is free, repoints every `Reference<>` in the data that pointed at the old id,
+renames the data file and saves everything it changed.
+
+Two things it can not do for you:
+- Undo only covers the item itself, not the other items that were repointed.
+- Ids stored outside the Neuro data - in scenes, prefabs, save games or hard coded in your code - are not updated.
 
 ### How to read from referencable/config at runtime
 ```
@@ -102,7 +180,8 @@ foreach (var theItem in table.SelectAll())
 }
 
 // Get an item by id or name
-var myItem = table.GetId(<myid>);
+var myItem = table.Get(myRefId);   // uint
+var sameItem = table.Get("myItem"); // RefName
 ```
 
 ### How to reference to other referencables
@@ -210,7 +289,7 @@ void LoadIcon(SomeObject obj)
 
 # Saving player progress
 The easiest in Unity is to use LocalNeuroContinuousSave MonoBehaviour.
-See Save() in example [CraftClickerLogic.cs](../ExampleProject~/Assets/Scripts/CraftClicker/CraftClickerLogic.cs)
+See Save() in example [CraftClickerLogic.cs](https://github.com/Ninjadini/NeuroExampleProject/blob/main/Assets/Scripts/CraftClicker/CraftClickerLogic.cs)
 
 ```
 public class MyPlayerSaveData
@@ -235,6 +314,26 @@ public class MyGameLogic : MonoBehaviour
 }
 ```
 
+### Saving without a MonoBehaviour
+Same thing, plain C#:
+```
+var save = LocalNeuroContinuousSave<MyPlayerSaveData>.CreateInPersistedData("save");
+var data = save.GetData();   // loads from disk on first call, creates a new one if there is no file
+data.PlayerLevel++;
+save.Save();                 // writes straight into the open file stream, no allocations
+save.DelayedSave(1f);        // or coalesce rapid changes into one write
+```
+It holds one file open for the life of the object, which is what makes it allocation free - so it is one
+instance per file. If loading fails, the bad file is copied to `<file>-failed<timestamp>` and you get a
+fresh object rather than an exception.
+
+For several files, or one off reads and writes, use `LocalNeuroStorage` instead - `Save(obj, name)`,
+`TryLoad<T>(name)`, `Delete(name)`, defaulting to `Application.persistentDataPath`.
+
+> [!NOTE]
+> Saves are binary and not encrypted - anyone can read and edit them. Nothing stops you writing your own
+> bytes to disk if you need more than that.
+
 
 # What's next ?
 
@@ -243,5 +342,7 @@ public class MyGameLogic : MonoBehaviour
 [Advanced usages >](AdvancedUsages.md)
 
 [BackwardCompatibility >](BackwardCompatibility.md)
+
+[Editor Tools & Settings >](EditorTools.md)
 
 [Editor Customisation >](EditorCustomisation.md)

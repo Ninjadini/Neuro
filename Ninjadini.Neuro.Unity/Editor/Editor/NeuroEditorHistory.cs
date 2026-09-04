@@ -226,7 +226,8 @@ namespace Ninjadini.Neuro.Editor
                 }
             }
             var str = value.RefName;
-            str = string.IsNullOrEmpty(str) ? value.RefId.ToString() : $"{value.RefId} : {str}";
+            var id = NeuroEditorUtils.DisplayRefId(value.RefId);
+            str = string.IsNullOrEmpty(str) ? id : $"{id} : {str}";
             return $"{value.GetType().Name} > {str}";
         }
     }

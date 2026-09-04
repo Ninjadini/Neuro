@@ -1,0 +1,15 @@
+---
+description: Ninjadini Neuro - [Neuro(#)] data types, Referencable config, Reference<T>, binary/JSON serialisation, NeuroData RefIds, Neuro codegen errors
+globs: ["**/*.cs"]
+alwaysApply: false
+---
+
+Neuro is a C# binary + JSON serializer with a Unity data-authoring layer, in namespace
+`Ninjadini.Neuro`. A Roslyn source generator emits the serialisation code from `[Neuro(#)]` attributed
+types, so most mistakes surface as compile errors (`Neuro022`, `Neuro101`, `Neuro102`, `Neuro300`,
+`Neuro303`, `Neuro312`, `Neuro404`, `Neuro406`, ...).
+
+The full condensed reference ships inside the Neuro package as tool-neutral markdown. Read
+`Docs/AI/neuro.md` before answering Neuro questions or writing Neuro types, then the reference file it
+routes you to. Depending on install, that is `Docs/AI/neuro.md`,
+`Packages/com.ninjadini.neuro-unity/Docs/AI/neuro.md`, or under `Library/PackageCache/`.

@@ -11,6 +11,8 @@ namespace Ninjadini.Neuro
     
     public class NeuroBytesWriter : INeuroSync
     {
+        /// A per thread writer you can reuse instead of allocating one.
+        /// Note that every write reuses the same buffer, so copy the result (`.ToArray()`) before the next write.
         [ThreadStatic] private static NeuroBytesWriter _shared;
         public static NeuroBytesWriter Shared => _shared ??= new NeuroBytesWriter(5120);
         
@@ -28,6 +30,14 @@ namespace Ninjadini.Neuro
             proto.Set(new byte[initialCapacity]);
         }
 
+        /// Writes a neuro object to bytes. This is the one to use in almost all cases.
+        /// `T` can be the base class or interface of `value` - the actual runtime type is written and read back.
+        /// Read it back with `NeuroBytesReader.Read&lt;T&gt;(bytes)`, where T can be any base type of the written object.
+        /// WARNING: the returned span points at this writer's own buffer, which the next `Write()` on the same writer
+        /// overwrites in place - a span you are still holding silently turns into the other object's bytes.
+        /// Call `.ToArray()` on it before writing anything else, unless you are done with it by then.
+        /// Alternatives: `WriteObject(value)` when you only have a `System.Type` at read time,
+        /// `WriteGlobalTyped(value)` when the reader has no idea what type to expect - see [NeuroGlobalType].
         public ReadOnlySpan<byte> Write<T>(T value)
         {
             if (value == null)
@@ -41,7 +51,13 @@ namespace Ninjadini.Neuro
             proto.Position = 0;
             lastKey = 0;
             NeuroSyncTypes<T>.TryAutoRegisterTypeOrThrow();
-            if (NeuroSyncTypes<T>.SizeType == NeuroConstants.ChildWithType)
+            var sizeType = NeuroSyncTypes<T>.SizeType;
+            if (sizeType != NeuroConstants.Child && sizeType != NeuroConstants.ChildWithType)
+            {
+                throw NeuroSyncErrors.NotAStandaloneType(typeof(T), "write");
+            }
+            // The runtime type is what matters, `value` may well be a sub class of T.
+            if (sizeType == NeuroConstants.ChildWithType || value.GetType() != typeof(T))
             {
                 proto.Write(1 << NeuroConstants.HeaderShift | NeuroConstants.ChildWithType);
                 var tag = NeuroSyncSubTypes<T>.GetTag(value.GetType());
@@ -50,14 +66,16 @@ namespace Ninjadini.Neuro
             }
             else
             {
-                proto.Write(1 << NeuroConstants.HeaderShift | NeuroSyncTypes<T>.SizeType);
+                proto.Write(1 << NeuroConstants.HeaderShift | sizeType);
                 NeuroSyncTypes<T>.GetOrThrow()(this, ref value);
             }
             proto.Write(NeuroConstants.EndOfChild);
             return new ReadOnlySpan<byte>(proto.Buffer, 0, proto.Position);
         }
 
-        /// This is a bit slower as it needs to use reflection once.
+        /// Same output as `Write&lt;T&gt;(value)` but for when the type is only known at runtime.
+        /// Read it back with `NeuroBytesReader.ReadObject(bytes, type)`.
+        /// This is a bit slower as it needs to use reflection once per type.
         public ReadOnlySpan<byte> WriteObject(object value)
         {
             if (value == null)
@@ -80,6 +98,10 @@ namespace Ninjadini.Neuro
             return new ReadOnlySpan<byte>(proto.Buffer, 0, proto.Position);
         }
 
+        /// Writes the object with its [NeuroGlobalType] id in front, so the reader can work out the type from the data alone.
+        /// Use this when the reading side doesn't know what to expect, e.g. mixed message streams or saved blobs.
+        /// Read it back with `NeuroBytesReader.ReadGlobalTyped(bytes)`. The type must have a [NeuroGlobalType] attribute.
+        /// The output is not interchangeable with `Write()` / `WriteObject()` output.
         public ReadOnlySpan<byte> WriteGlobalTyped(object value)
         {
             proto.Position = 0;
@@ -156,6 +178,8 @@ namespace Ninjadini.Neuro
             return new ReadOnlySpan<byte>(proto.Buffer, 0, proto.Position);
         }
         
+        /// The bytes of the last write. Like `Write()`'s result, this points at this writer's own buffer,
+        /// which the next write overwrites - copy it if you need to keep it.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BytesChunk GetCurrentBytesChunk()
         {
@@ -233,7 +257,7 @@ namespace Ninjadini.Neuro
 
         void INeuroSync.Sync<T>(uint key, string name, ref T value, T defaultValue)
         {
-            if (value != null && !value.Equals(defaultValue))
+            if (value != null && !NeuroSyncTypes.AreEqual(value, defaultValue))
             {
                 var sizeType = NeuroSyncTypes<T>.SizeType;
                 WriteHeader(key, sizeType);

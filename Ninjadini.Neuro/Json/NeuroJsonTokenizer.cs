@@ -3,6 +3,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Ninjadini.Neuro.SyncTests")]
+[assembly: InternalsVisibleTo("Ninjadini.Neuro.Tests.Sync")]
 [assembly: InternalsVisibleTo("Ninjadini.Neuro.Unity.Editor")]
 namespace Ninjadini.Neuro.Sync
 {
@@ -245,7 +246,12 @@ namespace Ninjadini.Neuro.Sync
                 index++;
                 return ReadString(jsonStr, ref index);
             }
-            if (char.IsNumber(c) || c == '-')
+            if (c == '-' && index + 1 < jsonStr.Length && jsonStr[index + 1] == 'I')
+            {
+                nodeType = NodeType.Value;
+                return ReadLiteral(jsonStr, "-Infinity", ref index);
+            }
+            if (IsDigit(c) || c == '-')
             {
                 nodeType = NodeType.Value;
                 return ReadNumber(jsonStr, ref index);
@@ -264,6 +270,18 @@ namespace Ninjadini.Neuro.Sync
             {
                 nodeType = NodeType.Value;
                 return ReadLiteral(jsonStr, "null", ref index);
+            }
+            // not part of the json spec, but the writer produces these for the values that have no other
+            // spelling, so reading them back has to work.
+            if (c == 'N')
+            {
+                nodeType = NodeType.Value;
+                return ReadLiteral(jsonStr, "NaN", ref index);
+            }
+            if (c == 'I')
+            {
+                nodeType = NodeType.Value;
+                return ReadLiteral(jsonStr, "Infinity", ref index);
             }
             throw Error(jsonStr, index, "Unexpected string '" + c +"'");
         }
@@ -295,35 +313,33 @@ namespace Ninjadini.Neuro.Sync
         static StringRange ReadString(string jsonStr, ref int index)
         {
             var start = index;
-            int endIndex;
-            while (true)
+            var i = index;
+            var length = jsonStr.Length;
+            while (i < length)
             {
-                endIndex = jsonStr.IndexOf('"', index);
-                if(endIndex < 0)
+                var c = jsonStr[i];
+                if (c == '\\')
                 {
-                    throw Error(jsonStr, index, "Expected string end '\"'");
+                    // whatever follows is escaped, including another backslash, so step over both.
+                    i += 2;
+                    continue;
                 }
-                if (jsonStr[endIndex - 1] != '\\')
+                if (c == '"')
                 {
-                    break;
+                    index = i + 1;
+                    return new StringRange()
+                    {
+                        Start = start,
+                        End = i
+                    };
                 }
-                else if (endIndex >= 2 && jsonStr[endIndex - 2] == '\\')
-                {
-                    // TODO
-                    throw new Exception("TODO Double // near a string end is not working yet");
-                }
-                else
-                {
-                    index = endIndex + 1;
-                }
+                i++;
             }
-            index = endIndex + 1;
-            return new StringRange()
-            {
-                Start = start,
-                End = endIndex
-            };
+            throw Error(jsonStr, index, "Expected string end '\"'");
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool IsDigit(char c) => c >= '0' && c <= '9';
 
         static StringRange ReadNumber(string jsonStr, ref int index)
         {
@@ -332,7 +348,7 @@ namespace Ninjadini.Neuro.Sync
             while (index < jsonStr.Length)
             {
                 var c = jsonStr[index];
-                if (char.IsNumber(c) || c == '.' || c == 'e' || c == 'E' || c == '+' || c == '-')
+                if (IsDigit(c) || c == '.' || c == 'e' || c == 'E' || c == '+' || c == '-')
                 {
                     index++;
                 }

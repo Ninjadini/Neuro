@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Ninjadini.Neuro.Sync;
@@ -8,6 +9,7 @@ namespace Ninjadini.Neuro
 {
     public class NeuroJsonReader : INeuroSync
     {
+        /// A per thread reader you can reuse instead of allocating one.
         [ThreadStatic] private static NeuroJsonReader _shared;
         public static NeuroJsonReader Shared => _shared ??= new NeuroJsonReader();
         
@@ -20,6 +22,7 @@ namespace Ninjadini.Neuro
         NeuroJsonTokenizer.VisitedNodes nodes;
         private int currentParent;
         private NeuroJsonTokenizer.StringRange currentValue;
+        private NeuroJsonTokenizer.NodeType currentValueType;
         private StringBuilder stringBuilder;
         
         
@@ -28,6 +31,11 @@ namespace Ninjadini.Neuro
             NeuroDefaultJsonSyncTypes.Register();
         }
         
+        /// Reads json written by `NeuroJsonWriter.Write()` or `WriteObject()`. This is the one to use in almost all cases.
+        /// `T` can be any base class or interface of the written object - the sub class named by "-subType" is what you get back.
+        /// Throws if the json turns out to describe a type that isn't a `T`.
+        /// Alternatives: `ReadObject(json, type)` when the type is only known at runtime,
+        /// `ReadGlobalTyped(json)` for json written by `WriteGlobalTyped()`.
         public T Read<T>(string json, ReaderOptions opts = default)
         {
             T value = default;
@@ -37,20 +45,35 @@ namespace Ninjadini.Neuro
 
         public void Read<T>(string json, ref T result, ReaderOptions opts = default)
         {
-            options = opts;
-            jsonStr = json;
-            nodes = _jsonVisitor.Visit(json);
-            currentParent = nodes.Array[0].Parent;
-            NeuroSyncTypes<T>.TryAutoRegisterTypeOrThrow();
-            var subTypeNode = FindNode(NeuroJsonWriter.FieldName_ClassTag);
             if (typeof(T) == typeof(object))
             {
                 throw GetErrorAboutGlobalTypes("json");
             }
+            NeuroSyncTypes<T>.TryAutoRegisterTypeOrThrow();
+            var sizeType = NeuroJsonSyncTypes<T>.SizeType;
+            if (sizeType != NeuroConstants.Child && sizeType != NeuroConstants.ChildWithType)
+            {
+                throw NeuroSyncErrors.NotAStandaloneType(typeof(T), "read");
+            }
+            if (IsNothingToRead(json))
+            {
+                result = default;
+                return;
+            }
+            options = opts;
+            jsonStr = json;
+            nodes = _jsonVisitor.Visit(json);
+            currentParent = nodes.Array[0].Parent;
+            var subTypeNode = FindNode(NeuroJsonWriter.FieldName_ClassTag);
             if (subTypeNode.Type != NeuroJsonTokenizer.NodeType.Unknown)
             {
                 var tag = GetFirstUintPart(subTypeNode.Value);
                 NeuroSyncSubTypes<T>.Sync(this, tag, ref result);
+            }
+            else if (sizeType == NeuroConstants.ChildWithType)
+            {
+                // T is itself a registered sub class, the json just didn't spell the tag out.
+                NeuroSyncSubTypes<T>.Sync(this, NeuroSyncSubTypes<T>.GetTag(typeof(T)), ref result);
             }
             else
             {
@@ -58,7 +81,8 @@ namespace Ninjadini.Neuro
             }
         }
         
-        /// This is a bit slower as it needs to use reflection once.
+        /// Same as `Read&lt;T&gt;(json)` but for when the type is only known at runtime.
+        /// This is a bit slower as it needs to use reflection once per type.
         public object ReadObject(string json, Type type, ReaderOptions opts = default)
         {
             object result = null;
@@ -69,6 +93,11 @@ namespace Ninjadini.Neuro
         /// This is a bit slower as it needs to use reflection once.
         public void ReadObject(string json, Type type, ref object resultTarget, ReaderOptions opts = default)
         {
+            if (IsNothingToRead(json))
+            {
+                resultTarget = null;
+                return;
+            }
             options = opts;
             jsonStr = json;
             nodes = _jsonVisitor.Visit(json);
@@ -80,9 +109,15 @@ namespace Ninjadini.Neuro
             resultTarget = typeInfo.Sync(this, tag, resultTarget);
         }
         
+        /// Reads json written by `NeuroJsonWriter.WriteGlobalTyped()`, working the type out from the "-globalType" field.
+        /// Use this when you don't know what type to expect. Throws if the json has no "-globalType" field.
         public object ReadGlobalTyped(string json, ReaderOptions opts = default)
         {
             object result = null;
+            if (IsNothingToRead(json))
+            {
+                return null;
+            }
             options = opts;
             jsonStr = json;
             nodes = _jsonVisitor.Visit(json);
@@ -103,6 +138,17 @@ namespace Ninjadini.Neuro
             return result;
         }
 
+        /// null, empty and a literal `null` document all read back as no value, mirroring what the writers emit.
+        static bool IsNothingToRead(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return true;
+            }
+            var trimmed = json.AsSpan().Trim();
+            return trimmed.Length == 4 && trimmed.SequenceEqual("null".AsSpan());
+        }
+
         T INeuroSync.GetPooled<T>()
         {
             return options.ObjectPool?.Borrow<T>();
@@ -117,94 +163,149 @@ namespace Ninjadini.Neuro
 
         void INeuroSync.Sync(ref int value)
         {
-            value = int.Parse(currentValue.AsSpan(jsonStr));
+            value = int.Parse(currentValue.AsSpan(jsonStr), NumberStyles.Integer, CultureInfo.InvariantCulture);
         }
 
         void INeuroSync.Sync(ref uint value)
         {
-            value = uint.Parse(currentValue.AsSpan(jsonStr));
+            value = uint.Parse(currentValue.AsSpan(jsonStr), NumberStyles.Integer, CultureInfo.InvariantCulture);
         }
 
         void INeuroSync.Sync(ref long value)
         {
-            value = long.Parse(currentValue.AsSpan(jsonStr));
+            value = long.Parse(currentValue.AsSpan(jsonStr), NumberStyles.Integer, CultureInfo.InvariantCulture);
         }
 
         void INeuroSync.Sync(ref ulong value)
         {
-            value = ulong.Parse(currentValue.AsSpan(jsonStr));
+            value = ulong.Parse(currentValue.AsSpan(jsonStr), NumberStyles.Integer, CultureInfo.InvariantCulture);
         }
 
         void INeuroSync.Sync(ref float value)
         {
-            value = float.Parse( currentValue.AsSpan(jsonStr));
+            value = float.Parse(currentValue.AsSpan(jsonStr), NumberStyles.Float, CultureInfo.InvariantCulture);
         }
 
         void INeuroSync.Sync(ref double value)
         {
-            value = double.Parse( currentValue.AsSpan(jsonStr));
+            value = double.Parse(currentValue.AsSpan(jsonStr), NumberStyles.Float, CultureInfo.InvariantCulture);
         }
 
         void INeuroSync.Sync(ref string value)
         {
-            var strSpan = jsonStr.AsSpan(currentValue.Start, currentValue.Length);
-            var slashIndex = strSpan.IndexOf("\\", StringComparison.Ordinal);
-            if (slashIndex >= 0)
-            {
-                if (stringBuilder == null)
-                {
-                    stringBuilder = new StringBuilder();
-                }
-                else
-                {
-                    stringBuilder.Length = 0;
-                }
-                while (slashIndex >= 0)
-                {
-                    stringBuilder.Append(strSpan.Slice(0, slashIndex));
-                    if (strSpan.Length > slashIndex + 1 && strSpan[slashIndex + 1] == 'n')
-                    {
-                        stringBuilder.Append("\n");
-                    }
-                    else
-                    {
-                        stringBuilder.Append(strSpan[slashIndex + 1]);
-                    }
-                    strSpan = strSpan.Slice(slashIndex + 2);
-                    slashIndex = strSpan.IndexOf("\\", StringComparison.Ordinal);
-                }
-                stringBuilder.Append(strSpan);
-                value = stringBuilder.ToString();
-                stringBuilder.Length = 0;
-            }
-            else if(IsCurrentValueNull())
+            if (IsCurrentValueNull())
             {
                 value = null;
+                return;
+            }
+            var strSpan = jsonStr.AsSpan(currentValue.Start, currentValue.Length);
+            var slashIndex = strSpan.IndexOf('\\');
+            if (slashIndex < 0)
+            {
+                value = jsonStr.Substring(currentValue.Start, currentValue.Length);
+                return;
+            }
+            if (stringBuilder == null)
+            {
+                stringBuilder = new StringBuilder();
             }
             else
             {
-                value = jsonStr.Substring(currentValue.Start, currentValue.Length);
+                stringBuilder.Length = 0;
             }
+            while (slashIndex >= 0)
+            {
+                stringBuilder.Append(strSpan.Slice(0, slashIndex));
+                strSpan = strSpan.Slice(slashIndex + 1);
+                if (strSpan.Length == 0)
+                {
+                    // a backslash with nothing after it, there is nothing left to unescape.
+                    break;
+                }
+                var escaped = strSpan[0];
+                var consumed = 1;
+                switch (escaped)
+                {
+                    case 'n':
+                        stringBuilder.Append('\n');
+                        break;
+                    case 't':
+                        stringBuilder.Append('\t');
+                        break;
+                    case 'r':
+                        stringBuilder.Append('\r');
+                        break;
+                    case 'b':
+                        stringBuilder.Append('\b');
+                        break;
+                    case 'f':
+                        stringBuilder.Append('\f');
+                        break;
+                    case 'u':
+                        if (strSpan.Length >= 5 && TryReadHex4(strSpan.Slice(1, 4), out var unicodeChar))
+                        {
+                            stringBuilder.Append(unicodeChar);
+                            consumed = 5;
+                        }
+                        else
+                        {
+                            stringBuilder.Append(escaped);
+                        }
+                        break;
+                    default:
+                        // covers \" \\ \/ and anything else we don't have a meaning for.
+                        stringBuilder.Append(escaped);
+                        break;
+                }
+                strSpan = strSpan.Slice(consumed);
+                slashIndex = strSpan.IndexOf('\\');
+            }
+            stringBuilder.Append(strSpan);
+            value = stringBuilder.ToString();
+            stringBuilder.Length = 0;
+        }
+
+        static bool TryReadHex4(ReadOnlySpan<char> chars, out char result)
+        {
+            var parsed = 0;
+            for (var i = 0; i < 4; i++)
+            {
+                var c = chars[i];
+                int digit;
+                if (c >= '0' && c <= '9') digit = c - '0';
+                else if (c >= 'a' && c <= 'f') digit = c - 'a' + 10;
+                else if (c >= 'A' && c <= 'F') digit = c - 'A' + 10;
+                else
+                {
+                    result = default;
+                    return false;
+                }
+                parsed = (parsed << 4) | digit;
+            }
+            result = (char)parsed;
+            return true;
         }
 
         bool IsCurrentValueNull()
         {
-            return currentValue.Length == 4 && jsonStr[currentValue.Start] == 'n' &&
+            // a quoted "null" is the four character string, only a bare null is the null literal.
+            return currentValueType != NeuroJsonTokenizer.NodeType.String &&
+                   currentValue.Length == 4 && jsonStr[currentValue.Start] == 'n' &&
                    jsonStr[currentValue.Start + 1] == 'u' && jsonStr[currentValue.Start + 2] == 'l' &&
-                   jsonStr[currentValue.Start + 2] == 'l';
+                   jsonStr[currentValue.Start + 3] == 'l';
         }
         
         public ReadOnlySpan<char> CurrentValue => jsonStr != null ? currentValue.AsSpan(jsonStr) : default;
 
         void INeuroSync.Sync<T>(ref Reference<T> value)
         {
-            value.RefId = GetFirstUintPart(currentValue);
+            value.RefId = GetFirstRefIdPart(currentValue);
         }
 
         void INeuroSync.SyncEnum<T>(ref int value)
         {
             var endIndex = jsonStr.IndexOf(':', currentValue.Start, currentValue.Length);
-            value = int.Parse(jsonStr.AsSpan(currentValue.Start, (endIndex > 0 ? endIndex : currentValue.End) - currentValue.Start));
+            value = int.Parse(jsonStr.AsSpan(currentValue.Start, (endIndex > 0 ? endIndex : currentValue.End) - currentValue.Start), NumberStyles.Integer, CultureInfo.InvariantCulture);
         }
 
         NeuroJsonTokenizer.VisitedNode FindNode(string key)
@@ -228,6 +329,7 @@ namespace Ninjadini.Neuro
             if (node.Type != NeuroJsonTokenizer.NodeType.Unknown)
             {
                 var parentBefore = currentParent;
+                currentValueType = node.Type;
                 if (node.Type == NeuroJsonTokenizer.NodeType.Group)
                 {
                     currentParent = node.Value.Start;
@@ -251,6 +353,7 @@ namespace Ninjadini.Neuro
             if (node.Type != NeuroJsonTokenizer.NodeType.Unknown)
             {
                 var parentBefore = currentParent;
+                currentValueType = node.Type;
                 if (node.Type == NeuroJsonTokenizer.NodeType.Group)
                 {
                     currentParent = node.Value.Start;
@@ -292,6 +395,7 @@ namespace Ninjadini.Neuro
             if (node.Type != NeuroJsonTokenizer.NodeType.Unknown)
             {
                 var parentBefore = currentParent;
+                currentValueType = node.Type;
                 if (node.Type == NeuroJsonTokenizer.NodeType.Group)
                 {
                     currentParent = node.Value.Start;
@@ -318,6 +422,7 @@ namespace Ninjadini.Neuro
             {
                 var parentBefore = currentParent;
                 currentValue = node.Value;
+                currentValueType = node.Type;
                 NeuroJsonSyncTypes<T>.GetOrThrow()(this, ref value);
                 currentParent = parentBefore;
             }
@@ -383,6 +488,7 @@ namespace Ninjadini.Neuro
                 {
                     currentParent = childNode.Value.Start;
                     currentValue = childNode.Value;
+                    currentValueType = childNode.Type;
                     T value = i < values.Count ? values[i] : default;
                     if (IsCurrentValueNull())
                     {
@@ -473,10 +579,12 @@ namespace Ninjadini.Neuro
                 {
                     currentParent = childNode.Value.Start;
                     currentValue = childNode.Key;
+                    currentValueType = NeuroJsonTokenizer.NodeType.String;
                     TKey itemKey = default;
                     kDel(this, ref itemKey);
                     
                     currentValue = childNode.Value;
+                    currentValueType = childNode.Type;
                     TValue itemValue = default;
                     if (IsCurrentValueNull())
                     {
@@ -503,6 +611,22 @@ namespace Ninjadini.Neuro
                 }
             }
             currentParent = parentBefore;
+        }
+
+        uint GetFirstRefIdPart(in NeuroJsonTokenizer.StringRange stringRange)
+        {
+            var len = stringRange.Length;
+            if (len == 0)
+            {
+                return 0;
+            }
+            var endIndex = jsonStr.IndexOf(':', stringRange.Start, len);
+            var span = jsonStr.AsSpan(stringRange.Start, (endIndex > 0 ? endIndex : stringRange.End) - stringRange.Start);
+            if (!NeuroRefId.TryParse(span, out var refId))
+            {
+                throw new Exception($"`{span.ToString()}` is not a valid RefId @ {stringRange.Start}");
+            }
+            return refId;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -6,6 +6,15 @@ var bytes = NeuroBytesWriter.Shared.Write(myData).ToArray();
 // Read byte array to neuro object
 var myReadData = NeuroBytesReader.Shared.Read<MyData>(bytes);
 ```
+> [!WARNING]
+> `Write()` returns a span over the writer's own buffer, which the next `Write()` on the same writer overwrites
+> in place - a span you are still holding silently turns into the other object's bytes:
+> ```
+> var a = NeuroBytesWriter.Shared.Write(objA);   // span into the shared buffer
+> var b = NeuroBytesWriter.Shared.Write(objB);   // a now reads as objB's bytes, no error
+> ```
+> So call `.ToArray()` on the result before writing anything else, unless you are done with it by then.
+> The same goes for `GetCurrentBytesChunk()`.
 
 ### Clone neuro data via binary serialization
 ```
@@ -20,14 +29,41 @@ var jsonString = NeuroJsonWriter.Shared.Write(data);
 // Read JSON string to neuro object
 var myData = NeuroJsonReader.Shared.Read<MyData>(jsonString);
 ```
+
+### Which read / write call do I use?
+Both the binary and JSON reader/writer have the same three pairs. They differ only in how the type is worked out on the reading side.
+
+| | Write | Read | Use when |
+|---|---|---|---|
+| **Generic** | `Write(value)` | `Read<MyType>(data)` | You know the type at compile time. Almost always this one. |
+| **Runtime type** | `WriteObject(value)` | `ReadObject(data, type)` | You only have a `System.Type`. Same data format as above, just a bit slower - it uses reflection once per type. |
+| **Global type** | `WriteGlobalTyped(value)` | `ReadGlobalTyped(data)` | The reading side has no idea what to expect. The type id is stored in the data, so the type needs a `[NeuroGlobalType]` attribute. Not interchangeable with the other two. |
+
+#### Sub classes
+The generic parameter is only a hint - what gets written is the object's actual runtime type.
+So you can write through a base class or interface and read it back as the sub class:
+```
+Animal animal = new Dog() { Barks = 7 };
+
+var bytes = NeuroBytesWriter.Shared.Write(animal).ToArray();   // writes it as a Dog
+var result = NeuroBytesReader.Shared.Read<Animal>(bytes);      // result is a Dog
+```
+You can read as any base type of the written object. Reading as an unrelated type (`Read<Cat>` above) throws.
+
+#### Empty input
+Reading nothing gives you back nothing rather than an exception - empty bytes, and `null` / `""` / `"null"` json,
+all read back as `null` on all three read calls. That mirrors the writers, which emit exactly those for a null value.
+
+#### Top level types
+`Write` / `Read` need a neuro object - a class or struct with `[Neuro]` fields.
+A bare `int`, `string`, `List<>` etc has no header of its own so there would be nothing to read it back with; those calls throw.
+Put the value in a field of a neuro object and write that instead.
 > [!TIP]
-> JSON output will print references and enum in this format `"myItem": "2:mySecondItemName"`
-> 
-> This looks like you can't change the ref name of items or it will unlink the values, but that is not the case
-> 
-> The only thing that matters is the number. You can just have `"myItem": 2` and it'll work
-> 
-> The ref name there is just so that it is easy for you to figue out what the item is.
+> JSON prints references and enums as `"myItem": "4zbc:mySecondItemName"` - only the part before the `:` is
+> read, the name is there for you. See
+> [RefName is only there to read](GettingStarted.md#the-refname-next-to-a-refid-is-only-there-to-read).
+>
+> `NeuroJsonWriter.Options.TagValuesOnly` drops the name suffixes if you want the shorter output.
 
 ### Content validator
 ```
@@ -57,7 +93,7 @@ Your validator will also be automatically included in Unity's edit mode test run
 Say you want to use an object in Neuro world, but you can not modify the code, e.g. 3rd party.
 
 You can write the 'sync' code manually. This is how Unity's build in data types such as Vector3 are registered.   
-See full example of Unity ones in this class: [NeuroDefaultUnityTypesHook.cs](Ninjadini.Neuro.Unity/RunTime/NeuroDefaultUnityTypesHook.cs)
+See full example of Unity ones in this class: [NeuroDefaultUnityTypesHook.cs](../Ninjadini.Neuro.Unity/RunTime/NeuroDefaultUnityTypesHook.cs)
 
 Short example using Unity.Mathematics.int2:
 ```
@@ -187,6 +223,25 @@ vistor.Visit(myObjToVisit, new MyCustomVisitor(refs));
 ```
 
 
+# Object pooling / zero allocations
+
+Once the buffers are warm, Neuro allocates nothing except the objects it hands back to you.
+To avoid those too, read with a pool and give the objects back when you are done with them.
+
+```
+var options = new ReaderOptions(myPool); // myPool : INeuroObjectPool
+var obj = NeuroBytesReader.Shared.Read<MyData>(bytes, options);
+
+// ... later, walks the whole object graph and returns every neuro object in it
+NeuroPoolCollector.Shared.ReturnAllToPool(obj, myPool);
+```
+
+`INeuroObjectPool` is just `T Borrow<T>()` and `void Return(object)`.
+`NeuroPoolCollector.BasicPool` is a usable default if you don't want to write one.
+
+Only worth it for data you read repeatedly - network messages, replay frames. Config data is read once.
+
+
 # Reserve / Deprecate tags
 ```
 public class MyObjectWithOldFields
@@ -203,6 +258,11 @@ When changing a type of an existing field, it is recommended to also change the 
 This ensures it keeps the backward compatibility to old saved data.
 
 If you are in early stage of development, it might be ok to reuse the tags and just wipe the data to keep the tag numbers tidy.
+
+Reserved tags count as taken everywhere Neuro reports tag usage - the tag map at the top of the
+generated `NeuroTypesRegister` file, and the conflict errors - so the "next free" number it gives you
+will always skip past them. See [BackwardCompatibility.md](BackwardCompatibility.md) for what that
+looks like.
 
 
 
@@ -231,15 +291,49 @@ In both cases, you will also need to stop using `NeuroDataProvider.GetSharedTabl
 Instead call via `NeuroReferences.Default.GetTable<T>()`
 
 
-# Selective assembly scanning for faster compile time
-By default Neuro will scan all assemblies for Neuro objects, this may be slow in a large project.   
-Turn on selective assemblies mode to only scan certain assemblies.
-1. In all the assemblies where you define Neuro types, add `[assembly:Neuro(0)]` - not the assemblies you use Neuro, just the places you define Neuro objects with `[Neuro(123)]`
-2. In Unity Project Settings > Player > Scripting Define Symbols, add NEURO_SELECTIVE_ASSEMBLIES and apply.
+# Fast code gen for faster compile time
+By default Neuro looks at every type in every assembly to work out what to generate, which may be slow in a
+large project. Fast code gen mode narrows that down so it can tell from the source text alone whether a type
+is worth looking at properly.
+
+1. In all the assemblies where you define Neuro types, add `[assembly:Neuro]` - not the assemblies where you
+   *use* Neuro, just the places you define Neuro objects with `[Neuro(123)]`
+2. In Unity Project Settings > Player > Scripting Define Symbols, add `NEURO_FAST_CODEGEN` and apply.
+
+### The extra rule
+Normally a type takes part in Neuro if the class *or any of its fields* is attributed. Under fast code gen only
+the class level attribute counts:
+
+```csharp
+// Fine, the class says what it is.
+[Neuro(1)]
+public partial class Item
+{
+    [Neuro(1)] public int Id;
+}
+
+// Error Neuro406 - the fields are attributed but the class never opted in.
+public partial class Item
+{
+    [Neuro(1)] public int Id;
+}
+```
+
+`[NeuroGlobalType(#)]` counts as opting in too, and `INeuroCustomTypesRegistryHook` implementations are still
+found without any attribute. A subclass of a Neuro class still has to carry its own `[Neuro(#)]`, same as always.
+
+If you forget one you get a compile error pointing at the type, not a silent "type is not registered" at runtime.
+
+### Notes
+- `NEURO_SELECTIVE_ASSEMBLIES`, the old name for this define, still works.
+- The check that decides whether to look at a type reads the source text, so it does not follow `using` aliases.
+  Writing `using N = Ninjadini.Neuro.NeuroAttribute;` and then `[N(1)]` will not be picked up in this mode.
 
 
 # What's next ?
 
 [Backward Compatibility >](BackwardCompatibility.md)
+
+[Editor Tools & Settings >](EditorTools.md)
 
 [Editor Customisation >](EditorCustomisation.md)

@@ -43,6 +43,47 @@ using Ninjadini.Neuro;
         TestUtils.GenerateSourceExpectingError(src, "HashSet<int>");
     }
 
+    [TestCase("byte"), TestCase("sbyte"), TestCase("short"), TestCase("ushort"), TestCase("char"), TestCase("decimal")]
+    public void NarrowNumberTypes_Fail(string type)
+    {
+        var src = @"
+using Ninjadini.Neuro;
+        partial class TestClass
+        {
+            [Neuro(1)] public " + type + @" obj;
+        }
+";
+        TestUtils.GenerateSourceExpectingError(src, type);
+    }
+
+    [TestCase("byte"), TestCase("char")]
+    public void NarrowNumberTypes_InsideCollections_Fail(string type)
+    {
+        var src = @"
+using Ninjadini.Neuro;
+        partial class TestClass
+        {
+            [Neuro(1)] public System.Collections.Generic.List<" + type + @"> obj;
+        }
+";
+        TestUtils.GenerateSourceExpectingError(src, type);
+    }
+
+    [Test]
+    public void EnumBackedByNarrowType_Works()
+    {
+        // the field type is the enum, not its underlying type, so this stays supported.
+        var src = @"
+using Ninjadini.Neuro;
+        enum SmallEnum : byte { A = 1, B = 2 }
+        partial class TestClass
+        {
+            [Neuro(1)] public SmallEnum obj;
+        }
+";
+        TestUtils.GenerateSource(src);
+    }
+
     [Test]
     public void List_Works()
     {

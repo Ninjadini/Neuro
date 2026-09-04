@@ -8,7 +8,7 @@ namespace Ninjadini.Neuro
     /// For example, you want to save player progress.
     /// This feature is written in such a way that it will not allocate memory to write into disk.
     /// This only work for writing to a single file at a time, if you want to save to different files, use LocalNeuroStorage - but not as efficient
-    /// If you don't want to use MonoBehaviour, use LocalNeuroContinuousSave<T> directly.
+    /// If you don't want to use MonoBehaviour, use <c>LocalNeuroContinuousSave&lt;T&gt;</c> directly.
     public class LocalNeuroContinuousSave : MonoBehaviour
     {
         [Tooltip("Warning: The value you set here may be overridden at runtime by call to `SetSaveFileName()`.")]

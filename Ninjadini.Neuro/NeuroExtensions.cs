@@ -23,19 +23,20 @@ namespace Ninjadini.Neuro
                 return "null";
             }
             var name = referencable.RefName;
-            return string.IsNullOrEmpty(name) ? $"#{referencable.RefId.ToString()}" : $"#{referencable.RefId}:{name}";
+            var id = NeuroRefId.ToString(referencable.RefId);
+            return string.IsNullOrEmpty(name) ? $"#{id}" : $"#{id}:{name}";
         }
         
         public static string TryGetIdAndName<T>(this Reference<T> reference, NeuroReferences refs) where T : class, IReferencable
         {
             var value = reference.GetValue(refs);
-            return value != null ? TryGetIdAndName(value) : $"#{reference.RefId.ToString()}";
+            return value != null ? TryGetIdAndName(value) : $"#{NeuroRefId.ToString(reference.RefId)}";
         }
         
         public static string TryGetIdAndName<T>(this Reference<T> reference, NeuroReferenceTable<T> table) where T : class, IReferencable
         {
             var value = reference.GetValue(table);
-            return value != null ? TryGetIdAndName(value) : $"#{reference.RefId.ToString()}";
+            return value != null ? TryGetIdAndName(value) : $"#{NeuroRefId.ToString(reference.RefId)}";
         }
         
         
@@ -43,7 +44,7 @@ namespace Ninjadini.Neuro
         public static string TryGetIdAndName<T>(this Reference<T> reference) where T : class, IReferencable
         {
             var value = reference.GetValue();
-            return value != null ? TryGetIdAndName(value) : $"#{reference.RefId.ToString()}";
+            return value != null ? TryGetIdAndName(value) : $"#{NeuroRefId.ToString(reference.RefId)}";
         }
 #endif
         

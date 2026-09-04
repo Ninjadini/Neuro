@@ -1,0 +1,31 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  dotnet:
+    name: .NET tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles('Development~/**/*.csproj') }}
+          restore-keys: nuget-
+
+      - name: Restore
+        run: dotnet restore 'Development~/Neuro.sln'
+
+      - name: Test
+        run: dotnet test 'Development~/Neuro.sln' --no-restore --nologo

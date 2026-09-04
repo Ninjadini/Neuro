@@ -41,7 +41,7 @@ namespace Ninjadini.Neuro.Sync
                 {
                     if (kv.Value == tag && kv.Key != typeof(TSubClass))
                     {
-                        throw new System.Exception($"{typeof(TRootType)}'s subClass tag is already registered for {kv.Key} but we are trying to register again for {typeof(TSubClass)}");
+                        throw new System.Exception($"{typeof(TRootType)}'s subClass tag is already registered for {kv.Key} but we are trying to register again for {typeof(TSubClass)}. {NeuroTagListText.Describe(_tagBySubClass, "tags")}");
                     }
                 }
             }
@@ -69,8 +69,19 @@ namespace Ninjadini.Neuro.Sync
             NeuroSyncSubTypes<TSubClass>.Delegate = (INeuroSync neuro, uint tag, ref TSubClass value) =>
             {
                 var baseValue = value != null ? (TRootType)value : default;
-                _subClassesByTag[tag](neuro, ref baseValue);
-                value = baseValue as TSubClass;
+                GetSubClassDelegateOrThrow(tag)(neuro, ref baseValue);
+                if (baseValue is TSubClass typedValue)
+                {
+                    value = typedValue;
+                }
+                else if (baseValue is object otherValue)
+                {
+                    throw NeuroSyncErrors.UnexpectedSubType(typeof(TSubClass), otherValue.GetType());
+                }
+                else
+                {
+                    value = null;
+                }
             };
         }
 
@@ -111,8 +122,17 @@ namespace Ninjadini.Neuro.Sync
             }
             else
             {
-                _subClassesByTag[tag](neuro, ref baseValue);
+                GetSubClassDelegateOrThrow(tag)(neuro, ref baseValue);
             }
+        }
+
+        static NeuroSyncDelegate<TRootType> GetSubClassDelegateOrThrow(uint tag)
+        {
+            if (_subClassesByTag == null || !_subClassesByTag.TryGetValue(tag, out var result))
+            {
+                throw NeuroSyncErrors.UnknownSubTypeTag(typeof(TRootType), tag);
+            }
+            return result;
         }
         
         internal static NeuroSyncDelegate<TRootType> GetOrThrow(Type type)
@@ -122,11 +142,7 @@ namespace Ninjadini.Neuro.Sync
             {
                 return NeuroSyncTypes<TRootType>.Delegate;
             }
-            if (_subClassesByTag == null)
-            {
-                throw new SystemException($"`{type}` is not registered as a subtype of {typeof(TRootType).Name}.");
-            }
-            return _subClassesByTag[tag];
+            return GetSubClassDelegateOrThrow(tag);
         }
         
         internal static uint GetTag(Type type)

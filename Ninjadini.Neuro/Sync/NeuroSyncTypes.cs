@@ -6,6 +6,7 @@ namespace Ninjadini.Neuro.Sync
 {
     public delegate void NeuroSyncDelegate<T>(INeuroSync neuro, ref T value);
     public delegate void NeuroSyncSubDelegate<T>(INeuroSync neuro, uint tag, ref T value);
+    public delegate bool NeuroEqualsDelegate<T>(T a, T b);
 
     public static class NeuroSyncTypes
     {
@@ -22,6 +23,12 @@ namespace Ninjadini.Neuro.Sync
         public static bool Exists<T>()
         {
             return NeuroSyncTypes<T>.Delegate != null;
+        }
+
+        internal static bool AreEqual<T>(T value, T defaultValue) where T : IEquatable<T>
+        {
+            var equals = NeuroSyncTypes<T>.EqualsDelegate;
+            return equals != null ? equals(value, defaultValue) : value.Equals(defaultValue);
         }
 
         public static void Register<T>(NeuroSyncDelegate<T> d, uint globalTypeId = 0)
@@ -52,6 +59,11 @@ namespace Ninjadini.Neuro.Sync
         {
             NeuroSyncTypes<T>.SizeType = (uint)sizeType;
             NeuroSyncTypes<T>.Delegate = d;
+        }
+
+        public static void RegisterEqualityCheck<T>(NeuroEqualsDelegate<T> d)
+        {
+            NeuroSyncTypes<T>.EqualsDelegate = d;
         }
         
         static bool _scannedAssemblies;
@@ -155,7 +167,15 @@ namespace Ninjadini.Neuro.Sync
             }
             var subTypesType = typeof(NeuroSyncTypes<>).MakeGenericType(type);
             var method = subTypesType.GetMethod("GetTypeInfo", BindingFlags.NonPublic | BindingFlags.Static);
-            result = (TypeInfo) method.Invoke(null, null);
+            try
+            {
+                result = (TypeInfo) method.Invoke(null, null);
+            }
+            catch (TargetInvocationException e) when (e.InnerException != null)
+            {
+                // don't bury the actual problem inside a reflection exception
+                throw e.InnerException;
+            }
             _typeInfos[type] = result;
             return result;
         }
@@ -172,6 +192,7 @@ namespace Ninjadini.Neuro.Sync
     {
         internal static uint SizeType;
         internal static NeuroSyncDelegate<T> Delegate;
+        internal static NeuroEqualsDelegate<T> EqualsDelegate;
         
         internal static NeuroSyncDelegate<T> GetOrThrow()
         {
@@ -232,6 +253,11 @@ namespace Ninjadini.Neuro.Sync
                         return output;
                     }
                 };
+            }
+            if (Delegate != null)
+            {
+                // it is registered, it just isn't something that can be read/written on its own.
+                throw NeuroSyncErrors.NotAStandaloneType(typeof(T), "read or write");
             }
             throw new Exception($"{typeof(T)} is not registered. You might just need to call NeuroTypesRegister.Register()");
         }

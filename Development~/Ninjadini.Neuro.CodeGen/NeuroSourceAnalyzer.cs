@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Threading;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -20,37 +21,49 @@ namespace Ninjadini.Neuro.CodeGen
         static readonly DiagnosticDescriptor ReadOnlyFieldRule = new DiagnosticDescriptor("Neuro022", "Readonly Neuro field on primitive types", "Neuro attributed field with readonly keyword found @ {0}, which is not a class type", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor ReadOnlyWithoutInitializerFieldRule = new DiagnosticDescriptor("Neuro023", "Readonly Neuro fields without an initializer", "Neuro attribute field that is readonly must have a 'new' initializer assignment @ {0}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor UnsupportedTypeRule = new DiagnosticDescriptor("Neuro101", "Unsupported type", "Unsupported type `{0}` found @ {1}", "Syntax", DiagnosticSeverity.Error, true);
+        static readonly DiagnosticDescriptor UnsupportedNumberTypeRule = new DiagnosticDescriptor("Neuro102", "Unsupported number type", "Unsupported number type `{0}` found @ {1}. Whole numbers are stored as variable length ints, so a narrow type saves nothing - use int, uint, long or ulong. For char use string, for decimal use double or a long of scaled units.", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor InvalidDictionaryKeyTypeRule = new DiagnosticDescriptor("Neuro101", "Invalid dictionary key type", "Unsupported dictionary key type `{0}` found @ {1}", "Syntax", DiagnosticSeverity.Error, true);
-        static readonly DiagnosticDescriptor InvalidTagRangeRule = new DiagnosticDescriptor(InvalidTagDiagnosticID, "Invalid field neuro tag", "Neuro field attribute tag must be between 0 and "+int.MaxValue+" @ {1}", "Syntax", DiagnosticSeverity.Error, true);
-        static readonly DiagnosticDescriptor FieldTagConflictRule = new DiagnosticDescriptor(FieldTagConflictDiagnosticID, "Field attribute tag already used", "Neuro field attribute tag {0} of `{1}` is already used by another field `{2}`", "Syntax", DiagnosticSeverity.Error, true);
+        static readonly DiagnosticDescriptor InvalidTagRangeRule = new DiagnosticDescriptor(InvalidTagDiagnosticID, "Invalid field neuro tag", "Neuro field attribute tag of `{0}` must be between 1 and "+int.MaxValue+". {1}", "Syntax", DiagnosticSeverity.Error, true);
+        static readonly DiagnosticDescriptor FieldTagConflictRule = new DiagnosticDescriptor(FieldTagConflictDiagnosticID, "Field attribute tag already used", "Neuro field attribute tag {0} of `{1}` is already used by another field `{2}`. {3}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor MissingClassAttributeRule = new DiagnosticDescriptor("Neuro404", "Missing neuro class attribute", "`{0}` needs neuro class attribute `[Neuro(#)]` because it's base class `{1}` is a Neuro class.", "Syntax", DiagnosticSeverity.Error, true);
+        static readonly DiagnosticDescriptor FastCodeGenClassAttributeRule = new DiagnosticDescriptor("Neuro406", "Missing neuro class attribute", "`{0}` has [Neuro] field(s) but no class level [Neuro(#)] attribute. " + NeuroCodeGenUtils.DefineSymbol_FastCodeGen + " is on, which requires every Neuro type to declare itself with a class level attribute.", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor MultipleBaseClassRootsRule = new DiagnosticDescriptor("Neuro405", "Multiple inheritance paths not supported", "`{0}` extends from multiple inheritance paths: `{1}` and `{2}`. This is not supported for now.", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor InvalidClassTagRangeRule = new DiagnosticDescriptor("Neuro002", "Invalid class neuro tag",  "Neuro class attribute tag must be between 0 and "+int.MaxValue+" @ {0}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor PartialClassRule = new DiagnosticDescriptor("Neuro101", "Non-partial Neuro class",  "{0} is not a partial class. It is required so Neuro can write to private fields without reflection.", "Syntax", DiagnosticSeverity.Error, true);
-        public static readonly DiagnosticDescriptor ClassTagConflictRule = new DiagnosticDescriptor("Neuro303", "Class attribute tag already used", "Neuro class attribute tag {0} of `{1}` is already used by another class `{2}`. Full list of tags: {3}", "Syntax", DiagnosticSeverity.Error, true);
-        public static readonly DiagnosticDescriptor ClassTagReservedRule = new DiagnosticDescriptor("Neuro304", "Class attribute tag reserved", "Neuro class attribute tag {0} of `{1}` is marked as reserved `[ReservedNeuroTag({0})]`. Full list of tags: {2}", "Syntax", DiagnosticSeverity.Error, true);
-        public static readonly DiagnosticDescriptor GlobalTypeConflictRule = new DiagnosticDescriptor("Neuro310", "Global type id already used", "Neuro global type id {0} of `{1}` is already used by another class `{2}`. Full list of global ids: {3}", "Syntax", DiagnosticSeverity.Error, true);
+        public static readonly DiagnosticDescriptor ClassTagConflictRule = new DiagnosticDescriptor("Neuro303", "Class attribute tag already used", "Neuro class attribute tag {0} of `{1}` is already used by another class `{2}`. {3}", "Syntax", DiagnosticSeverity.Error, true);
+        public static readonly DiagnosticDescriptor ClassTagReservedRule = new DiagnosticDescriptor("Neuro304", "Class attribute tag reserved", "Neuro class attribute tag {0} of `{1}` is marked as reserved `[ReservedNeuroTag({0})]`. {2}", "Syntax", DiagnosticSeverity.Error, true);
+        /// `[Neuro(0)]` is not a tag, it is a question - answer it with the numbers this hierarchy has
+        /// already spent so the next one can be typed straight in.
+        public static readonly DiagnosticDescriptor ClassTagNotSetRule = new DiagnosticDescriptor("Neuro305", "Class attribute tag not set", "Neuro class attribute tag of `{0}` is not set. {1}", "Syntax", DiagnosticSeverity.Error, true);
+        public static readonly DiagnosticDescriptor GlobalTypeIdNotSetRule = new DiagnosticDescriptor("Neuro313", "Global type id not set", "Neuro global type id of `{0}` is not set. {1}", "Syntax", DiagnosticSeverity.Error, true);
+        public static readonly DiagnosticDescriptor GlobalTypeConflictRule = new DiagnosticDescriptor("Neuro310", "Global type id already used", "Neuro global type id {0} of `{1}` is already used by another class `{2}`. {3}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor GlobalTypeRangeRule = new DiagnosticDescriptor("Neuro311", "Invalid global neuro type id",  "Neuro global type id must be between 0 and "+int.MaxValue+" @ {0}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor RefsGlobalTypeRule = new DiagnosticDescriptor("Neuro312", "Global neuro type attribute missing",  "Neuro global type attribute `[NeuroGlobalType(#)]` is required in `{0}` because it is an IReferencable", "Syntax", DiagnosticSeverity.Error, true);
         public static readonly DiagnosticDescriptor ExceptionThrown = new DiagnosticDescriptor("Neuro911", "Exception was thrown while generating Neuro source", "Neuro codegen exception: {0}", "Syntax", DiagnosticSeverity.Error, true);
 
         [ThreadStatic]
         static Dictionary<uint, string> tempTagDict;
+        [ThreadStatic]
+        static List<NeuroTagReport.Entry> tempTagEntries;
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(
             UnsupportedTypeRule,
+            UnsupportedNumberTypeRule,
             InvalidDictionaryKeyTypeRule,
             ReadOnlyFieldRule, 
             ReadOnlyWithoutInitializerFieldRule,
             InvalidTagRangeRule, 
             FieldTagConflictRule, 
             MissingClassAttributeRule,
+            FastCodeGenClassAttributeRule,
             MultipleBaseClassRootsRule,
             InvalidClassTagRangeRule, 
             PartialClassRule, 
             ClassTagConflictRule,
             ClassTagReservedRule,
+            ClassTagNotSetRule,
             GlobalTypeConflictRule,
+            GlobalTypeIdNotSetRule,
             GlobalTypeRangeRule,
             RefsGlobalTypeRule,
             ExceptionThrown);
@@ -62,24 +75,107 @@ namespace Ninjadini.Neuro.CodeGen
             
             context.RegisterCompilationStartAction(compilationStart =>
             {
-                if (!NeuroCodeGenUtils.CanScanAssembly(compilationStart.Compilation))
+                var scanMode = GetScanMode(compilationStart.Compilation);
+                if (scanMode == NeuroScanMode.Skip)
                 {
                     return;
                 }
-                compilationStart.RegisterSymbolAction(ProcessClassOrStruct, SymbolKind.NamedType);
+                compilationStart.RegisterSymbolAction(symbolContext => ProcessClassOrStruct(symbolContext, scanMode), SymbolKind.NamedType);
+                if (scanMode == NeuroScanMode.Fast)
+                {
+                    // Finding the fields that should have opted their type in by reading every type's members
+                    // costs more than everything else this analyzer does put together, and almost every type
+                    // it reads has no Neuro field at all. Asking for the attributes instead turns it into work
+                    // proportional to the number of [Neuro] attributes actually written in the assembly.
+                    compilationStart.RegisterSyntaxNodeAction(
+                        nodeContext => ProcessFieldAttribute((AttributeSyntax)nodeContext.Node, nodeContext.SemanticModel, nodeContext.ReportDiagnostic, nodeContext.CancellationToken),
+                        SyntaxKind.Attribute);
+                }
             });
             
         }
 
-        public void ProcessClassOrStruct(SymbolAnalysisContext context)
+        public static NeuroScanMode GetScanMode(Compilation compilation)
+        {
+            return NeuroCodeGenUtils.GetScanMode(compilation);
+        }
+
+        public void ProcessClassOrStruct(SymbolAnalysisContext context, NeuroScanMode scanMode)
         {
             var classSymbol = context.Symbol as INamedTypeSymbol;
             if (classSymbol == null)
             {
                 return;
             }
+            if (scanMode == NeuroScanMode.Fast && !ProcessFastCodeGenOptIn(classSymbol, context))
+            {
+                return;
+            }
             var fieldsInfo = ProcessFields(classSymbol, context);
-            ProcessNeuroBaseClass(classSymbol, fieldsInfo, context);
+            ProcessNeuroBaseClass(classSymbol, fieldsInfo, context, scanMode);
+        }
+
+        /// A [Neuro] attribute on a field of a type that never declared itself a Neuro type. Reached from the
+        /// attribute itself, so the check costs nothing for the types that have no Neuro attributes at all.
+        public void ProcessFieldAttribute(AttributeSyntax attribute, SemanticModel semanticModel, Action<Diagnostic> reportDiagnostic, CancellationToken cancellationToken)
+        {
+            if (!NeuroCodeGenUtils.IsNeuroAttributeNameSyntax(attribute))
+            {
+                return;
+            }
+            var attributeList = attribute.Parent as AttributeListSyntax;
+            var fieldDeclaration = attributeList == null ? null : attributeList.Parent as FieldDeclarationSyntax;
+            if (fieldDeclaration == null)
+            {
+                return;
+            }
+            var typeDeclaration = fieldDeclaration.Parent as TypeDeclarationSyntax;
+            if (typeDeclaration == null)
+            {
+                return;
+            }
+            foreach (var modifier in fieldDeclaration.Modifiers)
+            {
+                // Static and const fields take no part in Neuro either way, so they can't be the mistake
+                // this rule is looking for.
+                if (modifier.IsKind(SyntaxKind.StaticKeyword) || modifier.IsKind(SyntaxKind.ConstKeyword))
+                {
+                    return;
+                }
+            }
+            var classSymbol = semanticModel.GetDeclaredSymbol(typeDeclaration, cancellationToken) as INamedTypeSymbol;
+            if (classSymbol == null || HasNeuroTypeAttribute(classSymbol))
+            {
+                return;
+            }
+            reportDiagnostic(Diagnostic.Create(FastCodeGenClassAttributeRule, attribute.GetLocation(), classSymbol.ToString()));
+        }
+
+        static bool HasNeuroTypeAttribute(INamedTypeSymbol classSymbol)
+        {
+            return NeuroCodeGenUtils.FindNeuroAttribute(classSymbol) != null
+                   || NeuroCodeGenUtils.FindNeuroGlobalTypeAttribute(classSymbol) != null;
+        }
+
+        /// Did this type opt in to Neuro? If it didn't, reports the subclass that should have and returns
+        /// false so the caller can stop.
+        bool ProcessFastCodeGenOptIn(INamedTypeSymbol classSymbol, SymbolAnalysisContext context)
+        {
+            if (HasNeuroTypeAttribute(classSymbol))
+            {
+                return true;
+            }
+            // The [Neuro] field with no class level attribute is reported by ProcessFieldAttribute, which the
+            // driver reaches straight from the attribute rather than by reading this type's members.
+            // A subclass of a Neuro class takes part in serialization whether or not it declares anything of
+            // its own, so it has to opt in as well. Only class level attributes count here, which means no
+            // one's members need reading to answer it.
+            var baseClassSymbol = FindNeuroBaseType(classSymbol, NeuroScanMode.Fast);
+            if (baseClassSymbol != null)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(MissingClassAttributeRule, classSymbol.Locations.FirstOrDefault(), classSymbol.ToString(), baseClassSymbol.ToString()));
+            }
+            return false;
         }
 
         private ClassFieldsInfo ProcessFields(INamedTypeSymbol classSymbol, SymbolAnalysisContext context)
@@ -87,11 +183,17 @@ namespace Ninjadini.Neuro.CodeGen
             if (tempTagDict == null)
             {
                 tempTagDict = new Dictionary<uint, string>();
+                tempTagEntries = new List<NeuroTagReport.Entry>();
             }
             else
             {
                 tempTagDict.Clear();
+                tempTagEntries.Clear();
             }
+            // Tag problems are held back until the whole class has been read: the message quotes every
+            // tag in the class, and the fields after this one have not been looked at yet. Only
+            // allocated when there is something to report, so a clean class pays nothing.
+            List<PendingTagDiagnostic> pending = null;
             var result = ClassFieldsInfo.NoNeuro;
             foreach (var fieldSymbol in classSymbol.GetMembers().OfType<IFieldSymbol>())
             {
@@ -111,6 +213,7 @@ namespace Ninjadini.Neuro.CodeGen
                         else
                         {
                             tempTagDict.Add(tag, "* reserved or deprecated *");
+                            tempTagEntries.Add(new NeuroTagReport.Entry(tag, null));
                         }
                     }
                 }
@@ -152,21 +255,66 @@ namespace Ninjadini.Neuro.CodeGen
                     var tag = NeuroCodeGenUtils.GetNeuroTag(fieldAttribute);
                     if(tag == 0 || tag >= int.MaxValue)
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(InvalidTagRangeRule, NeuroCodeGenUtils.GetLocation(fieldAttribute), fieldSymbol.ToString()));
+                        // `[Neuro(0)]` is how you ask what is free - the report tells you. Nothing is
+                        // added to the tag set, so it can't go on to look like a conflict as well.
+                        Add(ref pending, new PendingTagDiagnostic(InvalidTagRangeRule, NeuroCodeGenUtils.GetLocation(fieldAttribute), fieldSymbol.ToString()));
+                        continue;
                     }
                     if (tempTagDict.TryGetValue(tag, out var otherField))
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(FieldTagConflictRule, NeuroCodeGenUtils.GetLocation(fieldAttribute), tag, fieldSymbol.ToString(), otherField));
+                        Add(ref pending, new PendingTagDiagnostic(FieldTagConflictRule, NeuroCodeGenUtils.GetLocation(fieldAttribute), tag, fieldSymbol.ToString(), otherField));
                     }
                     else
                     {
                         tempTagDict.Add(tag, fieldSymbol.Name);
+                        tempTagEntries.Add(new NeuroTagReport.Entry(tag, fieldSymbol.Name));
                     }
                 }
             }
-            
+            if (pending != null)
+            {
+                var report = NeuroTagReport.Describe(tempTagEntries);
+                foreach (var item in pending)
+                {
+                    context.ReportDiagnostic(item.Create(report));
+                }
+            }
             tempTagDict.Clear();
+            tempTagEntries.Clear();
             return result;
+        }
+
+        static void Add(ref List<PendingTagDiagnostic> pending, PendingTagDiagnostic diagnostic)
+        {
+            if (pending == null)
+            {
+                pending = new List<PendingTagDiagnostic>();
+            }
+            pending.Add(diagnostic);
+        }
+
+        /// A tag diagnostic waiting on the used-tag report, which is only complete once every field in
+        /// the class has been read. The report is always the last message argument.
+        struct PendingTagDiagnostic
+        {
+            readonly DiagnosticDescriptor rule;
+            readonly Location location;
+            readonly object[] args;
+
+            public PendingTagDiagnostic(DiagnosticDescriptor rule_, Location location_, params object[] args_)
+            {
+                rule = rule_;
+                location = location_;
+                args = args_;
+            }
+
+            public Diagnostic Create(string report)
+            {
+                var allArgs = new object[args.Length + 1];
+                args.CopyTo(allArgs, 0);
+                allArgs[args.Length] = report;
+                return Diagnostic.Create(rule, location, allArgs);
+            }
         }
         
         public static bool HasFieldInitializer(IFieldSymbol fieldSymbol)
@@ -196,6 +344,18 @@ namespace Ninjadini.Neuro.CodeGen
 
         DiagnosticDescriptor GetTypeProblem(ITypeSymbol classSymbol)
         {
+            switch (classSymbol.SpecialType)
+            {
+                // These would pass codegen and then fail at runtime with "type is not registered", so reject
+                // them here instead. Enums backed by these are fine - the field type there is the enum.
+                case SpecialType.System_Byte:
+                case SpecialType.System_SByte:
+                case SpecialType.System_Int16:
+                case SpecialType.System_UInt16:
+                case SpecialType.System_Char:
+                case SpecialType.System_Decimal:
+                    return UnsupportedNumberTypeRule;
+            }
             var typeKind = classSymbol.TypeKind;
             if (typeKind != TypeKind.Class 
                 && typeKind != TypeKind.Struct 
@@ -237,11 +397,58 @@ namespace Ninjadini.Neuro.CodeGen
             return null;
         }
 
-        private void ProcessNeuroBaseClass(INamedTypeSymbol classSymbol, ClassFieldsInfo fieldsInfo, SymbolAnalysisContext context)
+        static bool IsNeuroType(INamedTypeSymbol symbol, NeuroScanMode scanMode)
+        {
+            if (NeuroCodeGenUtils.FindNeuroAttribute(symbol) != null)
+            {
+                return true;
+            }
+            if (scanMode == NeuroScanMode.Fast)
+            {
+                // A class level attribute is the only way in, so members don't need reading.
+                return false;
+            }
+            foreach (var member in symbol.GetMembers())
+            {
+                var fieldSymbol = member as IFieldSymbol;
+                if (fieldSymbol != null && NeuroCodeGenUtils.FindNeuroAttribute(fieldSymbol) != null)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// A class deriving from a Neuro class takes part in serialization whether or not it declares members
+        /// of its own, so it still has to be checked for its `[Neuro(#)]` tag. Without this a field-less
+        /// subclass would slip through and silently serialize as its base type.
+        static ISymbol FindNeuroBaseType(INamedTypeSymbol classSymbol, NeuroScanMode scanMode)
+        {
+            var baseSymbol = classSymbol.BaseType;
+            while (baseSymbol != null)
+            {
+                if (IsNeuroType(baseSymbol, scanMode))
+                {
+                    return baseSymbol;
+                }
+                baseSymbol = baseSymbol.BaseType;
+            }
+            foreach (var interfaceSymbol in classSymbol.AllInterfaces)
+            {
+                if (NeuroCodeGenUtils.FindNeuroAttribute(interfaceSymbol) != null)
+                {
+                    return interfaceSymbol;
+                }
+            }
+            return null;
+        }
+
+        private void ProcessNeuroBaseClass(INamedTypeSymbol classSymbol, ClassFieldsInfo fieldsInfo, SymbolAnalysisContext context, NeuroScanMode scanMode)
         {
             var classAttribute = NeuroCodeGenUtils.FindNeuroAttribute(classSymbol);
-            if (classAttribute == null && fieldsInfo == ClassFieldsInfo.NoNeuro)
+            if (classAttribute == null && fieldsInfo == ClassFieldsInfo.NoNeuro && FindNeuroBaseType(classSymbol, scanMode) == null)
             {
+                // nothing marks this type as taking part in Neuro, so leave it alone.
                 return;
             }
             if (fieldsInfo == ClassFieldsInfo.NeuroWithPrivateFields)
@@ -279,10 +486,7 @@ namespace Ninjadini.Neuro.CodeGen
             var baseSymbol = classSymbol.BaseType;
             while (baseSymbol != null)
             {
-                if (NeuroCodeGenUtils.FindNeuroAttribute(baseSymbol) != null 
-                    || baseSymbol.GetMembers()
-                        .Where(m => m.Kind == SymbolKind.Field).Cast<IFieldSymbol>()
-                        .Any(s => NeuroCodeGenUtils.FindNeuroAttribute(s) != null))
+                if (IsNeuroType(baseSymbol, scanMode))
                 {
                     baseClassSymbol = baseSymbol;
                     break;

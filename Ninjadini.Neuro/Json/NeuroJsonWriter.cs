@@ -11,6 +11,7 @@ namespace Ninjadini.Neuro
         public const string FieldName_GlobalType = "-globalType";
         public const string FieldName_ClassTag = "-subType";
         
+        /// A per thread writer you can reuse instead of allocating one.
         [ThreadStatic] private static NeuroJsonWriter _shared;
         public static NeuroJsonWriter Shared => _shared ??= new NeuroJsonWriter();
         
@@ -41,6 +42,11 @@ namespace Ninjadini.Neuro
             NeuroDefaultJsonSyncTypes.Register();
         }
         
+        /// Writes a neuro object to a JSON string. This is the one to use in almost all cases.
+        /// `T` can be the base class or interface of `value` - the actual runtime type is written out as a "-subType" field and read back.
+        /// Read it back with `NeuroJsonReader.Read&lt;T&gt;(json)`, where T can be any base type of the written object.
+        /// Alternatives: `WriteObject(value)` when you only have a `System.Type` at read time,
+        /// `WriteGlobalTyped(value)` when the reader has no idea what type to expect - see [NeuroGlobalType].
         public string Write<T>(T value, NeuroReferences refs = null, Options options = 0)
         {
             if (defaultStringBuilder == null)
@@ -57,6 +63,7 @@ namespace Ninjadini.Neuro
             return result;
         }
         
+        /// Same as `Write&lt;T&gt;(value)` but appends into your own StringBuilder instead of allocating a string.
         public void WriteTo<T>(StringBuilder strBuilder, ref T value, NeuroReferences refs = null, Options options = 0)
         {
             if (strBuilder == null)
@@ -65,23 +72,29 @@ namespace Ninjadini.Neuro
             }
             if (value == null)
             {
-                stringBuilder.Append("null");
+                strBuilder.Append("null");
                 return;
             }
             if (typeof(T) == typeof(object))
             {
                 throw GetErrorAboutGlobalTypes(value.GetType());
             }
+            NeuroSyncTypes<T>.TryAutoRegisterTypeOrThrow();
+            var sizeType = NeuroJsonSyncTypes<T>.SizeType;
+            if (sizeType != NeuroConstants.Child && sizeType != NeuroConstants.ChildWithType)
+            {
+                throw NeuroSyncErrors.NotAStandaloneType(typeof(T), "write");
+            }
             opts = options & ~Options.ExcludeTopLevelGlobalType;
             references = refs ?? defaultReferences;
             stringBuilder = strBuilder;
             stringBuilder.Append("{\n");
             numIndents = 1;
-            NeuroSyncTypes<T>.TryAutoRegisterTypeOrThrow();
             
             var type = value.GetType();
             var posAtStart = stringBuilder.Length;
-            if (NeuroJsonSyncTypes<T>.SizeType == NeuroConstants.ChildWithType)
+            // The runtime type is what matters, `value` may well be a sub class of T.
+            if (sizeType == NeuroConstants.ChildWithType || type != typeof(T))
             {
                 var subTag = NeuroSyncSubTypes<T>.GetTag(type);
                 AppendSubTagAndOrName(FieldName_ClassTag, subTag, type.Name);
@@ -101,7 +114,9 @@ namespace Ninjadini.Neuro
             stringBuilder = null;
         }
         
-        /// This is a bit slower as it needs to use reflection once.
+        /// Same output as `Write&lt;T&gt;(value)` but for when the type is only known at runtime.
+        /// Read it back with `NeuroJsonReader.ReadObject(json, type)`.
+        /// This is a bit slower as it needs to use reflection once per type.
         public string WriteObject(object value, NeuroReferences refs = null, Options options = 0)
         {
             if (defaultStringBuilder == null)
@@ -127,7 +142,7 @@ namespace Ninjadini.Neuro
             }
             if (value == null)
             {
-                stringBuilder.Append("null");
+                strBuilder.Append("null");
                 return;
             }
             opts = options & ~Options.ExcludeTopLevelGlobalType;
@@ -155,6 +170,9 @@ namespace Ninjadini.Neuro
             stringBuilder = null;
         }
 
+        /// Writes the object with a "-globalType" field in front, so the reader can work out the type from the json alone.
+        /// Use this when the reading side doesn't know what to expect. The type must have a [NeuroGlobalType] attribute.
+        /// Read it back with `NeuroJsonReader.ReadGlobalTyped(json)`.
         public string WriteGlobalTyped(object value, NeuroReferences refs = null, Options options = 0)
         {
             if (defaultStringBuilder == null)
@@ -273,40 +291,9 @@ namespace Ninjadini.Neuro
         {
             if (value != null)
             {
-                stringBuilder.Append("\"");
-                var strSpan = value.AsSpan();
-                var lineBreakIndex = strSpan.IndexOf("\n", StringComparison.Ordinal);
-                var quoteIndex = strSpan.IndexOf("\"", StringComparison.Ordinal);
-                var slashIndex = strSpan.IndexOf("\\", StringComparison.Ordinal);
-                // TODO, this is just way too complicated for what it is
-                while (quoteIndex >= 0 || slashIndex >= 0 || lineBreakIndex >= 0)
-                {
-                    if (lineBreakIndex >= 0 
-                        && (quoteIndex == -1 || lineBreakIndex < quoteIndex)
-                        && (slashIndex == -1 || lineBreakIndex < slashIndex))
-                    {
-                        stringBuilder.Append(strSpan.Slice(0, lineBreakIndex));
-                        strSpan = strSpan.Slice(lineBreakIndex + 1);
-                        stringBuilder.Append("\\n");
-                    }
-                    else if ((quoteIndex < slashIndex && quoteIndex != -1) || slashIndex == -1)
-                    {
-                        stringBuilder.Append(strSpan.Slice(0, quoteIndex));
-                        strSpan = strSpan.Slice(quoteIndex + 1);
-                        stringBuilder.Append("\\\"");
-                    }
-                    else
-                    {
-                        stringBuilder.Append(strSpan.Slice(0, slashIndex));
-                        strSpan = strSpan.Slice(slashIndex + 1);
-                        stringBuilder.Append(@"\\");
-                    }
-                    lineBreakIndex = strSpan.IndexOf("\n", StringComparison.Ordinal);
-                    slashIndex = strSpan.IndexOf("\\", StringComparison.Ordinal);
-                    quoteIndex = strSpan.IndexOf("\"", StringComparison.Ordinal);
-                }
-                stringBuilder.Append(strSpan);
-                stringBuilder.Append("\"");
+                stringBuilder.Append('"');
+                AppendEscaped(stringBuilder, value);
+                stringBuilder.Append('"');
             }
             else
             {
@@ -314,22 +301,85 @@ namespace Ninjadini.Neuro
             }
         }
 
+        /// Writes the body of a json string. Escapes exactly what the spec requires - the quote, the backslash
+        /// and every control character below U+0020 - using the short form where there is one and \u00xx otherwise.
+        /// Everything else, unicode included, goes out as is.
+        static void AppendEscaped(StringBuilder stringBuilder, string value)
+        {
+            var start = 0;
+            for (var i = 0; i < value.Length; i++)
+            {
+                var c = value[i];
+                if (c >= ' ' && c != '"' && c != '\\')
+                {
+                    continue;
+                }
+                if (i > start)
+                {
+                    stringBuilder.Append(value, start, i - start);
+                }
+                switch (c)
+                {
+                    case '"':
+                        stringBuilder.Append("\\\"");
+                        break;
+                    case '\\':
+                        stringBuilder.Append("\\\\");
+                        break;
+                    case '\n':
+                        stringBuilder.Append("\\n");
+                        break;
+                    case '\r':
+                        stringBuilder.Append("\\r");
+                        break;
+                    case '\t':
+                        stringBuilder.Append("\\t");
+                        break;
+                    case '\b':
+                        stringBuilder.Append("\\b");
+                        break;
+                    case '\f':
+                        stringBuilder.Append("\\f");
+                        break;
+                    default:
+                        stringBuilder.Append("\\u00");
+                        AppendHexDigit(stringBuilder, (c >> 4) & 0xF);
+                        AppendHexDigit(stringBuilder, c & 0xF);
+                        break;
+                }
+                start = i + 1;
+            }
+            if (start < value.Length)
+            {
+                stringBuilder.Append(value, start, value.Length - start);
+            }
+        }
+
+        static void AppendHexDigit(StringBuilder stringBuilder, int digit)
+        {
+            stringBuilder.Append((char)(digit < 10 ? '0' + digit : 'a' + digit - 10));
+        }
+
         void INeuroSync.Sync<T>(ref Reference<T> value)
         {
+            var refId = value.RefId;
             if ((opts & Options.TagValuesOnly) == 0)
             {
                 var refName = value.GetValue(references)?.RefName;
                 if (!string.IsNullOrEmpty(refName))
                 {
                     stringBuilder.Append("\"");
-                    stringBuilder.Append(value.RefId);
+                    NeuroRefId.Append(stringBuilder, refId);
                     stringBuilder.Append(":");
-                    stringBuilder.Append(refName);
+                    AppendEscaped(stringBuilder, refName);
                     stringBuilder.Append("\"");
                     return;
                 }
             }
-            stringBuilder.AppendNum(value.RefId);
+            // A RefId is base36, which is not a json number, so it always goes in as a string.
+            stringBuilder.Append("\"");
+            NeuroRefId.Append(stringBuilder, refId);
+            stringBuilder.Append("\"");
         }
 
         void INeuroSync.SyncEnum<T>(ref int value)
@@ -358,7 +408,7 @@ namespace Ninjadini.Neuro
 
         void INeuroSync.Sync<T>(uint key, string name, ref T value, T defaultValue)
         {
-            if (value != null && !value.Equals(defaultValue))
+            if (value != null && !NeuroSyncTypes.AreEqual(value, defaultValue))
             {
                 SyncObj(name, ref value);
             }

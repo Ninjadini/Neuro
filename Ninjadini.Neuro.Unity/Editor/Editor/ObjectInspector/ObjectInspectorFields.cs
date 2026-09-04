@@ -167,6 +167,17 @@ namespace Ninjadini.Neuro.Editor
             {
                 return CreateDrawer(data, new Vector4Field());
             }
+            if (type == typeof(Quaternion))
+            {
+                // no built-in Quaternion field, but Unity's own inspector shows one as x/y/z/w too.
+                return CreateDrawer<Vector4>(data, new Vector4Field(),
+                    o =>
+                    {
+                        var q = (Quaternion)o;
+                        return new Vector4(q.x, q.y, q.z, q.w);
+                    },
+                    v => new Quaternion(v.x, v.y, v.z, v.w));
+            }
             if (type == typeof(Bounds))
             {
                 return CreateDrawer(data, new BoundsField());
@@ -187,12 +198,26 @@ namespace Ninjadini.Neuro.Editor
             {
                 return CreateDrawer(data, new Hash128Field());
             }
+            if (type == typeof(LayerMask))
+            {
+                return CreateDrawer<int>(data, new LayerMaskField(),
+                    o => ((LayerMask)o).value,
+                    v => (LayerMask)v);
+            }
             return null;
         }
 
         static VisualElement TryObjectTypes(in ObjectInspector.Data data)
         {
             var type = data.type;
+            if (type == typeof(AnimationCurve))
+            {
+                return CreateDrawer(data, new CurveField());
+            }
+            if (type == typeof(Gradient))
+            {
+                return CreateDrawer(data, new GradientField());
+            }
             if (type.IsValueType && !type.IsPrimitive)
             {
                 if (Nullable.GetUnderlyingType(type) != null)

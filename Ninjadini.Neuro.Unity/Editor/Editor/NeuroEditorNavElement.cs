@@ -483,7 +483,7 @@ namespace Ninjadini.Neuro.Editor
 
         void OnDeleteBtnClicked()
         {
-            var message = $"Delete {selectedItem.Value?.RefId}-{selectedItem.Value?.RefName}?\n\n@ {selectedItem.FilePath}";
+            var message = $"Delete {NeuroEditorUtils.DisplayRefId(selectedItem.RefId)}-{selectedItem.Value?.RefName}?\n\n@ {selectedItem.FilePath}";
             if (EditorUtility.DisplayDialog("", message, "Delete", "Cancel"))
             {
                 var index = itemDropdown.index;

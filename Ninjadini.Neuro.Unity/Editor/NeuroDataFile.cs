@@ -83,6 +83,8 @@ namespace Ninjadini.Neuro.Editor
             }
         }
 
+        /// The RefId a data file's name starts with. Data file names spell the RefId in base36 - this is not
+        /// for the <c>&lt;typeId&gt;-&lt;TypeName&gt;</c> directory names, whose numbers are plain decimal global type ids.
         public static uint ReadIdFromFileName(string filePath)
         {
             var fileName = Path.GetFileNameWithoutExtension(filePath.AsSpan());
@@ -91,14 +93,14 @@ namespace Ninjadini.Neuro.Editor
             {
                 fileName = fileName.Slice(0, splitIndex);
             }
-            return uint.TryParse(fileName, out var id) ? id : (uint)0;
+            return NeuroRefId.TryParse(fileName, out var id) ? id : (uint)0;
         }
 
         IReferencable INeuroReferencedItemLoader.Load(uint refId)
         {
             if (refId != RefId)
             {
-                throw new InvalidOperationException($"Wrong ref id requested expecting {RefId} but {refId}");
+                throw new InvalidOperationException($"Wrong ref id requested expecting {NeuroRefId.ToString(RefId)} but {NeuroRefId.ToString(refId)}");
             }
             return Value;
         }

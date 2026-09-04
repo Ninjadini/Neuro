@@ -8,7 +8,8 @@ public class MyOtherReferencableObject : Referencable, INeuroRefDropDownCustomiz
 {
     [Neuro(1)] public string Name;
     
-    string INeuroRefDropDownCustomizable.GetRefDropdownText(NeuroReferences references) => RefId + " : "+ RefName + " -- "+Name;
+    string INeuroRefDropDownCustomizable.GetRefDropdownText(NeuroReferences references) => NeuroRefId.ToString(RefId) + " : "+ RefName + " -- "+Name;
+    // NeuroRefId.ToString() gives you the same base36 form that is shown everywhere else and in the file name.
 }
 
 // icon display customisation
