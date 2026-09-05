@@ -4,6 +4,9 @@ using System.Linq;
 
 namespace Ninjadini.Neuro.Sync
 {
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     internal static class NeuroSyncSubTypes<TRootType>
     {
         static Dictionary<uint, NeuroSyncDelegate<TRootType>> _subClassesByTag;

@@ -8,6 +8,9 @@ namespace Ninjadini.Neuro.Sync
     public delegate void NeuroSyncSubDelegate<T>(INeuroSync neuro, uint tag, ref T value);
     public delegate bool NeuroEqualsDelegate<T>(T a, T b);
 
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     public static class NeuroSyncTypes
     {
         static NeuroSyncTypes()
@@ -188,6 +191,9 @@ namespace Ninjadini.Neuro.Sync
         }
     }
 
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     internal static class NeuroSyncTypes<T>
     {
         internal static uint SizeType;

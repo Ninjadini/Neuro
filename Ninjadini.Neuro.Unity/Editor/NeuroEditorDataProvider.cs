@@ -12,6 +12,9 @@ using UnityEngine;
 namespace Ninjadini.Neuro.Editor
 {
     [InitializeOnLoad]
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     public class NeuroEditorDataProvider : IReferencesProvider
     {
         static NeuroEditorDataProvider()

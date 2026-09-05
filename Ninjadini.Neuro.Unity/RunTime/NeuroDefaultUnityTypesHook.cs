@@ -8,6 +8,9 @@ using UnityEngine;
 namespace Ninjadini.Neuro.Sync
 {
     // This is auto picked up by code gen to be registered.
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     struct NeuroDefaultUnityTypesHook : INeuroCustomTypesRegistryHook
     {
         static bool _registered;

@@ -13,6 +13,9 @@ namespace Ninjadini.Neuro
     /// AddField/AddProperty are marked [Conditional("UNITY_EDITOR")], so calls to them are stripped from
     /// player builds at compile time — there is no runtime cost outside the editor.
     /// </summary>
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     public static class NeuroSyncEditorFields
     {
 #if UNITY_EDITOR

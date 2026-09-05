@@ -6,6 +6,9 @@ using Ninjadini.Neuro.Sync;
 
 namespace Ninjadini.Neuro
 {
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     public class NeuroJsonWriter : INeuroSync
     {
         public const string FieldName_GlobalType = "-globalType";

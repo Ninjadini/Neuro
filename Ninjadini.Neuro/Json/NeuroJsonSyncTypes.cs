@@ -16,6 +16,9 @@ namespace Ninjadini.Neuro
         }
     }
 
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     internal static class NeuroJsonSyncTypes<T>
     {
         internal static NeuroSyncDelegate<T> _Delegate;

@@ -153,6 +153,9 @@ namespace Ninjadini.Neuro.CodeGen
             strBuilder.Append(@"[assembly:Ninjadini.Neuro.NeuroAssemblyAttribute(typeof(");
             strBuilder.Append(uniqueClassName);
         strBuilder.Append(@"), ""RegisterTypes"")]
+#if UNITY_6000_5_OR_NEWER
+[Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
 public static class ");
             strBuilder.Append(uniqueClassName);
             strBuilder.Append(@"

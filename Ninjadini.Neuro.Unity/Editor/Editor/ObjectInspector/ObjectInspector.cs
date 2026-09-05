@@ -9,6 +9,9 @@ using UnityEngine.UIElements;
 
 namespace Ninjadini.Neuro.Editor
 {
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     public partial class ObjectInspector : VisualElement
     {
         static readonly BasicController SharedController = new BasicController();

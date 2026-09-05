@@ -7,6 +7,9 @@ using Ninjadini.Neuro.Sync;
 
 namespace Ninjadini.Neuro
 {
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     public class NeuroJsonReader : INeuroSync
     {
         /// A per thread reader you can reuse instead of allocating one.

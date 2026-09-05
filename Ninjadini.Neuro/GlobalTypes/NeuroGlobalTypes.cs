@@ -4,6 +4,9 @@ using System.Linq;
 
 namespace Ninjadini.Neuro.Sync
 {
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     public static class NeuroGlobalTypes
     {
         private static Dictionary<Type, uint> typeIds = new Dictionary<Type, uint>();

@@ -10,6 +10,9 @@ using UnityEngine;
 
 namespace Ninjadini.Neuro.Editor
 {
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     public static class NeuroEditorUtils
     {
         static ReadOnlyCollection<Type> _allScannableTypes;
