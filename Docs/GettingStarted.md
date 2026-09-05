@@ -320,12 +320,12 @@ Same thing, plain C#:
 var save = LocalNeuroContinuousSave<MyPlayerSaveData>.CreateInPersistedData("save");
 var data = save.GetData();   // loads from disk on first call, creates a new one if there is no file
 data.PlayerLevel++;
-save.Save();                 // writes straight into the open file stream, no allocations
+save.Save();                 // allocates nothing, whatever the size of the data
 save.DelayedSave(1f);        // or coalesce rapid changes into one write
 ```
-It holds one file open for the life of the object, which is what makes it allocation free - so it is one
-instance per file. If loading fails, the bad file is copied to `<file>-failed<timestamp>` and you get a
-fresh object rather than an exception.
+It is one instance per file. Saves alternate between two files, `<file>.0` and `<file>.1`, so the one
+being written is never the one holding the last good save - a crash or the OS killing the app mid save
+can not leave you with nothing to load.
 
 For several files, or one off reads and writes, use `LocalNeuroStorage` instead - `Save(obj, name)`,
 `TryLoad<T>(name)`, `Delete(name)`, defaulting to `Application.persistentDataPath`.

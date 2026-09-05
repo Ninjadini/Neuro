@@ -113,6 +113,69 @@ using Ninjadini.Neuro;
     }
 
     [Test]
+    public void RefToSubType_Fails()
+    {
+        var src = @"
+using Ninjadini.Neuro;
+[NeuroGlobalType(1)]
+        partial class RootClass : Referencable
+        {
+        }
+        [Neuro(1)]
+        partial class SubClass : RootClass
+        {
+        }
+        partial class TestClass
+        {
+            [Neuro(1)] public Reference<SubClass> obj;
+        }
+";
+        TestUtils.GenerateSourceExpectingError(src, "Reference<RootClass>");
+    }
+
+    [Test]
+    public void ListOfRefsToSubType_Fails()
+    {
+        var src = @"
+using Ninjadini.Neuro;
+[NeuroGlobalType(1)]
+        partial class RootClass : Referencable
+        {
+        }
+        [Neuro(1)]
+        partial class SubClass : RootClass
+        {
+        }
+        partial class TestClass
+        {
+            [Neuro(1)] public System.Collections.Generic.List<Reference<SubClass>> obj;
+        }
+";
+        TestUtils.GenerateSourceExpectingError(src, "Reference<RootClass>");
+    }
+
+    [Test]
+    public void RefToRootType_Works()
+    {
+        var src = @"
+using Ninjadini.Neuro;
+[NeuroGlobalType(1)]
+        partial class RootClass : Referencable
+        {
+        }
+        [Neuro(1)]
+        partial class SubClass : RootClass
+        {
+        }
+        partial class TestClass
+        {
+            [Neuro(1)] public Reference<RootClass> obj;
+        }
+";
+        TestUtils.GenerateSource(src);
+    }
+
+    [Test]
     public void ListWithInvalidType_Fails()
     {
         var src = @"

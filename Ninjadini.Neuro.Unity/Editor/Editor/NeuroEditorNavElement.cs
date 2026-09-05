@@ -493,7 +493,7 @@ namespace Ninjadini.Neuro.Editor
                 {
                     index--;
                 }
-                else if (index < itemDropdown.choices.Count - 2)
+                else if (index < itemDropdown.choices.Count - 1)
                 {
                     index++;
                 }

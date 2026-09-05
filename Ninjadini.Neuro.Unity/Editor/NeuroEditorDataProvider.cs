@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -247,6 +248,15 @@ namespace Ninjadini.Neuro.Editor
                 fileSystemWatcher.Dispose();
             }
             fileSystemWatchers.Clear();
+            if (watchingEditorUpdate)
+            {
+                watchingEditorUpdate = false;
+                EditorApplication.update -= OnEditorUpdateForFileChanges;
+            }
+            while (pendingFileChanges.TryDequeue(out _))
+            {
+            }
+            updatesCountSinceFilesChanged = -1;
         }
 
         void AddFileWatchers(string dirPath)
@@ -261,38 +271,64 @@ namespace Ninjadini.Neuro.Editor
             watcher.IncludeSubdirectories = true;
             watcher.EnableRaisingEvents = true;
             fileSystemWatchers.Add(watcher);
-        }
-        
-        void OnFileChanged(object sender, FileSystemEventArgs fileArgs)
-        {
-            var fullPath = fileArgs.FullPath;
-            if(ignoreFileChangesExpiry.TryGetValue(fullPath, out var ignoreUntil) && ignoreUntil > DateTime.UtcNow)
+            if (!watchingEditorUpdate)
             {
-                return;
-            }
-            fileChangesCount++;
-            if (updatesCountSinceFilesChanged < 0 && NeuroUnityUserSettings.Get().ShowDialogOnDataFileChange)
-            {
-                updatesCountSinceFilesChanged = 0;
+                watchingEditorUpdate = true;
                 EditorApplication.update += OnEditorUpdateForFileChanges;
             }
         }
 
+        /// Raised on the FileSystemWatcher's own thread, where neither Unity's APIs nor the ignore list may be
+        /// touched. Everything this event means is worked out on the editor update tick instead, so all this
+        /// does is hand the path over.
+        void OnFileChanged(object sender, FileSystemEventArgs fileArgs)
+        {
+            pendingFileChanges.Enqueue(fileArgs.FullPath);
+        }
+
         public bool HasPendingFileChanges => fileChangesCount > 0;
 
+        readonly ConcurrentQueue<string> pendingFileChanges = new ConcurrentQueue<string>();
+        bool watchingEditorUpdate;
         int fileChangesCount;
         int updatesCountSinceFilesChanged = -1;
 
+        /// Counts what the watcher queued up, minus the changes this class made itself.
+        /// Returns whether anything new was counted.
+        bool DrainPendingFileChanges()
+        {
+            var counted = false;
+            var timeNow = DateTime.UtcNow;
+            while (pendingFileChanges.TryDequeue(out var fullPath))
+            {
+                if (ignoreFileChangesExpiry.TryGetValue(fullPath, out var ignoreUntil) && ignoreUntil > timeNow)
+                {
+                    continue;
+                }
+                fileChangesCount++;
+                counted = true;
+            }
+            return counted;
+        }
+
         void OnEditorUpdateForFileChanges()
         {
+            if (DrainPendingFileChanges())
+            {
+                // more changes are still landing, let the burst settle before asking about them.
+                updatesCountSinceFilesChanged = 0;
+            }
+            if (updatesCountSinceFilesChanged < 0)
+            {
+                return;
+            }
             updatesCountSinceFilesChanged++;
             if (updatesCountSinceFilesChanged <= 5)
             {
                 return;
             }
-            EditorApplication.update -= OnEditorUpdateForFileChanges;
             updatesCountSinceFilesChanged = -1;
-            if (fileChangesCount <= 0)
+            if (fileChangesCount <= 0 || !NeuroUnityUserSettings.Get().ShowDialogOnDataFileChange)
             {
                 return;
             }

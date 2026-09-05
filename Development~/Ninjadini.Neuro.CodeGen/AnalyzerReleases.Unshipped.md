@@ -20,6 +20,7 @@ Neuro311 | Syntax | Error | Invalid global neuro type id
 Neuro312 | Syntax | Error | Global neuro type attribute missing
 Neuro313 | Syntax | Error | Global type id not set
 Neuro314 | Syntax | Error | Global type id on an interface
+Neuro315 | Syntax | Error | Reference to a sub type
 Neuro404 | Syntax | Error | Missing neuro class attribute
 Neuro405 | Syntax | Error | Multiple inheritance paths not supported
 Neuro406 | Syntax | Error | Missing neuro class attribute (fast codegen)

@@ -88,6 +88,18 @@ namespace Ninjadini.Neuro.Editor
             return _allScannableTypes;
         }
 
+        public static IEnumerable<Type> SafeGetExportedTypes(Assembly assembly)
+        {
+            try
+            {
+                return assembly.GetExportedTypes();
+            }
+            catch (Exception)
+            {
+                return Array.Empty<Type>();
+            }
+        }
+
         public static IEnumerable<Type> SelectScannableTypes<T>() where T : IAssemblyTypeScannable
         {
             return GetAllScannableTypes().Where(t => typeof(T).IsAssignableFrom(t));

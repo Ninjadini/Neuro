@@ -175,6 +175,10 @@ namespace Ninjadini.Neuro.Editor
                 {
                     ShowRefIdChangedError(idBefore, idNow);
                     reader.Read(writer.GetCurrentBytesChunk(), ref drawnObj);
+                    // the fields still show the rejected value until they are told the object went back.
+                    // Deferred by a tick because this is running inside the changed field's own callback,
+                    // and redrawing clears the element the event is being dispatched to.
+                    schedule.Execute(ForceRedraw);
                     return;
                 }
                 try
@@ -222,7 +226,7 @@ namespace Ninjadini.Neuro.Editor
 #endif 
             var result = (from domainAssembly in assemblies
                 where !domainAssembly.IsDynamic && domainAssembly.IsDefined(typeof(NeuroAssemblyAttribute))
-                from assemblyType in domainAssembly.GetExportedTypes()
+                from assemblyType in NeuroEditorUtils.SafeGetExportedTypes(domainAssembly)
                 where assemblyType.IsClass
                       && !assemblyType.IsAbstract
                       && !assemblyType.IsInterface

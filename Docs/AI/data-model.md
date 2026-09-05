@@ -33,7 +33,8 @@ Unity-editor-only presentation attributes: `[DisplayName]`, `[Tooltip]` / `[Desc
 **Rejected**, with a compile error rather than a runtime surprise: arrays, `HashSet`, `IReadOnlyList`,
 any other generic; `byte`, `sbyte`, `short`, `ushort`, `char`, `decimal`; generic type arguments that are
 themselves generic (except `Reference<>`); `[NeuroGlobalType]` on an interface (`Neuro314` - put it on a
-base class, or register it by hand from a registry hook).
+base class, or register it by hand from a registry hook); `Reference<>` to anything but the root
+referencable type (`Neuro315`).
 
 A **dictionary key** must be a single value - a string, an enum, a number, `DateTime`/`TimeSpan` or a
 `Reference<>`. A key made of `[Neuro]` fields is rejected (`Neuro101`): json spells keys out as object
@@ -58,6 +59,11 @@ branches do not collide on merge.
 `Reference<T>` is a struct wrapping just the `RefId`. It implicitly converts to/from `uint` and from `T`,
 and compares by id. `HasRefId` / `HasNoRefId` test for unset. Resolve with `GetValue()`,
 `GetValue(NeuroReferences)` or `GetValue(NeuroReferenceTable<T>)`.
+
+`T` must be the **root** referencable type - the class directly under `Referencable`, the one the ids are
+unique per. A subclass there is a compile error (`Neuro315`), because every subclass is registered in the
+root's table: the stored id could be any subclass of the root, so `Reference<Sub>` would be a static type
+the data never promised. Declare the root and cast the resolved value where the subclass is needed.
 
 ## Polymorphism
 
