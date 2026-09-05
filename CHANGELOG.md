@@ -4,6 +4,23 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.2.1]
 
+### `Color` is fixed and now writes as hex (breaking data format)
+`Color` never survived a round trip - the decoder did not invert the encoder, so every value read back
+as garbage (`FFCC33` came back as `(0, 1, 0, 0)`). `Gradient` was broken with it. `Color32` was fine.
+
+**Any `Color` already stored holds the old packing and will read back differently.** There is no
+migration, because no old value decoded correctly anyway - re-author the affected colours.
+
+New format:
+- json, both types: a hex string - `"FFCC00"`, or `"FFCC0080"` when not fully opaque. Reads
+  `RGB`/`RGBA`/`RRGGBB`/`RRGGBBAA`, any case, optional `#`, and still accepts the old packed number.
+- binary: `Color` is `r | g<<12 | b<<24 | a<<36` scaled by 4095; `Color32` unchanged.
+
+So json is 8 bits per channel where binary `Color` keeps 12. `Color` is also LDR now - channels clamp
+to 0..1, use a `Vector4` for HDR.
+
+Adds `NeuroJsonReader.CurrentValueIsString`, for custom json codecs that take a string or a number.
+
 ### Player save files have moved (breaking)
 `LocalNeuroContinuousSave` now keeps saves in `<file>.0` and `<file>.1` rather than `<file>`, with a
 small header on each, so that an interrupted save can not destroy the last good one. **A save written

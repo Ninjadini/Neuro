@@ -103,6 +103,27 @@ obj.Icon.LoadFromResources<Sprite>();                      // sync, Resources on
 obj.Icon.LoadSceneAsync();
 ```
 
+## Built-in Unity types
+
+`NeuroDefaultUnityTypesHook` registers the common Unity structs so they need no attributes:
+`Vector2/3/4`, `Vector2Int`, `Vector3Int`, `Quaternion`, `Matrix4x4`, `Color`, `Color32`,
+`Gradient`, `AnimationCurve`, `Hash128`, `LayerMask`, `BoundingSphere`, `RangeInt`, `Plane`,
+`Ray`, `Ray2D`, `RectOffset`.
+
+Most write as an object (`"Pos": {"x": 1, "y": 2}`). **`Color` and `Color32` are hex strings** -
+`"FFCC00"`, or `"FFCC0080"` when the alpha is not fully opaque - so hand-writing one as
+`{"r": 0.5, ...}` fails the whole file's load. Reading also takes `RGB`/`RGBA`/`RRGGBB`/`RRGGBBAA`,
+any case, optional `#`, plus the packed number they used to be. Those are told apart by json token
+type (`NeuroJsonReader.CurrentValueIsString`), so `"281420"` is hex and `281420` is packed. Bad hex
+reads as opaque black rather than throwing.
+
+Binary stays packed: `Color` is `r | g<<12 | b<<24 | a<<36` scaled by 4095, `Color32` is
+`r | g<<8 | b<<16 | a<<24`. **So json is 8 bits per channel where binary `Color` keeps 12.** `Color`
+is LDR - channels clamp to 0..1, use a `Vector4` for HDR. `Gradient` stops use the `Color` codec.
+
+Both directions are allocation free. Implemented in `NeuroDefaultUnityTypesHook.RegisterColorJson`
+via `NeuroJsonSyncTypes.Register<T>`, which overrides only the json path.
+
 ## Content validation
 
 ```csharp

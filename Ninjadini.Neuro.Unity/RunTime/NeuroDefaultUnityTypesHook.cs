@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
 using Ninjadini.Neuro;
 using UnityEngine;
 
@@ -45,24 +47,33 @@ namespace Ninjadini.Neuro.Sync
             if(NeuroSyncTypes.IsEmpty<Color>())
                 NeuroSyncTypes.Register(FieldSizeType.VarInt, (INeuroSync neuro, ref Color value) =>
                 {
+                    // RGBA, 12 bits per channel packed low bits up: r | g<<12 | b<<24 | a<<36.
+                    // 48 bits total, so it still fits a varint.
+                    // LDR only - channels are clamped to 0..1, HDR colours do not survive the trip.
                     const int Bits = 12;
-                    const int Bits2 = Bits * 2;
-                    const int Bits3 = Bits * 3;
-                    const float Base = 2L << Bits;
-                    const long BaseL = 2L << Bits;
-                    const long BaseL2 = 2L << Bits2;
-                    const long BaseL3 = 2L << Bits3;
-                    // RGBA
-                    ulong num = neuro.IsWriting ? (ulong)(value.r * Base) + ((ulong)(value.g * Base)) * BaseL + ((ulong)(value.b * Base) * BaseL2) + ((ulong)(value.a * Base) * BaseL3) : 0;
+                    const uint Mask = (1u << Bits) - 1; // 4095
+                    const float Scale = Mask;
+                    ulong num = 0;
+                    if (neuro.IsWriting)
+                    {
+                        num = Pack(value.r)
+                              | (Pack(value.g) << Bits)
+                              | (Pack(value.b) << (Bits * 2))
+                              | (Pack(value.a) << (Bits * 3));
+                    }
                     neuro.Sync(ref num);
                     if (neuro.IsReading)
                     {
-                        value.r = (num & BaseL) / Base;
-                        value.g = ((num >> Bits) & BaseL) / Base;
-                        value.b = ((num >> Bits2) & BaseL) / Base;
-                        value.a = ((num >> Bits3) & BaseL) / Base;
+                        value.r = (num & Mask) / Scale;
+                        value.g = ((num >> Bits) & Mask) / Scale;
+                        value.b = ((num >> (Bits * 2)) & Mask) / Scale;
+                        value.a = ((num >> (Bits * 3)) & Mask) / Scale;
                     }
+                    // +0.5f so a channel rounds to nearest step instead of always truncating down.
+                    static ulong Pack(float v) => (ulong)(Mathf.Clamp01(v) * Scale + 0.5f);
                 });
+            RegisterColorJson();
+
             // not necessary here because we use built-in Color field editor
             // NeuroSyncEditorFields.AddProperty(typeof(Color), nameof(Color.r));
             // ...
@@ -474,6 +485,169 @@ namespace Ninjadini.Neuro.Sync
                 // NeuroSyncEditorFields.AddProperty(typeof(BoundsInt), nameof(BoundsInt.position));
                 // NeuroSyncEditorFields.AddProperty(typeof(BoundsInt), nameof(BoundsInt.size));
             }
+        }
+
+// ---------------------------------------------------------------------------------------------------- Color as hex in json
+
+        /// Colours are written to json as a readable hex string - "FFCC00", or "FFCC0080" when the
+        /// alpha is not fully opaque - rather than the packed integer the binary format uses.
+        /// Reading accepts either: a string is parsed as hex, a bare number falls back to the packed
+        /// form so data written before this still loads.
+        /// Note json hex is 8 bits per channel, while binary Color keeps 12 - authoring precision is
+        /// a colour picker's, which is 8.
+        static void RegisterColorJson()
+        {
+            if (NeuroJsonSyncTypes.IsEmpty<Color32>())
+            {
+                NeuroJsonSyncTypes.Register<Color32>(FieldSizeType.Length, delegate(INeuroSync neuro, ref Color32 value)
+                {
+                    if (neuro is NeuroJsonWriter jsonWriter)
+                    {
+                        AppendHex(jsonWriter.CurrentStringBuilder, value.r, value.g, value.b, value.a);
+                    }
+                    else if (neuro is NeuroJsonReader jsonReader)
+                    {
+                        if (jsonReader.CurrentValueIsString)
+                        {
+                            ParseHex(jsonReader.CurrentValue, out var r, out var g, out var b, out var a);
+                            value = new Color32(r, g, b, a);
+                        }
+                        else
+                        {
+                            // Legacy packed form: r | g<<8 | b<<16 | a<<24.
+                            var num = ParseUlong(jsonReader.CurrentValue);
+                            value = new Color32((byte)num, (byte)(num >> 8), (byte)(num >> 16), (byte)(num >> 24));
+                        }
+                    }
+                    else
+                    {
+                        throw new ArgumentException($"Not expecting {neuro} in for JSON sync of Color32");
+                    }
+                });
+            }
+            if (NeuroJsonSyncTypes.IsEmpty<Color>())
+            {
+                NeuroJsonSyncTypes.Register<Color>(FieldSizeType.Length, delegate(INeuroSync neuro, ref Color value)
+                {
+                    if (neuro is NeuroJsonWriter jsonWriter)
+                    {
+                        AppendHex(jsonWriter.CurrentStringBuilder,
+                            To8Bit(value.r), To8Bit(value.g), To8Bit(value.b), To8Bit(value.a));
+                    }
+                    else if (neuro is NeuroJsonReader jsonReader)
+                    {
+                        if (jsonReader.CurrentValueIsString)
+                        {
+                            ParseHex(jsonReader.CurrentValue, out var r, out var g, out var b, out var a);
+                            value = new Color(r / 255f, g / 255f, b / 255f, a / 255f);
+                        }
+                        else
+                        {
+                            // Legacy packed form, 12 bits per channel - see the binary registration above.
+                            const int Bits = 12;
+                            const uint Mask = (1u << Bits) - 1;
+                            const float Scale = Mask;
+                            var num = ParseUlong(jsonReader.CurrentValue);
+                            value = new Color(
+                                (num & Mask) / Scale,
+                                ((num >> Bits) & Mask) / Scale,
+                                ((num >> (Bits * 2)) & Mask) / Scale,
+                                ((num >> (Bits * 3)) & Mask) / Scale);
+                        }
+                    }
+                    else
+                    {
+                        throw new ArgumentException($"Not expecting {neuro} in for JSON sync of Color");
+                    }
+                });
+            }
+        }
+
+        const string HexChars = "0123456789ABCDEF";
+
+        static byte To8Bit(float v) => (byte)(Mathf.Clamp01(v) * 255f + 0.5f);
+
+        /// Appends "RRGGBB", or "RRGGBBAA" when not fully opaque. Char by char so nothing allocates.
+        static void AppendHex(StringBuilder sb, byte r, byte g, byte b, byte a)
+        {
+            sb.Append('"');
+            AppendByte(sb, r);
+            AppendByte(sb, g);
+            AppendByte(sb, b);
+            if (a != 255)
+            {
+                AppendByte(sb, a);
+            }
+            sb.Append('"');
+        }
+
+        static void AppendByte(StringBuilder sb, byte v)
+        {
+            sb.Append(HexChars[v >> 4]);
+            sb.Append(HexChars[v & 0xF]);
+        }
+
+        /// Accepts RGB, RGBA, RRGGBB and RRGGBBAA, with or without a leading '#'.
+        /// Anything unparseable comes back as opaque black rather than throwing, so one bad hand edit
+        /// does not take out the whole file.
+        static void ParseHex(ReadOnlySpan<char> chars, out byte r, out byte g, out byte b, out byte a)
+        {
+            r = g = b = 0;
+            a = 255;
+            if (chars.Length > 0 && chars[0] == '#')
+            {
+                chars = chars[1..];
+            }
+            switch (chars.Length)
+            {
+                case 3:
+                case 4:
+                    // Shorthand: each digit is doubled, so "F80" is "FF8800".
+                    if (!TryNibble(chars[0], out var sr) || !TryNibble(chars[1], out var sg) || !TryNibble(chars[2], out var sb_)) return;
+                    r = (byte)(sr << 4 | sr);
+                    g = (byte)(sg << 4 | sg);
+                    b = (byte)(sb_ << 4 | sb_);
+                    if (chars.Length == 4)
+                    {
+                        if (!TryNibble(chars[3], out var sa)) return;
+                        a = (byte)(sa << 4 | sa);
+                    }
+                    return;
+                case 6:
+                case 8:
+                    if (!TryByte(chars, 0, out r) || !TryByte(chars, 2, out g) || !TryByte(chars, 4, out b)) return;
+                    if (chars.Length == 8 && !TryByte(chars, 6, out a))
+                    {
+                        a = 255;
+                    }
+                    return;
+            }
+        }
+
+        static bool TryByte(ReadOnlySpan<char> chars, int index, out byte value)
+        {
+            if (TryNibble(chars[index], out var hi) && TryNibble(chars[index + 1], out var lo))
+            {
+                value = (byte)(hi << 4 | lo);
+                return true;
+            }
+            value = 0;
+            return false;
+        }
+
+        static bool TryNibble(char c, out int value)
+        {
+            if (c >= '0' && c <= '9') { value = c - '0'; return true; }
+            if (c >= 'A' && c <= 'F') { value = c - 'A' + 10; return true; }
+            if (c >= 'a' && c <= 'f') { value = c - 'a' + 10; return true; }
+            value = 0;
+            return false;
+        }
+
+        /// ulong.Parse over a span - no substring, no allocation.
+        static ulong ParseUlong(ReadOnlySpan<char> chars)
+        {
+            return ulong.TryParse(chars, NumberStyles.Integer, CultureInfo.InvariantCulture, out var result) ? result : 0;
         }
     }
 }

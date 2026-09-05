@@ -305,6 +305,8 @@ namespace Ninjadini.Neuro
         
         public ReadOnlySpan<char> CurrentValue => jsonStr != null ? currentValue.AsSpan(jsonStr) : default;
 
+        public bool CurrentValueIsString => currentValueType == NeuroJsonTokenizer.NodeType.String;
+
         void INeuroSync.Sync<T>(ref Reference<T> value)
         {
             value.RefId = GetFirstRefIdPart(currentValue);
