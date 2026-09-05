@@ -574,9 +574,13 @@ namespace Ninjadini.Neuro
             {
                 return;
             }
+            var keySizeType = NeuroSyncTypes<TKey>.SizeType;
+            if (keySizeType >= NeuroConstants.Child)
+            {
+                throw NeuroSyncErrors.NotAValidDictionaryKeyType(typeof(TKey), name);
+            }
             AppendIndents().Append("\"").Append(name).Append("\": {\n");
             numIndents++;
-            var keySizeType = NeuroSyncTypes<TKey>.SizeType;
             var kDel = NeuroJsonSyncTypes<TKey>.GetOrThrow();
             foreach (var value in values)
             {

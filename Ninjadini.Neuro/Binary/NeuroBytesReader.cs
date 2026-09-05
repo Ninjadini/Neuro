@@ -181,27 +181,63 @@ namespace Ninjadini.Neuro
                 }
             }
             
-            object result = null;
-            proto.Set(bytesChunk);
-            options = opts;
-            nextKey = 0;
-            
-            var sizeType = proto.ReadUint() & NeuroConstants.HeaderMask;
-            if (sizeType == NeuroConstants.ChildWithType)
+            // A referencable can be loaded lazily part way through another read on this same reader, so put
+            // the reader back where it was instead of leaving it cleared.
+            var previous = SaveState();
+            try
             {
-                var tag = proto.ReadUint();
-                NeuroGlobalTypes.Sync(typeId, this, tag, ref result);
+                object result = null;
+                proto.Set(bytesChunk);
+                options = opts;
+                nextKey = 0;
+
+                var sizeType = proto.ReadUint() & NeuroConstants.HeaderMask;
+                if (sizeType == NeuroConstants.ChildWithType)
+                {
+                    var tag = proto.ReadUint();
+                    NeuroGlobalTypes.Sync(typeId, this, tag, ref result);
+                }
+                else if (sizeType == NeuroConstants.Child)
+                {
+                    NeuroGlobalTypes.Sync(typeId, this, 0, ref result);
+                }
+                if (proto.Available > 1) // 1 byte left is fine, thats the group end tag.
+                {
+                    throw new System.Exception($"Did not reach end of stream, {proto.Available} bytes left.");
+                }
+                return result;
             }
-            else if (sizeType == NeuroConstants.Child)
+            finally
             {
-                NeuroGlobalTypes.Sync(typeId, this, 0, ref result);
+                RestoreState(previous);
             }
-            if (proto.Available > 1) // 1 byte left is fine, thats the group end tag.
+        }
+
+        /// Everything a read in progress is holding, so a nested read can hand it all back.
+        readonly struct ReaderState
+        {
+            internal readonly RawProtoReader.State Proto;
+            internal readonly ReaderOptions Options;
+            internal readonly uint NextKey;
+            internal readonly uint NextHeader;
+
+            internal ReaderState(RawProtoReader.State proto, ReaderOptions options, uint nextKey, uint nextHeader)
             {
-                throw new System.Exception($"Did not reach end of stream, {proto.Available} bytes left.");
+                Proto = proto;
+                Options = options;
+                NextKey = nextKey;
+                NextHeader = nextHeader;
             }
-            proto.Set(Array.Empty<byte>());
-            return result;
+        }
+
+        ReaderState SaveState() => new ReaderState(proto.GetState(), options, nextKey, nextHeader);
+
+        void RestoreState(in ReaderState state)
+        {
+            proto.SetState(state.Proto);
+            options = state.Options;
+            nextKey = state.NextKey;
+            nextHeader = state.NextHeader;
         }
 
         public void ReadReferencesListInto(NeuroReferences neuroReferences, BytesChunk bytesChunk)
@@ -266,9 +302,18 @@ namespace Ninjadini.Neuro
             {
                 if (_refName == null)
                 {
-                    reader.proto.Set(contentByteChunk.Bytes, namePos);
-                    _refName = reader.proto.ReadString();
-                    reader.proto.Set(Array.Empty<byte>());
+                    // Reading the name can happen at any point, including part way through another read on
+                    // this reader, so borrow it and put it back exactly as it was.
+                    var previous = reader.SaveState();
+                    try
+                    {
+                        reader.proto.Set(contentByteChunk.Bytes, namePos);
+                        _refName = reader.proto.ReadString();
+                    }
+                    finally
+                    {
+                        reader.RestoreState(previous);
+                    }
                 }
                 return _refName;
             }
@@ -482,10 +527,16 @@ namespace Ninjadini.Neuro
                             NeuroSyncSubTypes<T>.Sync(this, itemTypeTagOrNull - 1, ref value);
                             SeekKey(uint.MaxValue);
                         }
+                        else
+                        {
+                            // null - `value` may be a recycled item from the list we are reading into,
+                            // it has to be cleared or the null reads back as the old object.
+                            value = default;
+                        }
                     }
                     else if (containsNulls && proto.ReadUint() == 0)
                     {
-                        // null
+                        value = default;
                     }
                     else
                     {
@@ -530,6 +581,10 @@ namespace Ninjadini.Neuro
                     values ??= new Dictionary<TKey, TValue>();
                     values.Clear();
                     return;
+                }
+                if (NeuroSyncTypes<TKey>.SizeType >= NeuroConstants.Child)
+                {
+                    throw NeuroSyncErrors.NotAValidDictionaryKeyType(typeof(TKey), name);
                 }
                 var vSizeType = proto.ReadUint() >> NeuroConstants.HeaderShift;
                 

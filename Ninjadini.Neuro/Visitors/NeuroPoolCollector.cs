@@ -14,8 +14,14 @@ namespace Ninjadini.Neuro
         public void ReturnAllToPool<T>(T obj, INeuroObjectPool objPool)
         {
             pool = objPool;
-            SyncObj(ref obj);
-            pool = null;
+            try
+            {
+                SyncObj(ref obj);
+            }
+            finally
+            {
+                pool = null;
+            }
         }
         
         bool INeuroSync.IsReading => true;
@@ -75,7 +81,12 @@ namespace Ninjadini.Neuro
 
         void INeuroSync.Sync<T>(uint key, string name, ref T? value)
         {
-            
+            if (value != null)
+            {
+                // The struct itself is not poolable, but it can hold objects that are.
+                var localValue = value.Value;
+                SyncObj(ref localValue);
+            }
         }
 
         void INeuroSync.SyncEnum<T>(uint key, string name, ref T value, int defaultValue)
@@ -99,7 +110,7 @@ namespace Ninjadini.Neuro
             {
                 return;
             }
-            var isGroup = NeuroSyncTypes<T>.SizeType >= NeuroConstants.Child;
+            var isGroup = IsGroupType<T>();
             if (isGroup && value.GetType() != typeof(T))
             {
                 var subTag = NeuroSyncSubTypes<T>.GetTag(value.GetType());
@@ -116,16 +127,19 @@ namespace Ninjadini.Neuro
             }
         }
 
+        /// Every item has to be walked, not just the ones that are poolable themselves - an item that is not
+        /// poolable can still be holding poolable objects further down, and those would never come back.
+        /// Primitives can not hold anything, so those collections are just cleared.
         void INeuroSync.Sync<T>(uint key, string name, ref List<T> values)
         {
             if (values != null)
             {
-                foreach (var value in values)
+                if (IsGroupType<T>())
                 {
-                    if (value is INeuroPoolable)
+                    for (var index = 0; index < values.Count; index++)
                     {
-                        var v = value;
-                        SyncObj<T>(ref v);
+                        var v = values[index];
+                        SyncObj(ref v);
                     }
                 }
                 values.Clear();
@@ -136,16 +150,26 @@ namespace Ninjadini.Neuro
         {
             if (values != null)
             {
-                foreach (var kv in values)
+                // Keys are always single values, so only the values can be holding anything poolable.
+                if (IsGroupType<TValue>())
                 {
-                    if (kv.Value is INeuroPoolable)
+                    foreach (var kv in values)
                     {
                         var v = kv.Value;
-                        SyncObj<TValue>(ref v);
+                        SyncObj(ref v);
                     }
                 }
                 values.Clear();
             }
+        }
+
+        /// A group is a neuro class or struct - the only thing that can have fields, and so the only thing
+        /// worth walking into. Asking for the delegate first because `SizeType` is only filled in once the
+        /// type has been registered.
+        static bool IsGroupType<T>()
+        {
+            NeuroSyncTypes<T>.GetOrThrow();
+            return NeuroSyncTypes<T>.SizeType >= NeuroConstants.Child;
         }
 
         public class BasicPool : INeuroObjectPool

@@ -77,16 +77,7 @@ namespace Ninjadini.Neuro.Sync
 
         public static uint GetIdByType(Type type)
         {
-            var baseType = type;
-            while (baseType != null)
-            {
-                if (typeIds.TryGetValue(baseType, out var result))
-                {
-                    return result;
-                }
-                baseType = baseType.BaseType;
-            }
-            return 0;
+            return GetTypeId(type, out _);
         }
 
         public static uint GetSubTypeTag(Type type)
@@ -150,8 +141,28 @@ namespace Ninjadini.Neuro.Sync
                 }
                 baseType = baseType.BaseType;
             }
+            // A hierarchy can be rooted at an interface rather than a class, so the id may live there instead.
+            var interfaces = type.GetInterfaces();
+            var found = 0u;
             rootType = null;
-            return 0u;
+            foreach (var interfaceType in interfaces)
+            {
+                if (!typeIds.TryGetValue(interfaceType, out var result))
+                {
+                    continue;
+                }
+                if (rootType != null && result != found)
+                {
+                    throw new Exception($"{type.FullName} reaches two different global type ids - {found} via {rootType.FullName} and {result} via {interfaceType.FullName}. A type can only belong to one global type hierarchy.");
+                }
+                // Of several interfaces carrying the same id, the most derived one is the real root.
+                if (rootType == null || rootType.IsAssignableFrom(interfaceType))
+                {
+                    rootType = interfaceType;
+                }
+                found = result;
+            }
+            return rootType != null ? found : 0u;
         }
 
         public static bool IsPossiblyGlobalType<T>()

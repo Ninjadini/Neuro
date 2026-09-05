@@ -450,6 +450,10 @@ namespace Ninjadini.Neuro
         {
             WriteHeader(key, NeuroConstants.Dictionary);
             var kSizeType = NeuroSyncTypes<TKey>.SizeType;
+            if (kSizeType >= NeuroConstants.Child)
+            {
+                throw NeuroSyncErrors.NotAValidDictionaryKeyType(typeof(TKey), name);
+            }
             var vSizeType = NeuroSyncTypes<TValue>.SizeType;
             if (vSizeType >= NeuroConstants.Child && NeuroSyncSubTypes<TValue>.Exists())
             {

@@ -176,4 +176,88 @@ using Ninjadini.Neuro;
 ";
         TestUtils.GenerateSource(src);
     }
+
+    /// A dictionary key is one value - a json object name, and in binary a key with no terminator after it -
+    /// so a type built out of [Neuro] fields has nowhere to put its second field.
+    [Test]
+    public void DictionaryKeyedByNeuroStruct_Fails()
+    {
+        var src = @"
+using Ninjadini.Neuro;
+        partial struct KeyStruct
+        {
+            [Neuro(1)] public int A;
+            [Neuro(2)] public int B;
+        }
+        partial class TestClass
+        {
+            [Neuro(1)] public System.Collections.Generic.Dictionary<KeyStruct, string> obj;
+        }
+";
+        TestUtils.GenerateSourceExpectingError(src, "dictionary key must be a single value");
+    }
+
+    [Test]
+    public void DictionaryKeyedByNeuroTaggedStruct_Fails()
+    {
+        var src = @"
+using Ninjadini.Neuro;
+        [Neuro(1)]
+        partial struct KeyStruct
+        {
+            [Neuro(1)] public int A;
+        }
+        partial class TestClass
+        {
+            [Neuro(1)] public System.Collections.Generic.Dictionary<KeyStruct, string> obj;
+        }
+";
+        TestUtils.GenerateSourceExpectingError(src, "dictionary key must be a single value");
+    }
+
+    [TestCase("string"), TestCase("int"), TestCase("long"), TestCase("System.DateTime")]
+    public void DictionaryKeyedBySingleValueTypes_Work(string type)
+    {
+        var src = @"
+using Ninjadini.Neuro;
+        partial class TestClass
+        {
+            [Neuro(1)] public System.Collections.Generic.Dictionary<" + type + @", string> obj;
+        }
+";
+        TestUtils.GenerateSource(src);
+    }
+
+    /// The generator only reaches an interface through a class that implements it, so a global type id
+    /// written on the interface is never emitted - it has to be a compile error, not a runtime surprise.
+    [Test]
+    public void GlobalTypeIdOnInterface_Fails()
+    {
+        var src = @"
+using Ninjadini.Neuro;
+        [NeuroGlobalType(500)]
+        partial interface IShape
+        {
+        }
+";
+        TestUtils.GenerateSourceExpectingError(src, "it can not carry `[NeuroGlobalType(#)]`");
+    }
+
+    [Test]
+    public void NeuroTagOnInterface_Works()
+    {
+        var src = @"
+using Ninjadini.Neuro;
+        [Neuro(1)]
+        partial interface IShape
+        {
+        }
+        [Neuro(2)]
+        partial class Circle : IShape
+        {
+            [Neuro(1)] public int R;
+        }
+";
+        TestUtils.GenerateSource(src);
+    }
 }
