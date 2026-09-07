@@ -160,6 +160,19 @@ namespace Ninjadini.Neuro.Editor
             
             schedule.Execute(OnUpdate).Every(ObjectInspectorFields.RefreshRate);
             schedule.Execute(DelayedInit);
+
+            // a file reloaded from disk can change more than values - a list's length, an item's subtype - so the
+            // fields' own polling is not enough, the editor has to be rebuilt around the new content.
+            dataProvider.DataFileReloaded += OnDataFileReloaded;
+            RegisterCallback<DetachFromPanelEvent>(_ => dataProvider.DataFileReloaded -= OnDataFileReloaded);
+        }
+
+        void OnDataFileReloaded(NeuroDataFile dataFile)
+        {
+            if (dataFile == selectedItem)
+            {
+                UpdateSelectedItem();
+            }
         }
 
         void PrintNoTypesHelpBox()
@@ -493,7 +506,7 @@ namespace Ninjadini.Neuro.Editor
                 {
                     index--;
                 }
-                else if (index < itemDropdown.choices.Count - 2)
+                else if (index < itemDropdown.choices.Count - 1)
                 {
                     index++;
                 }

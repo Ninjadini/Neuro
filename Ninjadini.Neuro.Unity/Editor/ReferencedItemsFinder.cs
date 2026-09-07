@@ -28,9 +28,13 @@ namespace Ninjadini.Neuro.Editor
                 task._searchingObj = obj;
                 task._cancellationTokenSource = new CancellationTokenSource();
                 var cancellationToken = task._cancellationTokenSource.Token;
+                // The snapshot is taken here, on the calling (main) thread. Reading a table deserializes the
+                // items it was still holding as lazy loaders, which reads files and writes back into the table -
+                // none of which may happen on a background thread while the editor is using the same tables.
+                var allItems = CollectAllReferencables(references);
                 ThreadPool.QueueUserWorkItem((state) =>
                 {
-                    task._result = SearchInReferences(obj, references, cancellationToken);
+                    task._result = SearchInReferences(obj, allItems, cancellationToken);
                 }, cancellationToken);
                 return task;
             }
@@ -134,6 +138,10 @@ namespace Ninjadini.Neuro.Editor
                 {
                     var path = AssetDatabase.GUIDToAssetPath(prefabGuid);
                     var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                    if (!prefab)
+                    {
+                        continue;
+                    }
                     allObjects.AddRange(prefab.GetComponentsInChildren<Component>(true));
                 }
                 EditorUtility.DisplayProgressBar(progressTitle, "Loading ScriptableObject...", 0.6f);
@@ -236,28 +244,43 @@ namespace Ninjadini.Neuro.Editor
         
         public static List<(IReferencable referencable, string path)> SearchInReferences(IReferencable obj, NeuroReferences references, CancellationToken? cancellationToken = null)
         {
+            return SearchInReferences(obj, CollectAllReferencables(references), cancellationToken);
+        }
+
+        /// Every item in the database, fully loaded. Must be called from the main thread - see SearchReferencesTask.
+        static List<IReferencable> CollectAllReferencables(NeuroReferences references)
+        {
+            var result = new List<IReferencable>();
+            // ToArray twice because reading a table deserializes the lazily loaded items, which writes to the
+            // very tables (and table list) that would otherwise still be being enumerated.
+            foreach (var baseType in references.GetRegisteredBaseTypes().ToArray())
+            {
+                result.AddRange(references.GetTable(baseType).SelectAll().ToArray());
+            }
+            return result;
+        }
+
+        static List<(IReferencable referencable, string path)> SearchInReferences(IReferencable obj, List<IReferencable> allReferencables, CancellationToken? cancellationToken)
+        {
             var neuroVisitor = new NeuroVisitor();
             var visitor = new Visitor(obj);
             var result = new List<(IReferencable referencable, string path)>();
-            foreach (var baseType in references.GetRegisteredBaseTypes())
+            foreach (var referencable in allReferencables)
             {
-                foreach (var referencable in references.GetTable(baseType).SelectAll())
+                if (cancellationToken is { IsCancellationRequested: true })
                 {
-                    if (cancellationToken is { IsCancellationRequested: true })
-                    {
-                        return result;
-                    }
-                    if (referencable == obj)
-                    {
-                        continue;
-                    }
-                    neuroVisitor.Visit(referencable, visitor);
-                    foreach (var path in visitor.Paths)
-                    {
-                        result.Add((referencable, path));
-                    }
-                    visitor.Reset();
+                    return result;
                 }
+                if (referencable == obj)
+                {
+                    continue;
+                }
+                neuroVisitor.Visit(referencable, visitor);
+                foreach (var path in visitor.Paths)
+                {
+                    result.Add((referencable, path));
+                }
+                visitor.Reset();
             }
             return result;
         }

@@ -6,6 +6,9 @@ using Ninjadini.Neuro.Sync;
 
 namespace Ninjadini.Neuro
 {
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     public class NeuroJsonWriter : INeuroSync
     {
         public const string FieldName_GlobalType = "-globalType";
@@ -574,9 +577,13 @@ namespace Ninjadini.Neuro
             {
                 return;
             }
+            var keySizeType = NeuroSyncTypes<TKey>.SizeType;
+            if (keySizeType >= NeuroConstants.Child)
+            {
+                throw NeuroSyncErrors.NotAValidDictionaryKeyType(typeof(TKey), name);
+            }
             AppendIndents().Append("\"").Append(name).Append("\": {\n");
             numIndents++;
-            var keySizeType = NeuroSyncTypes<TKey>.SizeType;
             var kDel = NeuroJsonSyncTypes<TKey>.GetOrThrow();
             foreach (var value in values)
             {

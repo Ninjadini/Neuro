@@ -9,6 +9,9 @@ namespace Ninjadini.Neuro
     // TODO list with base classes
     // TODO list with null items.
     
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     public class NeuroBytesWriter : INeuroSync
     {
         /// A per thread writer you can reuse instead of allocating one.
@@ -450,6 +453,10 @@ namespace Ninjadini.Neuro
         {
             WriteHeader(key, NeuroConstants.Dictionary);
             var kSizeType = NeuroSyncTypes<TKey>.SizeType;
+            if (kSizeType >= NeuroConstants.Child)
+            {
+                throw NeuroSyncErrors.NotAValidDictionaryKeyType(typeof(TKey), name);
+            }
             var vSizeType = NeuroSyncTypes<TValue>.SizeType;
             if (vSizeType >= NeuroConstants.Child && NeuroSyncSubTypes<TValue>.Exists())
             {

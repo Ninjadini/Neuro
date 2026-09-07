@@ -9,6 +9,9 @@ using UnityEngine.UIElements;
 
 namespace Ninjadini.Neuro.Editor
 {
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     public class NeuroObjectInspector : ObjectInspector, ObjectInspector.IController
     {
         public bool AllowIdChange;
@@ -175,6 +178,10 @@ namespace Ninjadini.Neuro.Editor
                 {
                     ShowRefIdChangedError(idBefore, idNow);
                     reader.Read(writer.GetCurrentBytesChunk(), ref drawnObj);
+                    // the fields still show the rejected value until they are told the object went back.
+                    // Deferred by a tick because this is running inside the changed field's own callback,
+                    // and redrawing clears the element the event is being dispatched to.
+                    schedule.Execute(ForceRedraw);
                     return;
                 }
                 try
@@ -222,7 +229,7 @@ namespace Ninjadini.Neuro.Editor
 #endif 
             var result = (from domainAssembly in assemblies
                 where !domainAssembly.IsDynamic && domainAssembly.IsDefined(typeof(NeuroAssemblyAttribute))
-                from assemblyType in domainAssembly.GetExportedTypes()
+                from assemblyType in NeuroEditorUtils.SafeGetExportedTypes(domainAssembly)
                 where assemblyType.IsClass
                       && !assemblyType.IsAbstract
                       && !assemblyType.IsInterface

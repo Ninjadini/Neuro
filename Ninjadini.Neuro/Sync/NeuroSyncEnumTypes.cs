@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace Ninjadini.Neuro.Sync
 {
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     public static class NeuroSyncEnumTypes<T>
     {
         static Func<T, int> _getInt;

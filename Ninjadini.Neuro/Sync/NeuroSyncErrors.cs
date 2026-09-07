@@ -36,6 +36,17 @@ namespace Ninjadini.Neuro.Sync
                 $"\nOnly `WriteGlobalTyped()` output can be read this way - for `Write()` / `WriteObject()` output use `{readCall}`.");
         }
 
+        /// A dictionary key has to serialize down to a single value. Json spells keys out as object names, and
+        /// the binary format writes a key with no terminator after it, so a type made of [Neuro] fields has
+        /// nowhere to put its second field - writing it anyway produces data that can not be read back.
+        internal static Exception NotAValidDictionaryKeyType(Type keyType, string fieldName)
+        {
+            return new Exception(
+                $"`{keyType}` is a neuro object (a class or struct with [Neuro] fields), it can not be a dictionary key @ field `{fieldName}`." +
+                "\nA key must be a single value - a string, an enum, a number, a DateTime/TimeSpan or a Reference<>." +
+                $"\nMove the object into the value and key the dictionary by one of its fields instead.");
+        }
+
         internal static Exception UnknownSubTypeTag(Type rootType, uint tag)
         {
             return new Exception(

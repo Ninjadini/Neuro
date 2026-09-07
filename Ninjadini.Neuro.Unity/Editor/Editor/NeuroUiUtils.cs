@@ -78,7 +78,7 @@ namespace Ninjadini.Neuro.Editor
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
                 var scriptAsset = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
-                if (scriptAsset.GetClass() == typeToSearch)
+                if (scriptAsset && scriptAsset.GetClass() == typeToSearch)
                 {
                     AssetDatabase.OpenAsset(scriptAsset);
                     return true;

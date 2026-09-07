@@ -31,7 +31,7 @@ namespace Ninjadini.Neuro.Editor
             style.marginBottom = style.marginLeft = style.marginRight = style.marginTop = 2f;
             style.paddingLeft = style.paddingRight = 3f;
             style.borderBottomLeftRadius = style.borderBottomRightRadius =
-                style.borderTopLeftRadius = style.borderBottomRightRadius = 5f;
+                style.borderTopLeftRadius = style.borderTopRightRadius = 5f;
 
 
             if (links.TryGetValue(type, out var data))

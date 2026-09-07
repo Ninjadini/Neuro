@@ -29,6 +29,30 @@ namespace Ninjadini.Neuro
 
         public int Available => end - position;
 
+        /// Where the reader is up to, so a nested read on the same reader can put it back afterwards.
+        public readonly struct State
+        {
+            internal readonly byte[] Bytes;
+            internal readonly int Position;
+            internal readonly int End;
+
+            internal State(byte[] bytes, int position, int end)
+            {
+                Bytes = bytes;
+                Position = position;
+                End = end;
+            }
+        }
+
+        public State GetState() => new State(bytes, position, end);
+
+        public void SetState(in State state)
+        {
+            bytes = state.Bytes;
+            position = state.Position;
+            end = state.End;
+        }
+
         public BytesChunk GetCurrentBytesChunk()
         {
             return new BytesChunk()

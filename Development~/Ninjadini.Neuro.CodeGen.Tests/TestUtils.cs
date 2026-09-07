@@ -230,7 +230,10 @@ namespace Ninjadini.Neuro
 
             public override void Visit(SyntaxNode syntaxNode)
             {
-                if (syntaxNode is ClassDeclarationSyntax || syntaxNode is StructDeclarationSyntax)
+                // The real analyzer registers a symbol action for every named type, interfaces included,
+                // so the walker standing in for it here has to reach them too.
+                if (syntaxNode is ClassDeclarationSyntax || syntaxNode is StructDeclarationSyntax
+                    || syntaxNode is InterfaceDeclarationSyntax)
                 {
                     VisitClassOrStructNode(syntaxNode);
                 }

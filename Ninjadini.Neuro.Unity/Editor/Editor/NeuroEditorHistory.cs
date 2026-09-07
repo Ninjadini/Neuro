@@ -7,6 +7,9 @@ using UnityEngine;
 namespace Ninjadini.Neuro.Editor
 {
     [Serializable]
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     public class NeuroEditorHistory
     {
         const int MaxHistoryItems = 15;

@@ -6,6 +6,9 @@ using UnityEditor;
 namespace Ninjadini.Neuro.Editor
 {
     [InitializeOnLoad]
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     public static class NeuroCustomEditorFieldRegistry
     {
         static Dictionary<Type, List<string>> fields = new Dictionary<Type, List<string>>();

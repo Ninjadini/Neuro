@@ -25,6 +25,16 @@ Other menu items:
 Also under that menu: `Save Data To Resources` / `Save Resources data as JSON` (bake and dump the binary
 blob builds use) and `Bake AutoTypesRegister Script` (static type registry, skips assembly scanning).
 
+## Data files changing on disk
+
+Data paths are watched, so edits made outside the editor are picked up. With `Auto Reload Changed Data
+Files` on (project settings, the default), a changed file is re-read into the object already loaded, so
+anything holding the item sees the new values rather than a stale copy.
+
+Changes that need a full `Reload()` instead - a file added, deleted or renamed, or the setting being off -
+stay pending in `HasPendingFileChanges`, and entering play mode reloads everything. Subscribe to
+`NeuroEditorDataProvider.DataFileReloaded` if your editor UI has to redraw when an item is re-read.
+
 ## RefIds are base36 in files and JSON
 
 A `RefId` is always a `uint` in memory and in binary. In **file names and JSON** it is spelled in base36
@@ -91,7 +101,16 @@ Lower level: `LocalNeuroStorage` - `Save<T>(obj, name)`, `TryLoad<T>(name)`, `De
 ## Assets
 
 Unity objects cannot be embedded in neuro data. Reference them by address instead - the asset must be
-Addressable or in a `Resources` folder.
+Addressable or in a `Resources` folder **to load at runtime**.
+
+The address itself is not an Addressables key: `AssetAddressEditorUtils.GetAddress` writes the
+`Resources` path for an asset under `Resources`, and otherwise the plain asset **GUID**
+(`<guid>[SubName]` for a sub-asset). So in the editor an address resolves through the AssetDatabase
+whether or not the asset is Addressable - `AssetAddressEditorUtils.LoadObjectFromAddress(address)`
+is the synchronous editor-only load, which is what an editor tool that has to resolve an asset
+during a repaint wants. `NeuroAssetAddressValidator` only checks `Resources.Load` or
+`AssetDatabase.GUIDToAssetPath`, so content tests pass on a non-Addressable asset too, and the
+missing Addressables entry surfaces only as a failed load in a build.
 
 ```csharp
 [AssetType(typeof(Sprite))]                  // optional; filters the editor's picker
@@ -102,6 +121,27 @@ obj.Icon.LoadAssetAsync<Sprite>(s => image.sprite = s);   // callback form
 obj.Icon.LoadFromResources<Sprite>();                      // sync, Resources only
 obj.Icon.LoadSceneAsync();
 ```
+
+## Built-in Unity types
+
+`NeuroDefaultUnityTypesHook` registers the common Unity structs so they need no attributes:
+`Vector2/3/4`, `Vector2Int`, `Vector3Int`, `Quaternion`, `Matrix4x4`, `Color`, `Color32`,
+`Gradient`, `AnimationCurve`, `Hash128`, `LayerMask`, `BoundingSphere`, `RangeInt`, `Plane`,
+`Ray`, `Ray2D`, `RectOffset`.
+
+Most write as an object (`"Pos": {"x": 1, "y": 2}`). **`Color` and `Color32` are hex strings** -
+`"FFCC00"`, or `"FFCC0080"` when the alpha is not fully opaque - so hand-writing one as
+`{"r": 0.5, ...}` fails the whole file's load. Reading also takes `RGB`/`RGBA`/`RRGGBB`/`RRGGBBAA`,
+any case, optional `#`, plus the packed number they used to be. Those are told apart by json token
+type (`NeuroJsonReader.CurrentValueIsString`), so `"281420"` is hex and `281420` is packed. Bad hex
+reads as opaque black rather than throwing.
+
+Binary stays packed: `Color` is `r | g<<12 | b<<24 | a<<36` scaled by 4095, `Color32` is
+`r | g<<8 | b<<16 | a<<24`. **So json is 8 bits per channel where binary `Color` keeps 12.** `Color`
+is LDR - channels clamp to 0..1, use a `Vector4` for HDR. `Gradient` stops use the `Color` codec.
+
+Both directions are allocation free. Implemented in `NeuroDefaultUnityTypesHook.RegisterColorJson`
+via `NeuroJsonSyncTypes.Register<T>`, which overrides only the json path.
 
 ## Content validation
 

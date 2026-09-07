@@ -6,6 +6,9 @@ using System.Text;
 
 namespace Ninjadini.Neuro
 {
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     public class RawProtoWriter
     {
         internal static readonly UTF8Encoding UTF8Encoding = new UTF8Encoding();

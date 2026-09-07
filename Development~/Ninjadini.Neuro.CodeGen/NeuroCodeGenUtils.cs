@@ -287,6 +287,34 @@ namespace Ninjadini.Neuro.CodeGen
             return false;
         }
         
+        /// The type a `Reference<>` and its table are actually keyed by - the highest class in the chain that is
+        /// still an IReferencable, stopping below `Referencable` itself. Mirrors NeuroReferences.GetRootReferencable().
+        public static INamedTypeSymbol GetRootReferencable(INamedTypeSymbol symbol)
+        {
+            while (true)
+            {
+                var parent = symbol.BaseType;
+                if (parent == null
+                    || (parent.Name == Name_Referencable && IsNeuroNameSpace(parent.ContainingNamespace))
+                    || !ImplementsIReferencable(parent))
+                {
+                    return symbol;
+                }
+                symbol = parent;
+            }
+        }
+
+        /// Whether the type is an IReferencable anywhere up its chain, unlike IsReferencableType() which only
+        /// answers for the class that declares it.
+        public static bool ImplementsIReferencable(INamedTypeSymbol symbol)
+        {
+            return symbol.AllInterfaces
+                .Any(i =>
+                    IsNeuroNameSpace(i.ContainingNamespace) &&
+                    (i.Name == Name_IReferencable || i.Name == Name_ISingletonReferencable)
+                );
+        }
+
         public static bool IsNeuroNameSpace(INamespaceSymbol ns)
         {
             if (ns?.Name == "Neuro")

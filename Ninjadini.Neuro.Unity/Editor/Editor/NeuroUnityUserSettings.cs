@@ -1,4 +1,3 @@
-using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -15,19 +14,11 @@ namespace Ninjadini.Neuro.Editor
         [Tooltip("Debug.Log() neuro loading timings in case you need to know how long things are taking.")]
         public bool LogTimings;
         
-        [Tooltip("Show dialog if json data file changes are detected")]
-        public bool ShowDialogOnDataFileChange;
-        
         [Tooltip("Show the plain number next to RefIds in the editor UI, e.g. `1v83 (87123)`.\n" +
                  "Display only - it does not change file names, json, or what you type into the RefId field.\n" +
                  "Already open windows pick it up when you next select an item.\n" +
                  "Default value: false")]
         public bool ShowRawRefIdNumbers;
-
-        /// The day the user asked to stop being told that data files were reloaded on entering play mode,
-        /// as days since epoch. Stored as a day rather than a bool so it comes back the next day
-        /// instead of being muted forever.
-        [HideInInspector] public int PlayModeReloadDialogMutedDay;
 
         /// These used to live in NeuroUnityEditorSettings, this carries the old values over once.
         [HideInInspector] public bool MigratedFromProjectSettings;
@@ -47,24 +38,9 @@ namespace Ninjadini.Neuro.Editor
             MigratedFromProjectSettings = true;
             var projectSettings = NeuroUnityEditorSettings.Get();
             LogTimings = projectSettings.MigratedLogTimings;
-            ShowDialogOnDataFileChange = projectSettings.MigratedShowDialogOnDataFileChange;
             ShowRawRefIdNumbers = projectSettings.MigratedShowRawRefIdNumbers;
             Save();
         }
-
-        public bool IsPlayModeReloadDialogMutedToday()
-        {
-            return PlayModeReloadDialogMutedDay == Today();
-        }
-
-        public void MutePlayModeReloadDialogForToday()
-        {
-            PlayModeReloadDialogMutedDay = Today();
-            Save();
-        }
-
-        /// Local days since epoch - the mute is about the person's day, not UTC's.
-        static int Today() => (int)(DateTime.Now - new DateTime(1970, 1, 1)).TotalDays;
 
         public void Save()
         {

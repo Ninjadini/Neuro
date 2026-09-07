@@ -23,6 +23,9 @@ namespace Ninjadini.Neuro.CodeGen
         static readonly DiagnosticDescriptor UnsupportedTypeRule = new DiagnosticDescriptor("Neuro101", "Unsupported type", "Unsupported type `{0}` found @ {1}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor UnsupportedNumberTypeRule = new DiagnosticDescriptor("Neuro102", "Unsupported number type", "Unsupported number type `{0}` found @ {1}. Whole numbers are stored as variable length ints, so a narrow type saves nothing - use int, uint, long or ulong. For char use string, for decimal use double or a long of scaled units.", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor InvalidDictionaryKeyTypeRule = new DiagnosticDescriptor("Neuro101", "Invalid dictionary key type", "Unsupported dictionary key type `{0}` found @ {1}", "Syntax", DiagnosticSeverity.Error, true);
+        /// A key has to serialize down to one value - json spells keys out as object names and the binary format
+        /// writes them with no terminator, so a type made of [Neuro] fields has nowhere to put its second field.
+        static readonly DiagnosticDescriptor NeuroObjectDictionaryKeyTypeRule = new DiagnosticDescriptor("Neuro101", "Invalid dictionary key type", "`{0}` @ {1} is keyed by a Neuro object made of [Neuro] fields. A dictionary key must be a single value - use a string, an enum, a number, a DateTime/TimeSpan or a Reference<>, or move the object into the value and key the dictionary by one of its fields.", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor InvalidTagRangeRule = new DiagnosticDescriptor(InvalidTagDiagnosticID, "Invalid field neuro tag", "Neuro field attribute tag of `{0}` must be between 1 and "+int.MaxValue+". {1}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor FieldTagConflictRule = new DiagnosticDescriptor(FieldTagConflictDiagnosticID, "Field attribute tag already used", "Neuro field attribute tag {0} of `{1}` is already used by another field `{2}`. {3}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor MissingClassAttributeRule = new DiagnosticDescriptor("Neuro404", "Missing neuro class attribute", "`{0}` needs neuro class attribute `[Neuro(#)]` because it's base class `{1}` is a Neuro class.", "Syntax", DiagnosticSeverity.Error, true);
@@ -38,7 +41,16 @@ namespace Ninjadini.Neuro.CodeGen
         public static readonly DiagnosticDescriptor GlobalTypeIdNotSetRule = new DiagnosticDescriptor("Neuro313", "Global type id not set", "Neuro global type id of `{0}` is not set. {1}", "Syntax", DiagnosticSeverity.Error, true);
         public static readonly DiagnosticDescriptor GlobalTypeConflictRule = new DiagnosticDescriptor("Neuro310", "Global type id already used", "Neuro global type id {0} of `{1}` is already used by another class `{2}`. {3}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor GlobalTypeRangeRule = new DiagnosticDescriptor("Neuro311", "Invalid global neuro type id",  "Neuro global type id must be between 0 and "+int.MaxValue+" @ {0}", "Syntax", DiagnosticSeverity.Error, true);
+        /// A `Reference<>` is stored, registered and looked up by the root referencable type - `NeuroReferences`
+        /// maps every subclass onto the root's table. So `Reference<Sub>` is the exact same reference as
+        /// `Reference<Root>` wearing a type the data can not honour: the id may well belong to a sibling subclass,
+        /// and the editor's reference tooling matches on the root type and does not see it.
+        static readonly DiagnosticDescriptor SubReferenceTypeRule = new DiagnosticDescriptor("Neuro315", "Reference to a sub type", "`{0}` @ {1} references a sub class. References are registered and resolved by the root referencable type, so this is the same reference as `Reference<{2}>` but with a type the stored id does not promise - the item it resolves to may be any `{2}`. Declare it as `Reference<{2}>` and cast the resolved value where you need the sub type.", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor RefsGlobalTypeRule = new DiagnosticDescriptor("Neuro312", "Global neuro type attribute missing",  "Neuro global type attribute `[NeuroGlobalType(#)]` is required in `{0}` because it is an IReferencable", "Syntax", DiagnosticSeverity.Error, true);
+        /// The source generator only ever reaches an interface through a class or struct that implements it,
+        /// so a [NeuroGlobalType] written on the interface itself is never emitted and the id silently
+        /// does not exist at runtime. Say so rather than letting it fail on the first WriteGlobalTyped().
+        static readonly DiagnosticDescriptor GlobalTypeOnInterfaceRule = new DiagnosticDescriptor("Neuro314", "Global type id on an interface", "`{0}` is an interface, it can not carry `[NeuroGlobalType(#)]` - codegen does not pick it up, so the id would not exist at runtime. Put the global type id on a base class instead, or register it by hand from a NeuroCustomTypesRegistryHook with `NeuroGlobalTypes.Register<{0}>(#)`.", "Syntax", DiagnosticSeverity.Error, true);
         public static readonly DiagnosticDescriptor ExceptionThrown = new DiagnosticDescriptor("Neuro911", "Exception was thrown while generating Neuro source", "Neuro codegen exception: {0}", "Syntax", DiagnosticSeverity.Error, true);
 
         [ThreadStatic]
@@ -50,6 +62,7 @@ namespace Ninjadini.Neuro.CodeGen
             UnsupportedTypeRule,
             UnsupportedNumberTypeRule,
             InvalidDictionaryKeyTypeRule,
+            NeuroObjectDictionaryKeyTypeRule,
             ReadOnlyFieldRule, 
             ReadOnlyWithoutInitializerFieldRule,
             InvalidTagRangeRule, 
@@ -63,9 +76,11 @@ namespace Ninjadini.Neuro.CodeGen
             ClassTagReservedRule,
             ClassTagNotSetRule,
             GlobalTypeConflictRule,
+            GlobalTypeOnInterfaceRule,
             GlobalTypeIdNotSetRule,
             GlobalTypeRangeRule,
             RefsGlobalTypeRule,
+            SubReferenceTypeRule,
             ExceptionThrown);
 
         public override void Initialize(AnalysisContext context)
@@ -105,6 +120,18 @@ namespace Ninjadini.Neuro.CodeGen
             var classSymbol = context.Symbol as INamedTypeSymbol;
             if (classSymbol == null)
             {
+                return;
+            }
+            if (classSymbol.TypeKind == TypeKind.Interface)
+            {
+                // An interface can be a Neuro root via [Neuro(#)], but never a global type - report that and
+                // stop, the rest of the checks below are about fields and base classes.
+                var globalAttribute = NeuroCodeGenUtils.FindNeuroGlobalTypeAttribute(classSymbol);
+                if (globalAttribute != null)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(GlobalTypeOnInterfaceRule,
+                        NeuroCodeGenUtils.GetLocation(globalAttribute), NeuroCodeGenUtils.GetFullName(classSymbol)));
+                }
                 return;
             }
             if (scanMode == NeuroScanMode.Fast && !ProcessFastCodeGenOptIn(classSymbol, context))
@@ -233,7 +260,7 @@ namespace Ninjadini.Neuro.CodeGen
                             continue;
                         }
                     }
-                    var typeProblem = GetTypeProblem(fieldSymbol.Type);
+                    var typeProblem = GetTypeProblem(fieldSymbol.Type, out var typeProblemArg);
                     if(typeProblem != null)
                     {
                         var syntaxReference = fieldSymbol.DeclaringSyntaxReferences.FirstOrDefault();
@@ -241,7 +268,8 @@ namespace Ninjadini.Neuro.CodeGen
                         var variableDeclaration = fieldDeclarationSyntax?.Parent as VariableDeclarationSyntax;
                         var typeSyntax = variableDeclaration?.Type;
                         var location = typeSyntax?.GetLocation() ?? fieldSymbol.Locations.FirstOrDefault();
-                        context.ReportDiagnostic(Diagnostic.Create(typeProblem, location, fieldSymbol.Type.ToString(), fieldSymbol.ToString()));
+                        // the third arg is only used by the rules that ask for it, the rest ignore it.
+                        context.ReportDiagnostic(Diagnostic.Create(typeProblem, location, fieldSymbol.Type.ToString(), fieldSymbol.ToString(), typeProblemArg));
                         continue;
                     }
                     if (fieldSymbol.DeclaredAccessibility != Accessibility.Public)
@@ -342,8 +370,9 @@ namespace Ninjadini.Neuro.CodeGen
             NeuroWithPrivateFields
         }
 
-        DiagnosticDescriptor GetTypeProblem(ITypeSymbol classSymbol)
+        DiagnosticDescriptor GetTypeProblem(ITypeSymbol classSymbol, out string extraArg)
         {
+            extraArg = null;
             switch (classSymbol.SpecialType)
             {
                 // These would pass codegen and then fail at runtime with "type is not registered", so reject
@@ -369,13 +398,23 @@ namespace Ninjadini.Neuro.CodeGen
                 if (NeuroCodeGenUtils.IsSupportedGenericType(namedTypeSymbol))
                 {
                     var typeArguments = namedTypeSymbol.TypeArguments;
+                    if (NeuroCodeGenUtils.IsReferenceType(namedTypeSymbol)
+                        && typeArguments[0] is INamedTypeSymbol referencedType)
+                    {
+                        var rootType = NeuroCodeGenUtils.GetRootReferencable(referencedType);
+                        if (!SymbolEqualityComparer.Default.Equals(rootType, referencedType))
+                        {
+                            extraArg = rootType.Name;
+                            return SubReferenceTypeRule;
+                        }
+                    }
                     foreach (var typeArgument in typeArguments)
                     {
                         if(typeArgument is INamedTypeSymbol namedTypeArg && namedTypeArg.IsGenericType && !NeuroCodeGenUtils.IsReferenceType(namedTypeArg))
                         {
                             return UnsupportedTypeRule;
                         }
-                        var argProblem = GetTypeProblem(typeArgument);
+                        var argProblem = GetTypeProblem(typeArgument, out extraArg);
                         if(argProblem != null)
                         {
                             return argProblem;
@@ -384,10 +423,18 @@ namespace Ninjadini.Neuro.CodeGen
                     if (namedTypeSymbol.Name == "Dictionary")
                     {
                         var keyArg = typeArguments[0];
-                        if(!(keyArg is INamedTypeSymbol namedTypeArg) 
+                        if(!(keyArg is INamedTypeSymbol namedTypeArg)
                            || (namedTypeArg.TypeKind != TypeKind.Struct &&namedTypeArg.TypeKind != TypeKind.Enum && namedTypeArg.SpecialType != SpecialType.System_String))
                         {
                             return InvalidDictionaryKeyTypeRule;
+                        }
+                        // A struct is only a legal key if it serializes as a single value. Anything built out of
+                        // [Neuro] fields writes a field header per field, which a key position can not carry.
+                        if (namedTypeArg.TypeKind == TypeKind.Struct
+                            && !NeuroCodeGenUtils.IsReferenceType(namedTypeArg)
+                            && IsNeuroObjectType(namedTypeArg))
+                        {
+                            return NeuroObjectDictionaryKeyTypeRule;
                         }
                     }
                     return null;
@@ -395,6 +442,28 @@ namespace Ninjadini.Neuro.CodeGen
                 return UnsupportedTypeRule;
             }
             return null;
+        }
+
+        /// Like <see cref="IsNeuroType"/> but independent of the scan mode - a type declaring either the class
+        /// level attribute or [Neuro] fields serializes as a group of fields no matter how it was picked up.
+        static bool IsNeuroObjectType(INamedTypeSymbol symbol)
+        {
+            if (NeuroCodeGenUtils.FindNeuroAttribute(symbol) != null)
+            {
+                return true;
+            }
+            foreach (var member in symbol.GetMembers())
+            {
+                if (member is IFieldSymbol fieldSymbol && NeuroCodeGenUtils.FindNeuroAttribute(fieldSymbol) != null)
+                {
+                    return true;
+                }
+                if (member is IPropertySymbol propertySymbol && NeuroCodeGenUtils.FindNeuroAttribute(propertySymbol) != null)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         static bool IsNeuroType(INamedTypeSymbol symbol, NeuroScanMode scanMode)

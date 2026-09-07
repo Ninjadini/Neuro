@@ -6,6 +6,9 @@ using Ninjadini.Neuro.Utils;
 
 namespace Ninjadini.Neuro.Editor
 {
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     public class NeuroContentTester
     {
         public IReadOnlyList<Type> ValidatorsVisited => visitor.ValidatorsVisited;

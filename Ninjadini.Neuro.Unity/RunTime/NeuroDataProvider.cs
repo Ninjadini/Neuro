@@ -7,6 +7,9 @@ using UnityEngine;
 
 namespace Ninjadini.Neuro
 {
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     public class NeuroDataProvider : IReferencesProvider
     {
         public const string BinaryResourceName = "NeuroData";

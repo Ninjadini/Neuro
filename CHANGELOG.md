@@ -2,7 +2,69 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.2.1]
+
+### `Color` is fixed and now writes as hex (breaking data format)
+`Color` never survived a round trip - the decoder did not invert the encoder, so every value read back
+as garbage (`FFCC33` came back as `(0, 1, 0, 0)`). `Gradient` was broken with it. `Color32` was fine.
+
+**Any `Color` already stored holds the old packing and will read back differently.** There is no
+migration, because no old value decoded correctly anyway - re-author the affected colours.
+
+New format:
+- json, both types: a hex string - `"FFCC00"`, or `"FFCC0080"` when not fully opaque. Reads
+  `RGB`/`RGBA`/`RRGGBB`/`RRGGBBAA`, any case, optional `#`, and still accepts the old packed number.
+- binary: `Color` is `r | g<<12 | b<<24 | a<<36` scaled by 4095; `Color32` unchanged.
+
+So json is 8 bits per channel where binary `Color` keeps 12. `Color` is also LDR now - channels clamp
+to 0..1, use a `Vector4` for HDR.
+
+Adds `NeuroJsonReader.CurrentValueIsString`, for custom json codecs that take a string or a number.
+
+### Player save files have moved (breaking)
+`LocalNeuroContinuousSave` now keeps saves in `<file>.0` and `<file>.1` rather than `<file>`, with a
+small header on each, so that an interrupted save can not destroy the last good one. **A save written
+by an earlier version is not read** - players of an already shipped build start with fresh data, and
+the old file is left where it is. If that matters for your game, read the old file yourself before the
+first save and hand it over with `SetData()`.
+
+### New compile errors (breaking)
+Three things that used to fail silently at runtime are now caught at compile time. Existing code that
+does any of these will no longer build:
+- `Neuro101` - a dictionary key made of `[Neuro]` fields. It wrote data that could not be read back.
+  A key has to be a single value - a string, an enum, a number, a `DateTime`/`TimeSpan` or a `Reference<>`.
+- `Neuro314` - `[NeuroGlobalType]` on an interface. The id was never registered, and only failed at the
+  first `WriteGlobalTyped()`. A global type id registered by hand on an interface is now found, as the
+  type lookup follows interfaces as well as base classes.
+- `Neuro315` - `Reference<>` to anything but the root referencable type. Every subclass is registered in
+  the root's table, so a `Reference<SubClass>` resolved to whatever the id happened to be, and the
+  editor's reference tooling did not see it at all: "find references" reported none, and changing an
+  item's RefId left those references dangling without warning. Declare the root type and cast where the
+  subclass is needed.
+
+### Fixed
+- Reading a list of objects into an object that already held one no longer mixes the items up.
+  JSON matched each item against the wrong existing instance, so items were read into a neighbour's
+  object or freshly allocated, losing the reuse; binary left the previous object in place where the
+  data said `null`.
+- Lazily loading a referencable part way through another read on the same reader no longer disturbs
+  that read - it used to silently drop everything after the point the load happened.
+- Returning an object to a pool now reaches poolable objects held inside list items and dictionary
+  values. Only items that were themselves poolable used to be walked into, so anything they held was
+  never returned.
+- `LocalNeuroContinuousSave` now also saves a pending change when the app goes to the background
+  (`OnApplicationPause`/`OnApplicationFocus`). On mobile `OnDestroy` is not guaranteed to run.
+- The Neuro editor no longer touches Unity's APIs from background threads. The data file watcher and
+  the "find references" search both did, which could corrupt lazily loaded data or throw at random.
+- A batch of smaller Neuro editor fixes: picking a nested sub type in the polymorphic dropdown,
+  `System.Drawing.Color` fields, selection after deleting an item, redraw after a rejected RefId change,
+  unresolvable assemblies in the "create object" type list, `⌨ Code` and prefab reference search
+  throwing on assets that fail to load, and a stray square corner.
+
+### Changed
+- Reading JSON is much faster on anything but small documents. A field lookup used to scan every node
+  in the document; it now walks only the fields of the object it is in. A 145KB document reads about
+  10x faster, and it no longer gets quadratically worse as the document grows.
 
 ## [0.2.0]
 

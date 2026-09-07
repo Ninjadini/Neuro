@@ -9,6 +9,9 @@ using UnityEngine.UIElements;
 
 namespace Ninjadini.Neuro.Editor
 {
+#if UNITY_6000_5_OR_NEWER
+    [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
     public partial class ObjectInspector : VisualElement
     {
         static readonly BasicController SharedController = new BasicController();
@@ -429,7 +432,7 @@ namespace Ninjadini.Neuro.Editor
                 {
                     EnsureSubTypesDropdown();
                     subtypesDropDown.SetEnabled(false);
-                    subtypesDropDown.value = type.Name;
+                    subtypesDropDown.value = GetClassName(type);
                 }
                 else
                 {
@@ -475,7 +478,12 @@ namespace Ninjadini.Neuro.Editor
         void OnSubtypeDropDownChanged(ChangeEvent<string> evt)
         {
             var allClasses = data.Controller?.GetPossibleCreationTypesOf(data.type) ?? FindAllPossibleCreationTypesOf(data.type).ToArray();
-            var newType = allClasses.FirstOrDefault(t => t.Name == evt.newValue);
+            // the choices are spelled with GetClassName, which is not Type.Name for a nested type.
+            var newType = allClasses.FirstOrDefault(t => GetClassName(t) == evt.newValue);
+            if (newType == null)
+            {
+                return;
+            }
             object newObj = null;
             data.Controller?.SwitchObjectType(data.getter(), newType, ref newObj);
             if (newObj != null)
@@ -567,7 +575,7 @@ namespace Ninjadini.Neuro.Editor
 #endif 
             var result = (from domainAssembly in assemblies
                 where !domainAssembly.IsDynamic
-                from assemblyType in domainAssembly.GetExportedTypes()
+                from assemblyType in NeuroEditorUtils.SafeGetExportedTypes(domainAssembly)
                 where assemblyType.IsClass 
                       && !assemblyType.IsAbstract
                       && !assemblyType.IsInterface

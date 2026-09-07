@@ -250,7 +250,7 @@ namespace Ninjadini.Neuro.Editor
                         (o) =>
                         {
                             var v = (System.Drawing.Color)o;
-                            return new Color(v.R, v.G, v.B, v.A);
+                            return new Color(v.R / 255f, v.G / 255f, v.B / 255f, v.A / 255f);
                         }, 
                         c => System.Drawing.Color.FromArgb((byte)(c.a * 255), (byte)(c.r * 255),
                             (byte)(c.g * 255), (byte)(c.b * 255))
