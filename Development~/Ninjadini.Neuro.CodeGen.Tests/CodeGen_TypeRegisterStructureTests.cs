@@ -30,6 +30,9 @@ partial class TestChildClass
         
         TestUtils.TestSourceGenerates(src, 
 @"[assembly:Ninjadini.Neuro.NeuroAssemblyAttribute(typeof(NeuroCodeGen_NeuroRoslyn_Test_Assembly), ""RegisterTypes"")]
+#if UNITY_6000_5_OR_NEWER
+[Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
+#endif
 public static class NeuroCodeGen_NeuroRoslyn_Test_Assembly
 {
     static bool registered;

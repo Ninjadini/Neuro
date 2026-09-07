@@ -1,6 +1,6 @@
 {
   "name": "com.ninjadini.neuro-unity",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "displayName": "Ninjadini Neuro",
   "description": "A unified, data-driven toolset for Unity. At its core a fast, compact, allocation-free C# binary and JSON serializer with no schema files and no reflection at runtime \u2014 backwards and forwards compatible, inspired by Protocol Buffers. Ships with editor tooling to author, validate, debug and ship your config data, and to save player progress.",
   "documentationUrl": "https://github.com/Ninjadini/Neuro",
