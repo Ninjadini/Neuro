@@ -321,8 +321,14 @@ namespace Ninjadini.Neuro.Editor
         }
 
         /// True while there are data file changes on disk that could not be applied to what is already loaded,
-        /// so only a full Reload() will pick them up.
-        public bool HasPendingFileChanges => needsFullReload || pendingChangedFiles.Count > 0 || watcherLostEvents > 0;
+        /// so only a full Reload() will pick them up. Changes still settling do not count - most of them turn
+        /// out to be our own writes, and saying otherwise flashes a warning at the editor on every save.
+        public bool HasPendingFileChanges => needsFullReload || watcherLostEvents > 0
+                                             || (pendingChangedFiles.Count > 0 && !IsSettlingFileChanges);
+
+        /// A burst of file changes has arrived but has not been quiet long enough to be worth acting on yet,
+        /// so what it amounts to is still unknown.
+        bool IsSettlingFileChanges => timeOfLastFileChange >= 0d;
 
         /// How many files HasPendingFileChanges is about.
         public int PendingFileChangesCount => pendingChangedFiles.Count;
