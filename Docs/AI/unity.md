@@ -101,7 +101,16 @@ Lower level: `LocalNeuroStorage` - `Save<T>(obj, name)`, `TryLoad<T>(name)`, `De
 ## Assets
 
 Unity objects cannot be embedded in neuro data. Reference them by address instead - the asset must be
-Addressable or in a `Resources` folder.
+Addressable or in a `Resources` folder **to load at runtime**.
+
+The address itself is not an Addressables key: `AssetAddressEditorUtils.GetAddress` writes the
+`Resources` path for an asset under `Resources`, and otherwise the plain asset **GUID**
+(`<guid>[SubName]` for a sub-asset). So in the editor an address resolves through the AssetDatabase
+whether or not the asset is Addressable - `AssetAddressEditorUtils.LoadObjectFromAddress(address)`
+is the synchronous editor-only load, which is what an editor tool that has to resolve an asset
+during a repaint wants. `NeuroAssetAddressValidator` only checks `Resources.Load` or
+`AssetDatabase.GUIDToAssetPath`, so content tests pass on a non-Addressable asset too, and the
+missing Addressables entry surfaces only as a failed load in a build.
 
 ```csharp
 [AssetType(typeof(Sprite))]                  // optional; filters the editor's picker
