@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Ninjadini.Neuro.Sync;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
@@ -25,32 +26,30 @@ namespace Ninjadini.Neuro.Editor
             }
             NeuroDataProvider.Shared.SetReferenceProvider(new NeuroEditorDataProviderHook());
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+            // the watchers hold OS handles and a background thread, they don't survive a domain reload usefully.
+            AssemblyReloadEvents.beforeAssemblyReload += () => _shared?.ClearAllFileWatchers();
         }
 
-        /// Data files changed on disk are not reloaded as they happen, but entering play mode with stale data would
-        /// silently run the wrong content, so any pending changes are picked up at that point.
+        /// Anything that could not be picked up as it happened - a file was added or removed, or auto reload is
+        /// off - is still pending here, and entering play mode with stale data would silently run the wrong
+        /// content, so it is reloaded at that point.
         static void OnPlayModeStateChanged(PlayModeStateChange state)
         {
             // _shared is deliberately not touched via Shared here, there is nothing to reload if nothing loaded it.
-            if (state != PlayModeStateChange.ExitingEditMode || _shared == null || !_shared.HasPendingFileChanges)
+            if (state != PlayModeStateChange.ExitingEditMode || _shared == null)
             {
                 return;
             }
-            var changesCount = _shared.fileChangesCount;
+            _shared.ProcessPendingFileChangesNow();
+            if (!_shared.HasPendingFileChanges)
+            {
+                return;
+            }
+            var changesCount = _shared.PendingFileChangesCount;
             _shared.Reload();
-            Debug.Log($"Neuro ~ ~{changesCount:N0} data file(s) changed on disk, reloaded the data before entering play mode.");
-            var userSettings = NeuroUnityUserSettings.Get();
-            if (userSettings.IsPlayModeReloadDialogMutedToday())
-            {
-                return;
-            }
-            if (!EditorUtility.DisplayDialog("❖ Neuro",
-                    $"~{changesCount:N0} data file(s) changed on disk.\nThe data was reloaded before entering play mode.",
-                    "OK",
-                    "Don't show again today"))
-            {
-                userSettings.MutePlayModeReloadDialogForToday();
-            }
+            Debug.Log(changesCount > 0
+                ? $"Neuro ~ {changesCount:N0} data file change(s) on disk could not be applied one by one, reloaded all the data before entering play mode."
+                : "Neuro ~ data file changes may have been missed, reloaded all the data before entering play mode.");
         }
 
         static NeuroEditorDataProvider _shared;
@@ -74,7 +73,6 @@ namespace Ninjadini.Neuro.Editor
         internal NeuroJsonReader jsonReader;
         internal NeuroJsonWriter jsonWriter;
         readonly List<FileSystemWatcher> fileSystemWatchers = new ();
-        Dictionary<string, DateTime> ignoreFileChangesExpiry = new Dictionary<string, DateTime>();
 
         bool loadedFromProject;
         public readonly NeuroReferences References;
@@ -94,7 +92,6 @@ namespace Ninjadini.Neuro.Editor
         {
             if (loadedFromProject)
             {
-                fileChangesCount = 0;
                 References.Clear();
                 LoadFromProject();
             }
@@ -251,6 +248,7 @@ namespace Ninjadini.Neuro.Editor
                 fileSystemWatcher.Dispose();
             }
             fileSystemWatchers.Clear();
+            watchedDirs.Clear();
             if (watchingEditorUpdate)
             {
                 watchingEditorUpdate = false;
@@ -259,21 +257,36 @@ namespace Ninjadini.Neuro.Editor
             while (pendingFileChanges.TryDequeue(out _))
             {
             }
-            updatesCountSinceFilesChanged = -1;
+            pendingChangedFiles.Clear();
+            watcherLostEvents = 0;
+            needsFullReload = false;
+            timeOfLastFileChange = -1d;
         }
 
         void AddFileWatchers(string dirPath)
         {
+            var fullDirPath = WithTrailingSeparator(Path.GetFullPath(dirPath));
+            // the watchers include subdirectories, so a data path nested inside another one is already covered
+            // and a second watcher on it would only report everything twice.
+            if (watchedDirs.Any(d => fullDirPath.StartsWith(d, StringComparison.Ordinal)))
+            {
+                return;
+            }
             var watcher = new FileSystemWatcher(dirPath);
             watcher.NotifyFilter = NotifyFilters.DirectoryName | NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size;
             watcher.Changed += OnFileChanged;
             watcher.Created += OnFileChanged;
             watcher.Deleted += OnFileChanged;
-            watcher.Renamed += OnFileChanged;
+            watcher.Renamed += OnFileRenamed;
+            watcher.Error += OnFileWatcherError;
             watcher.Filter = "*.json";
             watcher.IncludeSubdirectories = true;
+            // the default 8kb overflows on a big burst - a branch switch or a bulk edit - and the events that
+            // did not fit are simply lost. It is not free (unpaged memory) but it is far cheaper than missing data.
+            watcher.InternalBufferSize = 64 * 1024;
             watcher.EnableRaisingEvents = true;
             fileSystemWatchers.Add(watcher);
+            watchedDirs.Add(fullDirPath);
             if (!watchingEditorUpdate)
             {
                 watchingEditorUpdate = true;
@@ -281,67 +294,228 @@ namespace Ninjadini.Neuro.Editor
             }
         }
 
-        /// Raised on the FileSystemWatcher's own thread, where neither Unity's APIs nor the ignore list may be
-        /// touched. Everything this event means is worked out on the editor update tick instead, so all this
-        /// does is hand the path over.
+        static string WithTrailingSeparator(string path)
+        {
+            return path.EndsWith(Path.DirectorySeparatorChar) ? path : path + Path.DirectorySeparatorChar;
+        }
+
+        /// Raised on the FileSystemWatcher's own thread, where Unity's APIs may not be touched. Everything the
+        /// event means is worked out on the editor update tick instead, so all this does is hand the path over.
         void OnFileChanged(object sender, FileSystemEventArgs fileArgs)
         {
             pendingFileChanges.Enqueue(fileArgs.FullPath);
         }
 
-        public bool HasPendingFileChanges => fileChangesCount > 0;
+        /// A rename is two paths worth of news - the file that is no longer there and the one that now is.
+        void OnFileRenamed(object sender, RenamedEventArgs fileArgs)
+        {
+            pendingFileChanges.Enqueue(fileArgs.OldFullPath);
+            pendingFileChanges.Enqueue(fileArgs.FullPath);
+        }
+
+        /// The watcher gave up on us, most likely its buffer overflowed. Whatever it dropped is unknowable, so
+        /// the only honest answer is that the whole data set may be stale.
+        void OnFileWatcherError(object sender, ErrorEventArgs errorArgs)
+        {
+            Interlocked.Increment(ref watcherLostEvents);
+        }
+
+        /// True while there are data file changes on disk that could not be applied to what is already loaded,
+        /// so only a full Reload() will pick them up.
+        public bool HasPendingFileChanges => needsFullReload || pendingChangedFiles.Count > 0 || watcherLostEvents > 0;
+
+        /// How many files HasPendingFileChanges is about.
+        public int PendingFileChangesCount => pendingChangedFiles.Count;
+
+        /// Raised for each data file that was re-read in place after it changed on disk, right after the new
+        /// values have landed in the item. Editor UI showing that item wants to redraw itself.
+        public event Action<NeuroDataFile> DataFileReloaded;
 
         readonly ConcurrentQueue<string> pendingFileChanges = new ConcurrentQueue<string>();
+        /// Full paths that changed and could not be dealt with on the spot. A set, so a file saved ten times
+        /// counts once - the old counter counted events and could only ever say "~n".
+        readonly HashSet<string> pendingChangedFiles = new HashSet<string>();
+        readonly List<string> watchedDirs = new List<string>();
         bool watchingEditorUpdate;
-        int fileChangesCount;
-        int updatesCountSinceFilesChanged = -1;
+        int watcherLostEvents;
+        bool needsFullReload;
+        double timeOfLastFileChange = -1d;
 
-        /// Counts what the watcher queued up, minus the changes this class made itself.
-        /// Returns whether anything new was counted.
-        bool DrainPendingFileChanges()
-        {
-            var counted = false;
-            var timeNow = DateTime.UtcNow;
-            while (pendingFileChanges.TryDequeue(out var fullPath))
-            {
-                if (ignoreFileChangesExpiry.TryGetValue(fullPath, out var ignoreUntil) && ignoreUntil > timeNow)
-                {
-                    continue;
-                }
-                fileChangesCount++;
-                counted = true;
-            }
-            return counted;
-        }
+        /// A burst of changes - a git pull, a save-all in another editor - arrives as a stream of events, this is
+        /// how long the stream has to be quiet before we act on it.
+        const double FileChangeSettleSeconds = 0.25d;
 
         void OnEditorUpdateForFileChanges()
         {
-            if (DrainPendingFileChanges())
+            if (DequeueFileChanges())
             {
-                // more changes are still landing, let the burst settle before asking about them.
-                updatesCountSinceFilesChanged = 0;
+                // a burst arrives as a stream of events, and a file that is still being written reads back as
+                // broken json - let it settle before acting on it.
+                timeOfLastFileChange = EditorApplication.timeSinceStartup;
             }
-            if (updatesCountSinceFilesChanged < 0)
+            else if (timeOfLastFileChange >= 0d
+                     && EditorApplication.timeSinceStartup - timeOfLastFileChange >= FileChangeSettleSeconds)
+            {
+                timeOfLastFileChange = -1d;
+                ApplyFileChanges();
+            }
+        }
+
+        /// Deals with everything the watchers have queued up right now, without waiting for the burst to settle.
+        /// Whatever is left in pendingChangedFiles afterwards needs a full Reload().
+        public void ProcessPendingFileChangesNow()
+        {
+            DequeueFileChanges();
+            timeOfLastFileChange = -1d;
+            ApplyFileChanges();
+        }
+
+        /// Moves what the watcher thread queued into the pending set. Returns whether anything new turned up.
+        bool DequeueFileChanges()
+        {
+            var anyNew = false;
+            while (pendingFileChanges.TryDequeue(out var fullPath))
+            {
+                pendingChangedFiles.Add(fullPath);
+                anyNew = true;
+            }
+            return anyNew;
+        }
+
+        /// Works out what each changed path actually means and applies the ones that can be applied, leaving
+        /// only the changes that need a full Reload() in pendingChangedFiles.
+        void ApplyFileChanges()
+        {
+            if (Interlocked.Exchange(ref watcherLostEvents, 0) > 0)
+            {
+                // We can not know which files the watcher dropped, so nothing loaded can be trusted to be current
+                // and there is no file by file fix for it - only a full reload.
+                needsFullReload = true;
+                Debug.LogWarning("Neuro ~ the data file watcher dropped events, so file changes may have been missed." +
+                                 " Reload the neuro data (Tools > Neuro > Reload) to be sure of what is loaded.");
+            }
+            if (pendingChangedFiles.Count == 0)
             {
                 return;
             }
-            updatesCountSinceFilesChanged++;
-            if (updatesCountSinceFilesChanged <= 5)
+            var autoReload = NeuroUnityEditorSettings.Get().AutoReloadChangedDataFiles;
+            var byFullPath = BuildDataFilesByFullPath();
+            var reloadedFiles = new List<NeuroDataFile>();
+            var startTime = DateTime.UtcNow;
+            foreach (var fullPath in pendingChangedFiles.ToArray())
+            {
+                if (TryApplyFileChange(fullPath, byFullPath, autoReload, reloadedFiles))
+                {
+                    pendingChangedFiles.Remove(fullPath);
+                }
+            }
+            if (reloadedFiles.Count == 0)
             {
                 return;
             }
-            updatesCountSinceFilesChanged = -1;
-            if (fileChangesCount <= 0 || !NeuroUnityUserSettings.Get().ShowDialogOnDataFileChange)
+            LogReloadedFiles(reloadedFiles, startTime);
+            // told after the fact rather than one by one, so a listener that reloads or rebuilds can't disturb
+            // the pass that is still running.
+            foreach (var dataFile in reloadedFiles)
             {
-                return;
+                DataFileReloaded?.Invoke(dataFile);
             }
-            if (EditorUtility.DisplayDialog(
-                    "",
-                    $"~{fileChangesCount} data files may have changed. \nWould you like to reload Neuro data?",
-                    "YES", 
-                    "Later"))
+        }
+
+        void LogReloadedFiles(List<NeuroDataFile> reloadedFiles, DateTime startTime)
+        {
+            const int maxNamed = 5;
+            var names = string.Join("\n", reloadedFiles.Take(maxNamed)
+                .Select(f => $"  {NeuroEditorUtils.DisplayRefId(f.RefId)}-{f.RefName} @ {f.FilePath}"));
+            if (reloadedFiles.Count > maxNamed)
             {
-                Reload();
+                names += $"\n  ...and {reloadedFiles.Count - maxNamed:N0} more";
+            }
+            var timing = NeuroUnityUserSettings.Get().LogTimings
+                ? $" in {(DateTime.UtcNow - startTime).TotalMilliseconds:N0} ms"
+                : "";
+            Debug.Log($"Neuro ~ reloaded {reloadedFiles.Count:N0} data file(s) changed on disk{timing}:\n{names}");
+        }
+
+        Dictionary<string, NeuroDataFile> BuildDataFilesByFullPath()
+        {
+            var result = new Dictionary<string, NeuroDataFile>(dataFiles.Count);
+            foreach (var dataFile in dataFiles)
+            {
+                if (!string.IsNullOrEmpty(dataFile.FilePath))
+                {
+                    result[Path.GetFullPath(dataFile.FilePath)] = dataFile;
+                }
+            }
+            return result;
+        }
+
+        /// Returns true when this path needs nothing further - either it turned out to be no change at all, or
+        /// the file was re-read in place. False leaves it pending for a full Reload().
+        bool TryApplyFileChange(string fullPath, Dictionary<string, NeuroDataFile> byFullPath, bool autoReload, List<NeuroDataFile> reloadedFiles)
+        {
+            if (!byFullPath.TryGetValue(fullPath, out var dataFile))
+            {
+                // A path we don't have an item for. If it is there, it is a new file and only a full reload can
+                // add it; if it is not, it is a file we deleted ourselves (or one that was never ours anyway).
+                return !File.Exists(fullPath);
+            }
+            if (!File.Exists(fullPath))
+            {
+                // the item is still registered but its file is gone - deleted or renamed away outside the editor.
+                return false;
+            }
+            string json;
+            try
+            {
+                json = File.ReadAllText(fullPath);
+            }
+            catch (Exception e)
+            {
+                // most likely still being written, the writer's own completion will raise another event.
+                Debug.LogWarning($"Neuro ~ could not read changed data file, leaving it for a full reload @ {fullPath}\n{e.Message}");
+                return false;
+            }
+            if (dataFile.IsLastKnownContent(json))
+            {
+                // this is the write we made ourselves, or a touch that did not change anything.
+                return true;
+            }
+            if (!dataFile.IsLoaded)
+            {
+                // nothing is holding stale values, it will be read off disk whenever something asks for it.
+                dataFile.SetLastKnownContent(json);
+                return true;
+            }
+            if (!autoReload)
+            {
+                return false;
+            }
+            try
+            {
+                ReloadDataFileInPlace(dataFile, json);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Neuro ~ failed to reload changed data file @ {fullPath}\n{e}");
+                return false;
+            }
+            reloadedFiles.Add(dataFile);
+            return true;
+        }
+
+        /// Reads the json into the object that is already loaded so that everything holding on to the item sees
+        /// the new values. The reference table only needs repointing in the one case the object can not be
+        /// reused - the json turned out to be a different subtype and the reader had to build a new one.
+        void ReloadDataFileInPlace(NeuroDataFile dataFile, string json)
+        {
+            var previousValue = dataFile.Value;
+            var newValue = dataFile.ReloadValueFromDisk(json);
+            if (!ReferenceEquals(previousValue, newValue))
+            {
+                var table = References.GetTable(dataFile.RootType);
+                table.Unregister(dataFile.RefId);
+                table.Register(newValue);
             }
         }
 
@@ -503,8 +677,9 @@ namespace Ninjadini.Neuro.Editor
                     Directory.CreateDirectory(dir);
                 }
                 var json = jsonWriter.WriteObject(value, refs:References, options:NeuroJsonWriter.Options.ExcludeTopLevelGlobalType);
-                AddTempIgnoreFile(dataFile.FilePath);
                 File.WriteAllText(dataFile.FilePath, json);
+                // so the watcher event this write is about to raise is recognised as our own rather than a change.
+                dataFile.SetLastKnownContent(json);
             }
         }
 
@@ -518,7 +693,6 @@ namespace Ninjadini.Neuro.Editor
             //dataFile.Value = null;
             if (!string.IsNullOrEmpty(dataFile.FilePath) && File.Exists(dataFile.FilePath))
             {
-                AddTempIgnoreFile(dataFile.FilePath);
                 File.Delete(dataFile.FilePath);
             }
             dataFiles.Remove(dataFile);
@@ -571,10 +745,8 @@ namespace Ninjadini.Neuro.Editor
             var newPath = Path.Combine(Path.GetDirectoryName(dataFile.FilePath), GetFileName(value) + ".json");
             if (!string.IsNullOrEmpty(dataFile.FilePath) && File.Exists(dataFile.FilePath))
             {
-                AddTempIgnoreFile(dataFile.FilePath);
                 File.Delete(dataFile.FilePath);
             }
-            AddTempIgnoreFile(newPath);
             dataFile.SetFilePath(newPath);
             dataFile.Value = value;
             SaveData(dataFile);
@@ -688,28 +860,12 @@ namespace Ninjadini.Neuro.Editor
             var newPath = Path.Combine(dir, fileName);
             if (!string.IsNullOrEmpty(dataFile.FilePath) && File.Exists(dataFile.FilePath))
             {
-                AddTempIgnoreFile(dataFile.FilePath);
                 File.Delete(dataFile.FilePath);
             }
-            AddTempIgnoreFile(newPath);
             dataFile.SetFilePath(newPath);
             SaveData(dataFile);
         }
 
-        void AddTempIgnoreFile(string filePath)
-        {
-            var timeNow = DateTime.UtcNow;
-            var fullPath = Path.GetFullPath(filePath);
-            ignoreFileChangesExpiry[fullPath] = timeNow.AddMilliseconds(1000);
-
-            if (ignoreFileChangesExpiry.Count > 100)
-            {
-                ignoreFileChangesExpiry = ignoreFileChangesExpiry
-                    .Where(kv => kv.Value > timeNow)
-                    .ToDictionary(kv => kv.Key, kv => kv.Value);
-            }
-        }
-        
         public string GetFileName(IReferencable referencable)
         {
             if (referencable is ISingletonReferencable)

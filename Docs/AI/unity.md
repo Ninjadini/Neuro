@@ -25,6 +25,16 @@ Other menu items:
 Also under that menu: `Save Data To Resources` / `Save Resources data as JSON` (bake and dump the binary
 blob builds use) and `Bake AutoTypesRegister Script` (static type registry, skips assembly scanning).
 
+## Data files changing on disk
+
+Data paths are watched, so edits made outside the editor are picked up. With `Auto Reload Changed Data
+Files` on (project settings, the default), a changed file is re-read into the object already loaded, so
+anything holding the item sees the new values rather than a stale copy.
+
+Changes that need a full `Reload()` instead - a file added, deleted or renamed, or the setting being off -
+stay pending in `HasPendingFileChanges`, and entering play mode reloads everything. Subscribe to
+`NeuroEditorDataProvider.DataFileReloaded` if your editor UI has to redraw when an item is re-read.
+
 ## RefIds are base36 in files and JSON
 
 A `RefId` is always a `uint` in memory and in binary. In **file names and JSON** it is spelled in base36

@@ -37,6 +37,14 @@ namespace Ninjadini.Neuro.Editor
         [Tooltip("This is where Neuro will bake the data for builds as "+ NeuroDataProvider.BinaryResourceName + "."+NeuroDataProvider.BinaryResourceExtension+" file.\nDefault value: Assets/Resources/")]
         public string ResourcesDir = "Assets/Resources/";
         
+        [Tooltip("When a data json file is changed outside the editor - a git pull, a text editor, a script - " +
+                 "re-read just that one file straight away, into the object that is already loaded.\n" +
+                 "Files that nothing has loaded yet are left alone, they read off disk when something asks for them.\n" +
+                 "Turn this off to leave the changes queued instead - either way anything still pending is " +
+                 "reloaded when you enter play mode.\n" +
+                 "Default value: true")]
+        public bool AutoReloadChangedDataFiles = true;
+
         [Header("Experimental")]
         public bool UndoRedosEnabled;
 
@@ -53,7 +61,6 @@ namespace Ninjadini.Neuro.Editor
         /// These moved to NeuroUnityUserSettings, they only exist so old ProjectSettings/NeuroSettings.asset
         /// values can be carried over once. Safe to delete once everyone has opened the project on this version.
         [SerializeField, HideInInspector, FormerlySerializedAs("LogTimings")] internal bool MigratedLogTimings;
-        [SerializeField, HideInInspector, FormerlySerializedAs("ShowDialogOnDataFileChange")] internal bool MigratedShowDialogOnDataFileChange;
         [SerializeField, HideInInspector, FormerlySerializedAs("ShowRawRefIdNumbers")] internal bool MigratedShowRawRefIdNumbers;
         
         public NeuroUnityEditorSettings() : base()
