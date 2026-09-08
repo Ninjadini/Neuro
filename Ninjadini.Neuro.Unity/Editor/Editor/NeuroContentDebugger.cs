@@ -14,7 +14,7 @@ namespace Ninjadini.Neuro.Editor
 #endif
     public partial class NeuroContentDebugger : EditorWindow
     {
-        [MenuItem("Tools/Neuro/Content Debugger", priority = 102)]
+        [MenuItem("Tools/Neuro/Content Debugger", priority = 205)]
         public static void ShowWindow()
         {
             //GetWindow<NeuroDataDebugger>("NeuroContentDebugger").Show();

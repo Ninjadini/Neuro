@@ -321,8 +321,9 @@ namespace Ninjadini.Neuro.Editor
         }
 
         /// True while there are data file changes on disk that could not be applied to what is already loaded,
-        /// so only a full Reload() will pick them up. Changes still settling do not count - most of them turn
-        /// out to be our own writes, and saying otherwise flashes a warning at the editor on every save.
+        /// so only a full Reload() will pick them up. Changes still settling do not count - an editor's own
+        /// write, add or delete raises a watcher event too, and it is only told apart from a real change once
+        /// the burst is processed. Reporting them meanwhile flashes a warning at the editor on every edit.
         public bool HasPendingFileChanges => needsFullReload || watcherLostEvents > 0
                                              || (pendingChangedFiles.Count > 0 && !IsSettlingFileChanges);
 
@@ -612,9 +613,28 @@ namespace Ninjadini.Neuro.Editor
                 Debug.LogError($"Tried to assign {newObj.GetType().Name}'s RefId to `{NeuroEditorUtils.DisplayRefId(nextId)}` but it is still `{NeuroEditorUtils.DisplayRefId(resultId)}`");
                 return null;
             }
-            var fileName = GetFileName(newObj)+".json";
-            var dir = GetDirForType(type);
-            var result = new NeuroDataFile(type, Path.Combine(dir, fileName), this)
+            return AddAtPath(newObj, Path.Combine(GetDirForType(type), GetFileName(newObj) + ".json"));
+        }
+
+        /// Adds an item whose RefId is already decided, as the file at `filePath` - a null or empty path means the
+        /// usual place for its type. This is how undo puts a deleted item back where it was, which may not be the
+        /// primary data path. Throws if the id is taken.
+        internal NeuroDataFile AddAtPath(IReferencable newObj, string filePath)
+        {
+            var type = NeuroReferences.GetRootReferencable(newObj.GetType());
+            if (newObj.RefId == 0)
+            {
+                throw new ArgumentException("The object needs a RefId, use Add() to have one generated.", nameof(newObj));
+            }
+            if (Find(type, newObj.RefId) != null || References.Get(type, newObj.RefId) != null)
+            {
+                throw new Exception($"Object with RefId `{NeuroEditorUtils.DisplayRefId(newObj.RefId)}` already exists for type `{type.Name}`");
+            }
+            if (string.IsNullOrEmpty(filePath))
+            {
+                filePath = Path.Combine(GetDirForType(type), GetFileName(newObj) + ".json");
+            }
+            var result = new NeuroDataFile(type, filePath, this)
             {
                 Value = newObj
             };
@@ -622,6 +642,16 @@ namespace Ninjadini.Neuro.Editor
             References.Register(newObj);
             SaveData(result);
             return result;
+        }
+
+        /// Replaces the loaded item's content with `json` - into the same object where possible, as a file changed
+        /// on disk would be reloaded - then saves it and raises <see cref="DataFileReloaded"/> so open editors
+        /// redraw. This is how undo/redo lands a recorded state.
+        internal void ApplyJson(NeuroDataFile dataFile, string json)
+        {
+            ReloadDataFileInPlace(dataFile, json);
+            SaveData(dataFile);
+            DataFileReloaded?.Invoke(dataFile);
         }
 
         string GetDirForType(Type type)

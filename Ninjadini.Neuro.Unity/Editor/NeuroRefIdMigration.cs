@@ -26,7 +26,7 @@ namespace Ninjadini.Neuro.Editor
             return NeuroUnityEditorSettings.Get().RefIdFormatVersion < CurrentFormatVersion;
         }
 
-        [MenuItem("Tools/Neuro/Migrate RefIds to base36...", priority = 210)]
+        [MenuItem("Tools/Neuro/Migrate RefIds to base36...", priority = 700)]
         public static void MigrateMenuItem()
         {
             if (!IsMigrationNeeded())

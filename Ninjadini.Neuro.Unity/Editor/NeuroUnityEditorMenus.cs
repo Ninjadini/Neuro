@@ -7,33 +7,33 @@ namespace Ninjadini.Neuro.Editor
 {
     public static class NeuroUnityEditorMenus
     {
-        [MenuItem("Tools/Neuro/ReadMe @ github url", priority = 108)]
+        [MenuItem("Tools/Neuro/ReadMe @ github url", priority = 500)]
         public static void ReadMe()
         {
             Application.OpenURL("https://github.com/Ninjadini/Neuro/");
         }
         
         
-        [MenuItem("Tools/Neuro/Save Data To Resources")]
+        [MenuItem("Tools/Neuro/Save Data To Resources", priority = 600)]
         public static void SaveToResources()
         {
             NeuroEditorDataProvider.Shared.SaveBundledBinaryToResources(null);
         }
         
         
-        [MenuItem("Tools/Neuro/Save Resources data as JSON")]
+        [MenuItem("Tools/Neuro/Save Resources data as JSON", priority = 601)]
         public static void SaveResourceDataAsJson()
         {
             NeuroEditorDataProvider.Shared.SaveBakedDataAsJson();
         }
         
-        [MenuItem("Tools/Neuro/Reload", priority = 202)]
+        [MenuItem("Tools/Neuro/Reload", priority = 104)]
         public static void Reload()
         {
             NeuroEditorDataProvider.Shared.Reload();
         }
         
-        [MenuItem("Tools/Neuro/Reload + Read all data", priority = 205)]
+        [MenuItem("Tools/Neuro/Reload + Read all data", priority = 105)]
         public static void ReloadAndReadAll()
         {
             var dataProvider = NeuroEditorDataProvider.Shared;

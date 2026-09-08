@@ -44,6 +44,37 @@ field to go. Move the object into the value and key the dictionary by one of its
 For `byte`/`short` use `int` - values are varint encoded, so a narrow type saves nothing. For `char` use
 `string`. For `decimal` use `double`, or a `long` of scaled units.
 
+## Defaults
+
+A field initialiser is the serialization default: writers skip a field still holding it, and readers
+write it back when the data does not carry the field. Codegen rebuilds the initialiser into the
+generated `Sync` call, so it has to be something it can rebuild:
+
+- a literal - `5`, `-5`, `1.5f`, `true`, `default`
+- a const, a static field or a static property - `Vector2Int.one`, `float.NaN`, an enum member
+- a static method call - `FPUtils.FromInt(10)`, `TimeSpan.FromSeconds(0.25)`
+- `new T(...)`, with or without the type name, where every argument is one of the above
+- an expression the compiler folds to a constant - `1 + 2`
+
+Anything else is `Neuro024` rather than a guess: an instance member, a private one the generated file
+can not reach, an object initialiser (`new Vec { x = 1 }`). Rewrite it as one of the forms above, or as
+a static readonly field holding the value.
+
+A default that **runs** something - a property getter, a method, a constructor - is held in a
+`internal static readonly` field on the generated registry class and named from the `Sync` call, so it
+is built once at class init rather than on every read and write of every object. Ones that just name a
+value stay inline. Nothing to do either way; it only matters when reading generated source.
+
+Two kinds of field never carry a default at all:
+
+- **Class typed fields** (including `string` and `List<>`) read back as null when the data omits them.
+  An initialiser there is not an error - `= new List<int>()` is worth writing for other reasons - it
+  just is not a default.
+- **Structs that do not implement `IEquatable<>` of themselves**, which the defaulted `Sync` overload
+  requires - among the Unity types that is `LayerMask`, `RangeInt`, `Ray`, `Ray2D`, `BoundingSphere`,
+  `Keyframe`, `GradientColorKey` and `GradientAlphaKey`. `T?` is one of these too, and always reads back
+  as null. An initialiser on one of these is `Neuro025`: write the value into the data instead.
+
 ## Referencable items
 
 ```csharp
@@ -135,7 +166,7 @@ another asmdef; `Tools > Neuro > Type Mapping Debugger` in Unity is the only vie
 
 ## Codegen errors
 
-Violations of the rules above are compile errors prefixed `Neuro` (`Neuro022`, `Neuro101`, `Neuro102`,
+Violations of the rules above are compile errors prefixed `Neuro` (`Neuro022`, `Neuro024`, `Neuro025`, `Neuro101`, `Neuro102`,
 `Neuro300`, `Neuro303`, `Neuro312`, `Neuro404`, `Neuro405`, `Neuro406`, ...). The messages state the
 cause and the fix, so read the error text rather than guessing from the code alone. Every descriptor is
 declared in one place if you need the full list: `Development~/Ninjadini.Neuro.CodeGen/NeuroSourceAnalyzer.cs`.

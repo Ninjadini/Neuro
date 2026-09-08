@@ -165,9 +165,8 @@ told how many other items reference this one.
 On confirm Neuro checks the id is free, repoints every `Reference<>` in the data that pointed at the old id,
 renames the data file and saves everything it changed.
 
-Two things it can not do for you:
-- Undo only covers the item itself, not the other items that were repointed.
-- Ids stored outside the Neuro data - in scenes, prefabs, save games or hard coded in your code - are not updated.
+Undo moves the id back and repoints the other items again. What it can not do for you: ids stored outside the
+Neuro data - in scenes, prefabs, save games or hard coded in your code - are not updated.
 
 ### How to read from referencable/config at runtime
 ```

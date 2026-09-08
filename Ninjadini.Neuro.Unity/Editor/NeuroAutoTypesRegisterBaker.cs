@@ -14,7 +14,7 @@ namespace Ninjadini.Neuro.Editor
     {
         public const string DefaultOutputFilePath = "Assets/NeuroBakedAutoTypesRegister.cs";
 
-        [MenuItem("Tools/Neuro/Bake AutoTypesRegister Script")]
+        [MenuItem("Tools/Neuro/Bake AutoTypesRegister Script", priority = 603)]
         public static void BakeTypesRegisterScript()
         {
             CreateTypesRegisterScript(DefaultOutputFilePath);

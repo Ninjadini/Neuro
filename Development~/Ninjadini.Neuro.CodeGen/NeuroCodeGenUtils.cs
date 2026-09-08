@@ -168,6 +168,13 @@ namespace Ninjadini.Neuro.CodeGen
             }
         }
 
+        /// The generated registry class - one per assembly, named after it. Both the generated file and the
+        /// walker name it, so it is worked out in one place.
+        public static string GetRegistryClassName(Compilation compilation)
+        {
+            return "NeuroCodeGen_" + System.Text.RegularExpressions.Regex.Replace(compilation.Assembly.Name, @"\W", "_");
+        }
+
         public static string GetFullName(ITypeSymbol symbol)
         {
             return symbol.IsValueType ? symbol.ToString() : symbol.ToDisplayString(fullNameFormat);

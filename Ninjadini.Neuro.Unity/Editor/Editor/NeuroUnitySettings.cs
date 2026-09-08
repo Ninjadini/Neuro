@@ -45,9 +45,6 @@ namespace Ninjadini.Neuro.Editor
                  "Default value: true")]
         public bool AutoReloadChangedDataFiles = true;
 
-        [Header("Experimental")]
-        public bool UndoRedosEnabled;
-
         [Header("Advanced")]
         [Tooltip("This is required for Neuro to function properly but you can disable it if you know what you are doing.\nDefault value: true")]
         public bool BakeAutoTypeRegistryForBuild = true;

@@ -4,6 +4,53 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.2.1]
 
+### Migrating a renamed field's data
+`Tools > Neuro > Migrate Renamed Field...` moves a value from its old json field name onto the new one,
+for when a `[Neuro]` field is renamed in code. Binary data does not care - it is keyed by tag - but json
+is keyed by name, so until now the value was silently dropped on the next read. Pick the class, pick the
+field from its `[Neuro]` fields, type the old name, preview, migrate.
+
+Only the json key is rewritten, in place at its character range, so formatting and field order survive.
+The data files are walked with the C# types alongside them - following `-subType` for polymorphic values -
+so the rename is scoped to that one class, and a field of the same name on another class is not touched.
+An object that already has the new name is left alone, and every file is checked to still read back before
+it is written. `NeuroJsonFieldRenamer` is the same thing for migration scripts.
+
+
+### Changing a RefId can now repoint prefabs and scenes too
+Changing an item's RefId has always rewritten every `Reference<>` in the Neuro data. The confirmation
+dialog now offers `Change & update assets` as well as `Change data only`: the extra pass sweeps every
+prefab, ScriptableObject and scene under `Assets/` for `Reference<>` fields holding the old id and
+repoints those as well, saving the files it changed. It runs after the data change and is not undoable,
+which is why it is opt-in. Scenes are skipped in play mode, or when the open scenes have unsaved
+changes and the save prompt is declined; whatever was skipped is reported.
+
+`NeuroAssetRefIdRewriter.Rewrite(rootType, oldRefId, newRefId, includeScenes, dryRun)` exposes the same
+sweep for migration scripts, and returns the matches, the files it wrote and anything it could not do.
+
+
+### More Unity inspector attributes work in the Neuro Editor
+These were all silently ignored before. Editor only - none of them clamp or hide anything at
+serialisation time, so existing data is untouched until someone edits the field.
+
+- `[Range(min, max)]` on an `int`, `uint`, `long`, `float` or `double` draws Unity's slider plus
+  number box instead of a plain number field. A stored value outside the range is left alone until
+  someone drags the slider.
+- `[Min]` on the same numeric types clamps what an edit writes. Ignored when the field also has a
+  `[Range]`, which already bounds it.
+- `[Space]` puts a gap above the field, the same as `[InspectorStyle(spaceBefore:)]` - an explicit
+  `[InspectorStyle]` still wins.
+- `[TextArea(minLines, maxLines)]` on a string draws the multiline box `[Multiline]` gives, and sizes
+  it to the line counts.
+- `[HideInInspector]` drops the field or property from the inspector.
+
+### Undo/redo in the Neuro Editor
+Field edits, RefName and RefId changes, add, clone and delete are on Unity's undo stack - Ctrl+Z /
+Ctrl+Y and `Edit > Undo` work on them, the file on disk follows, and the editor window the change was
+made in shows the item again. Undoing a RefId change repoints the other items again too. The old
+experimental `Undo Redos Enabled` setting, which never worked, is replaced by `Undo Redo Enabled`,
+default on.
+
 ### `Color` is fixed and now writes as hex (breaking data format)
 `Color` never survived a round trip - the decoder did not invert the encoder, so every value read back
 as garbage (`FFCC33` came back as `(0, 1, 0, 0)`). `Gradient` was broken with it. `Color32` was fine.

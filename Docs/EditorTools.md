@@ -40,7 +40,7 @@ Shared with the team, stored in `ProjectSettings/NeuroSettings.asset`:
 | **Primary Data Path** | Where the JSON data files live. Default `NeuroData`. |
 | **Bake Data Resources For Build** | Bake the data into Resources so it is available in builds. Turn off only if you load it yourself. Default on. |
 | **Resources Dir** | Where that baked file goes. Default `Assets/Resources/`. |
-| **Undo Redos Enabled** | Experimental undo/redo in the Neuro Editor. |
+| **Undo Redo Enabled** | Neuro Editor edits go on Unity's undo stack (Ctrl+Z / Ctrl+Y, Edit > Undo). Default on. |
 | **Bake Auto Type Registry For Build** | Leave on unless you know why you're turning it off. |
 
 Yours only, stored in `UserSettings/` so it isn't shared:
@@ -66,6 +66,21 @@ fields side by side:
 [InspectorStyle(horizontal: 100)] [Neuro(2)] public int Min;
 [InspectorStyle(horizontal: 100)] [Neuro(3)] public int Max;
 ```
+
+Unity's own field attributes work too, on the numeric types (`int`, `uint`, `long`, `float`,
+`double`), on strings, or on any field:
+
+```csharp
+[Range(0f, 3f)] [Neuro(4)] public float StepRate;     // slider + number box
+[Min(0)]        [Neuro(5)] public int Cost;           // clamps on edit
+[Space(10)]     [Neuro(6)] public float Weight;       // gap above the field
+[TextArea(3, 8)][Neuro(7)] public string Notes;       // multiline box, sized to the line counts
+[HideInInspector] [Neuro(8)] public int Internal;     // still serialised, just not shown
+```
+
+`[Multiline]` is accepted for strings as well. `[Min]` is ignored on a field that also has a
+`[Range]`. None of these affect serialisation - a value already outside a `[Range]` or `[Min]` is
+kept as it is until someone edits that field.
 
 # What's next ?
 

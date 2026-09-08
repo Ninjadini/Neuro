@@ -8,6 +8,8 @@ Rule ID | Category | Severity | Notes
 Neuro002 | Syntax | Error | Invalid class neuro tag
 Neuro022 | Syntax | Error | Readonly Neuro field on primitive types
 Neuro023 | Syntax | Error | Readonly Neuro fields without an initializer
+Neuro024 | Syntax | Error | Unsupported Neuro field initializer
+Neuro025 | Syntax | Error | Neuro field type can not carry a default
 Neuro101 | Syntax | Error | Unsupported type / invalid dictionary key type / non-partial Neuro class
 Neuro102 | Syntax | Error | Unsupported number type
 Neuro300 | Syntax | Error | Field attribute tag already used

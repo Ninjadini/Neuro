@@ -20,6 +20,8 @@ namespace Ninjadini.Neuro.CodeGen
         
         static readonly DiagnosticDescriptor ReadOnlyFieldRule = new DiagnosticDescriptor("Neuro022", "Readonly Neuro field on primitive types", "Neuro attributed field with readonly keyword found @ {0}, which is not a class type", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor ReadOnlyWithoutInitializerFieldRule = new DiagnosticDescriptor("Neuro023", "Readonly Neuro fields without an initializer", "Neuro attribute field that is readonly must have a 'new' initializer assignment @ {0}", "Syntax", DiagnosticSeverity.Error, true);
+        static readonly DiagnosticDescriptor UnsupportedInitializerRule = new DiagnosticDescriptor("Neuro024", "Unsupported Neuro field initializer", "Neuro field initializer `{0}` @ {1} can not be turned into a serialization default, so data that does not carry the field would read back as `default` instead of `{0}`. Rewrite it as a literal, a const, a static field or property, or a `new {2}(...)` of those.", "Syntax", DiagnosticSeverity.Error, true);
+        static readonly DiagnosticDescriptor NoDefaultTypeRule = new DiagnosticDescriptor("Neuro025", "Neuro field type can not carry a default", "Neuro field initializer `{0}` @ {1} is ignored: `{2}` can not carry a serialization default because it does not implement IEquatable<{2}>, so the field reads back as `default` when the data does not carry it. Write the value into the data instead, or drop the initializer.", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor UnsupportedTypeRule = new DiagnosticDescriptor("Neuro101", "Unsupported type", "Unsupported type `{0}` found @ {1}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor UnsupportedNumberTypeRule = new DiagnosticDescriptor("Neuro102", "Unsupported number type", "Unsupported number type `{0}` found @ {1}. Whole numbers are stored as variable length ints, so a narrow type saves nothing - use int, uint, long or ulong. For char use string, for decimal use double or a long of scaled units.", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor InvalidDictionaryKeyTypeRule = new DiagnosticDescriptor("Neuro101", "Invalid dictionary key type", "Unsupported dictionary key type `{0}` found @ {1}", "Syntax", DiagnosticSeverity.Error, true);
@@ -65,6 +67,8 @@ namespace Ninjadini.Neuro.CodeGen
             NeuroObjectDictionaryKeyTypeRule,
             ReadOnlyFieldRule, 
             ReadOnlyWithoutInitializerFieldRule,
+            UnsupportedInitializerRule,
+            NoDefaultTypeRule,
             InvalidTagRangeRule, 
             FieldTagConflictRule, 
             MissingClassAttributeRule,
@@ -272,6 +276,10 @@ namespace Ninjadini.Neuro.CodeGen
                         context.ReportDiagnostic(Diagnostic.Create(typeProblem, location, fieldSymbol.Type.ToString(), fieldSymbol.ToString(), typeProblemArg));
                         continue;
                     }
+                    if (ReportInitializerProblem(fieldSymbol, context))
+                    {
+                        continue;
+                    }
                     if (fieldSymbol.DeclaredAccessibility != Accessibility.Public)
                     {
                         result = ClassFieldsInfo.NeuroWithPrivateFields;
@@ -345,6 +353,40 @@ namespace Ninjadini.Neuro.CodeGen
             }
         }
         
+        /// Reports the initialiser that is not the serialization default it reads as, and says whether it
+        /// found one. A class typed field is left alone - it has always read back as null when the data
+        /// omits it, initialiser or not, and `= new List<int>()` is worth writing for other reasons.
+        static bool ReportInitializerProblem(IFieldSymbol fieldSymbol, SymbolAnalysisContext context)
+        {
+            var typeKind = fieldSymbol.Type.TypeKind;
+            if (typeKind == TypeKind.Class || typeKind == TypeKind.Interface || typeKind == TypeKind.Array)
+            {
+                return false;
+            }
+            var syntax = fieldSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() as VariableDeclaratorSyntax;
+            var initializer = syntax?.Initializer?.Value;
+            if (initializer == null || NeuroDefaultValues.IsNullOrDefault(initializer))
+            {
+                return false;
+            }
+            if (!NeuroDefaultValues.CanCarryDefault(fieldSymbol.Type))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(NoDefaultTypeRule, initializer.GetLocation(), initializer.ToString(), fieldSymbol.ToString(), fieldSymbol.Type.ToString()));
+                return true;
+            }
+            // RS1030: a semantic model per initialiser is the cost of reading an expression that only a
+            // [Neuro] value typed field with an initialiser can reach, which is a rare thing to declare.
+#pragma warning disable RS1030
+            var model = context.Compilation.GetSemanticModel(initializer.SyntaxTree);
+#pragma warning restore RS1030
+            if (NeuroDefaultValues.Render(model, initializer, fieldSymbol.Type).IsValid)
+            {
+                return false;
+            }
+            context.ReportDiagnostic(Diagnostic.Create(UnsupportedInitializerRule, initializer.GetLocation(), initializer.ToString(), fieldSymbol.ToString(), fieldSymbol.Type.ToString()));
+            return true;
+        }
+
         public static bool HasFieldInitializer(IFieldSymbol fieldSymbol)
         {
             var declaringSyntaxReference = fieldSymbol.DeclaringSyntaxReferences.FirstOrDefault();

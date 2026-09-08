@@ -237,7 +237,8 @@ namespace Ninjadini.Neuro.Editor
             _horizontalRow = null;
             foreach (var fieldInfo in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
-                if (!(controller?.ShouldDrawField(fieldInfo, obj) ?? false))
+                if (!(controller?.ShouldDrawField(fieldInfo, obj) ?? false)
+                    || fieldInfo.IsDefined(typeof(HideInInspector), true))
                 {
                     continue;
                 }
@@ -265,7 +266,8 @@ namespace Ninjadini.Neuro.Editor
                     }
                     if (!propInfo.CanRead 
                         || propInfo.GetMethod?.GetParameters().Length > 0 
-                        || propInfo.IsDefined(typeof(EditorBrowsableAttribute)))
+                        || propInfo.IsDefined(typeof(EditorBrowsableAttribute))
+                        || propInfo.IsDefined(typeof(HideInInspector), true))
                     {
                         continue;
                     }
@@ -309,6 +311,12 @@ namespace Ninjadini.Neuro.Editor
 
         static void ApplyStyles(Data data, VisualElement element)
         {
+            // [Space] is the Unity spelling of SpaceBefore; an explicit [InspectorStyle] wins over it.
+            var space = data.MemberInfo?.GetCustomAttribute<SpaceAttribute>(true);
+            if (space != null && space.height > 0)
+            {
+                element.style.marginTop = space.height;
+            }
             var inspectorStyle = ObjectInspectorFields.GetVisualStyle(data.MemberInfo);
             if (inspectorStyle?.SpaceBefore > 0)
             {
