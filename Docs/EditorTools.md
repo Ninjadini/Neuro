@@ -40,7 +40,7 @@ Shared with the team, stored in `ProjectSettings/NeuroSettings.asset`:
 | **Primary Data Path** | Where the JSON data files live. Default `NeuroData`. |
 | **Bake Data Resources For Build** | Bake the data into Resources so it is available in builds. Turn off only if you load it yourself. Default on. |
 | **Resources Dir** | Where that baked file goes. Default `Assets/Resources/`. |
-| **Undo Redos Enabled** | Experimental undo/redo in the Neuro Editor. |
+| **Undo Redo Enabled** | Neuro Editor edits go on Unity's undo stack (Ctrl+Z / Ctrl+Y, Edit > Undo). Default on. |
 | **Bake Auto Type Registry For Build** | Leave on unless you know why you're turning it off. |
 
 Yours only, stored in `UserSettings/` so it isn't shared:

@@ -4,6 +4,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.2.1]
 
+### Undo/redo in the Neuro Editor
+Field edits, RefName and RefId changes, add, clone and delete are on Unity's undo stack - Ctrl+Z /
+Ctrl+Y and `Edit > Undo` work on them, the file on disk follows, and the editor window the change was
+made in shows the item again. Undoing a RefId change repoints the other items again too. The old
+experimental `Undo Redos Enabled` setting, which never worked, is replaced by `Undo Redo Enabled`,
+default on.
+
 ### `Color` is fixed and now writes as hex (breaking data format)
 `Color` never survived a round trip - the decoder did not invert the encoder, so every value read back
 as garbage (`FFCC33` came back as `(0, 1, 0, 0)`). `Gradient` was broken with it. `Color32` was fine.

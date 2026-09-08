@@ -13,6 +13,16 @@ Files live under the project's `NeuroData/` folder by default, configurable in
 `NeuroData/<globalTypeId>-<TypeName>/<refId>-<ref_name>.json`, e.g. `NeuroData/1-Troop/4zbc-goblin.json`.
 `⊙ File` in the editor reveals the file for the selected item.
 
+Edits made in the editor - field changes, RefName and RefId changes, add, clone, delete - go on Unity's
+undo stack, so Ctrl+Z / Ctrl+Y and `Edit > Undo` work on them and are saved to disk like any other edit
+(`Undo Redo Enabled` in project settings, default on). Implemented in `NeuroEditorUndoRedos`: one hidden
+ScriptableObject whose serialized state is a json snapshot of the one item that changed, registered with
+`Undo.RegisterCompleteObjectUndo`; `Undo.undoRedoPerformed` writes whichever state lands back into the
+data via `NeuroEditorDataProvider.ApplyJson` / `AddAtPath` / `Delete`. Only edits that go through the
+editor are recorded - a script calling `SaveData` is not - so a custom drawer that changes an item
+without the editor's own value-changed path should call `NeuroEditorUndoRedos.RecordChange(dataFile,
+"Edit")` after the change.
+
 Other menu items:
 
 | Menu | Does |
@@ -52,8 +62,8 @@ spelling. Hover the `RefId` field in the editor to see the plain number, or turn
 
 **Changing an item's RefId:** type the new id into the editor's `RefId` field. Neuro checks the id is
 free, repoints every `Reference<>` in the data, renames the file and saves everything it touched. It
-cannot fix ids stored outside the Neuro data (scenes, prefabs, save games, hard-coded constants), and
-undo only covers the item itself, not the repointed ones.
+cannot fix ids stored outside the Neuro data (scenes, prefabs, save games, hard-coded constants). Undo
+moves the id back and repoints the other items again.
 
 ## Runtime access
 

@@ -108,7 +108,7 @@ namespace Ninjadini.Neuro.Editor
             refLinksElement.Draw(dataProvider, type, value);
             objectInspector.Draw(type, value, OnValueSet);
             UpdateFilePath();
-            RecordUndo(NeuroEditorUndoRedos.UndoType.View);
+            NeuroEditorUndoRedos.Snapshot(dataFile);
         }
 
         void OnValueSet(object newValue)
@@ -122,13 +122,14 @@ namespace Ninjadini.Neuro.Editor
 
         void OnAnyValueChanged()
         {
-            RecordUndo(NeuroEditorUndoRedos.UndoType.Update);
+            RecordUndo("Edit");
             UpdateFilePath();
             AnyValueChanged?.Invoke();
             _dataProvider.SaveData(dataFile);
         }
 
-        void RecordUndo(NeuroEditorUndoRedos.UndoType undoType)
+        /// The change has already been made to dataFile by the time this is called.
+        void RecordUndo(string action)
         {
             EditorWindow window = null;
             var p = parent;
@@ -141,7 +142,7 @@ namespace Ninjadini.Neuro.Editor
                 }
                 p = p.parent;
             }
-            NeuroEditorUndoRedos.Record(dataFile, undoType, window);
+            NeuroEditorUndoRedos.RecordChange(dataFile, action, window);
         }
 
         const string RefIdTooltip = "RefId - editing this moves the item to a new id and repoints everything that referenced it";
@@ -163,6 +164,7 @@ namespace Ninjadini.Neuro.Editor
         void OnRefNameChanged(ChangeEvent<string> evt)
         {
             _dataProvider.SetRefName(dataFile, evt.newValue);
+            RecordUndo("Rename");
             UpdateFilePath();
             AnyValueChanged?.Invoke();
         }
@@ -200,7 +202,7 @@ namespace Ninjadini.Neuro.Editor
             message += referencingCount == 0
                 ? "Nothing else in the data references this item."
                 : $"{referencingCount} other item(s) reference this one and will be repointed at the new id and saved.";
-            message += "\n\nThe data file will be renamed. Undo only covers this item, not the others that get repointed.";
+            message += "\n\nThe data file will be renamed. Undo moves the id back and repoints them again.";
             message += "\nAnything outside the Neuro data that stored the old id (scenes, prefabs, save games, hard coded ids) will not be updated.";
             if (!EditorUtility.DisplayDialog("Change RefId", message, "Change", "Cancel"))
             {
@@ -219,7 +221,7 @@ namespace Ninjadini.Neuro.Editor
                 UpdateFilePath();
                 return;
             }
-            RecordUndo(NeuroEditorUndoRedos.UndoType.Update);
+            RecordUndo("Change RefId of");
             UpdateFilePath();
             AnyValueChanged?.Invoke();
         }

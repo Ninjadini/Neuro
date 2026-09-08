@@ -261,6 +261,7 @@ namespace Ninjadini.Neuro.Editor
                 }
                 selectedItem.Value = newObj;
                 dataProvider.SaveData(newObj);
+                NeuroEditorUndoRedos.RecordChange(selectedItem, "Edit", EditorWindow);
                 itemEditor.Draw(dataProvider, selectedType, selectedItem);
                 debugDisplay.Refresh();
             }
@@ -379,6 +380,7 @@ namespace Ninjadini.Neuro.Editor
                 try
                 {
                     var item = dataProvider.Add(referencable);
+                    NeuroEditorUndoRedos.RecordCreate(item, EditorWindow);
                     SetSelectedItem(item);
                 }
                 catch (Exception exception)
@@ -398,6 +400,7 @@ namespace Ninjadini.Neuro.Editor
                 var obj = (IReferencable)new NeuroBytesReader().ReadGlobalTyped(bytes.ToArray());
                 obj.RefName = src.RefName + " - Clone";
                 var item = dataProvider.Add(obj);
+                NeuroEditorUndoRedos.RecordCreate(item, EditorWindow);
                 SetSelectedItem(item);
             }
         }
@@ -500,7 +503,7 @@ namespace Ninjadini.Neuro.Editor
             if (EditorUtility.DisplayDialog("", message, "Delete", "Cancel"))
             {
                 var index = itemDropdown.index;
-                NeuroEditorUndoRedos.Record(selectedItem, NeuroEditorUndoRedos.UndoType.Delete, EditorWindow);
+                NeuroEditorUndoRedos.RecordDelete(selectedItem, EditorWindow);
                 dataProvider.Delete(selectedItem);
                 if (index > 0)
                 {
