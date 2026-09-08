@@ -4,6 +4,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.2.1]
 
+### Migrating a renamed field's data
+`Tools > Neuro > Migrate Renamed Field...` moves a value from its old json field name onto the new one,
+for when a `[Neuro]` field is renamed in code. Binary data does not care - it is keyed by tag - but json
+is keyed by name, so until now the value was silently dropped on the next read. Pick the class, pick the
+field from its `[Neuro]` fields, type the old name, preview, migrate.
+
+Only the json key is rewritten, in place at its character range, so formatting and field order survive.
+The data files are walked with the C# types alongside them - following `-subType` for polymorphic values -
+so the rename is scoped to that one class, and a field of the same name on another class is not touched.
+An object that already has the new name is left alone, and every file is checked to still read back before
+it is written. `NeuroJsonFieldRenamer` is the same thing for migration scripts.
+
+
 ### Changing a RefId can now repoint prefabs and scenes too
 Changing an item's RefId has always rewritten every `Reference<>` in the Neuro data. The confirmation
 dialog now offers `Change & update assets` as well as `Change data only`: the extra pass sweeps every
