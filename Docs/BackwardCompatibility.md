@@ -6,7 +6,9 @@ Basically, follow protobuf's (Protocol Buffers) rules
 
 ### ✅ Dos
 - You can remove classes and fields.
-- You can rename classes and fields. ⚠️ However if it is stored in config / json, the data will be lost as it is stored by name.
+- You can rename classes and fields. ⚠️ However if it is stored in config / json, the data will be lost as it
+  is stored by name. For a renamed field, `Tools > Neuro > Migrate Renamed Field...` moves the value onto the
+  new name across the data files - see [EditorTools](EditorTools.md#migrate-renamed-field).
 
 ### ⚠️ Careful 
 - If you change the type of a field, also change the Neuro tag.

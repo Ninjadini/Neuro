@@ -159,14 +159,16 @@ It can only be run once, and it says so if you try again. A name made only of di
 is why the project records that it has been done. Commit your data before running it.
 
 ### Changing an item's RefId
-Type a new id into the `RefId` field at the top of the editor and press enter. You will be asked to confirm, and
-told how many other items reference this one.
+Type a new id into the `RefId` field at the top of the editor and press enter. You are told how many other
+items reference this one, then pick a confirm button:
 
-On confirm Neuro checks the id is free, repoints every `Reference<>` in the data that pointed at the old id,
-renames the data file and saves everything it changed.
+- **Change data only** - checks the id is free, repoints every `Reference<>` in the data, renames the data
+  file and saves what it changed. Undo puts it all back.
+- **Change & update assets** - also sweeps every prefab, ScriptableObject and scene under `Assets/` for
+  `Reference<>` fields holding the old id. Not undoable, so commit first. Scenes are skipped in play mode,
+  or if you decline the prompt to save the open ones; anything skipped is reported.
 
-Undo moves the id back and repoints the other items again. What it can not do for you: ids stored outside the
-Neuro data - in scenes, prefabs, save games or hard coded in your code - are not updated.
+Neither can reach ids stored where Neuro cannot see them - save games, or numbers hard coded in your code.
 
 ### How to read from referencable/config at runtime
 ```

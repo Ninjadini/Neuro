@@ -30,6 +30,7 @@ Other menu items:
 | `Tools > Neuro > Content Debugger` | Inspect/round-trip arbitrary neuro data, including runtime saves. |
 | `Tools > Neuro > Type Mapping Debugger` | Shows every registered type, its global id and subtype tags. The only view spanning all assemblies - the compile-time tag reports cover one assembly each. |
 | `Tools > Neuro > Reload` / `Reload + Read all data` | Re-read the JSON files after external edits. |
+| `Tools > Neuro > Migrate Renamed Field...` | Moves a value from an old json field name onto the renamed one - see below. |
 | `Tools > Neuro > Migrate RefIds to base36...` | One-time migration for pre-base36 data. |
 
 Also under that menu: `Save Data To Resources` / `Save Resources data as JSON` (bake and dump the binary
@@ -61,9 +62,41 @@ spelling. Hover the `RefId` field in the editor to see the plain number, or turn
 `NeuroRefId.ToString(id)`, `NeuroRefId.Parse(chars)`, `NeuroRefId.TryParse(...)`.
 
 **Changing an item's RefId:** type the new id into the editor's `RefId` field. Neuro checks the id is
-free, repoints every `Reference<>` in the data, renames the file and saves everything it touched. It
-cannot fix ids stored outside the Neuro data (scenes, prefabs, save games, hard-coded constants). Undo
+free, repoints every `Reference<>` in the data, renames the file and saves everything it touched. Undo
 moves the id back and repoints the other items again.
+
+The confirmation offers `Change & update assets` as well as `Change data only`. The asset sweep walks
+every prefab, ScriptableObject and scene under `Assets/` for `Reference<>` fields holding the old id and
+repoints those too, saving what it changed. It runs after the data change is committed, is **not**
+undoable, and skips scenes in play mode or when the open scenes have unsaved changes the user declines to
+save - whatever it skipped is reported. Ids stored anywhere else (save games, hard-coded constants) are
+still on you.
+
+```csharp
+// the same sweep on its own, e.g. from a migration script
+NeuroAssetRefIdRewriter.Rewrite(typeof(Troop), oldRefId, newRefId, includeScenes: true, dryRun: false);
+// -> Result { Matches, ChangedFiles, Problems }
+```
+
+## Renaming a [Neuro] field
+
+JSON is keyed by field name and binary by tag, so renaming a `[Neuro]` field costs nothing in binary but
+leaves every NeuroData json holding the old key - an unknown field the reader drops. `Tools > Neuro >
+Migrate Renamed Field...` renames the key in the data instead. Pick the class, pick the field's new name
+from its `[Neuro]` fields, type what it used to be called, `Preview`, then `Migrate`.
+
+Only the key is rewritten, at its exact character range, so formatting and field order in the file are
+untouched. The files are walked with the C# types alongside them - each json object knows its type,
+`-subType` included - so the rename is scoped to that one class and a same-named field on another class is
+left alone. An object that already has the new name is skipped rather than ending up with both, and every
+file is checked to still read back before it is written.
+
+```csharp
+new NeuroJsonFieldRenamer().Rename(typeof(TowerAttack), "Damage", "Dmg", dryRun: false);
+// -> Result { Renamed, Skipped, Problems, ChangedFiles }, each match carrying the json path it was found at
+```
+
+`NeuroJsonFieldRenamer.GetNeuroFields(type)` lists a type's `[Neuro]` fields, base classes' included.
 
 ## Runtime access
 
