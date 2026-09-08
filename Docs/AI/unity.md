@@ -211,8 +211,16 @@ public class TroopBuildProcessor : INeuroBundledDataResourcesForBuildProcessor
 
 ## Customising the editor UI
 
-Cheap wins, on the type or field: `[DisplayName]`, `[Tooltip]`, `[Header("> foldout")]`,
-`[InspectorStyle]`. Reference dropdown labels/icons: implement `INeuroRefDropDownCustomizable` /
+Cheap wins: `[DisplayName]` (on a **type** - renames it in dropdowns; it is ignored on a field),
+`[Tooltip]` / `[Description]` (type or field), `[Header("> foldout")]`,
+`[Multiline]` / `[TextArea(minLines, maxLines)]` (string - `[TextArea]` also sizes the box),
+`[Range(min, max)]` (draws `int`/`uint`/`long`/`float`/`double` as a slider with a number box, like
+Unity's own inspector), `[Min]` (same numeric types - clamps on edit; ignored next to a `[Range]`),
+`[Space]`, `[HideInInspector]` (field or property), `[InspectorStyle]`. Still **not** read - they
+compile but do nothing here: `[Delayed]`, `[InspectorName]`, `[ColorUsage]`, `[GradientUsage]`,
+`[NonReorderable]`, `[ContextMenuItem]`.
+
+Reference dropdown labels/icons: implement `INeuroRefDropDownCustomizable` /
 `INeuroRefDropDownIconCustomizable`. Full custom drawers: `ICustomNeuroEditorProvider.CreateCustomDrawer`
 returns a `VisualElement` for types you take over, `null` otherwise, with helpers on
 `ObjectInspectorFields`.

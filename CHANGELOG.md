@@ -4,6 +4,21 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.2.1]
 
+### More Unity inspector attributes work in the Neuro Editor
+These were all silently ignored before. Editor only - none of them clamp or hide anything at
+serialisation time, so existing data is untouched until someone edits the field.
+
+- `[Range(min, max)]` on an `int`, `uint`, `long`, `float` or `double` draws Unity's slider plus
+  number box instead of a plain number field. A stored value outside the range is left alone until
+  someone drags the slider.
+- `[Min]` on the same numeric types clamps what an edit writes. Ignored when the field also has a
+  `[Range]`, which already bounds it.
+- `[Space]` puts a gap above the field, the same as `[InspectorStyle(spaceBefore:)]` - an explicit
+  `[InspectorStyle]` still wins.
+- `[TextArea(minLines, maxLines)]` on a string draws the multiline box `[Multiline]` gives, and sizes
+  it to the line counts.
+- `[HideInInspector]` drops the field or property from the inspector.
+
 ### Undo/redo in the Neuro Editor
 Field edits, RefName and RefId changes, add, clone and delete are on Unity's undo stack - Ctrl+Z /
 Ctrl+Y and `Edit > Undo` work on them, the file on disk follows, and the editor window the change was

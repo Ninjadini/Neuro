@@ -172,6 +172,23 @@ namespace Ninjadini.Neuro.Editor
             field.style.marginRight = 0;
             field.style.flexGrow = 1;
             field.multiline = data.Controller?.ShouldBeMultilineText(data) ?? false;
+            if (field.multiline)
+            {
+                // [TextArea] carries the line counts; [Multiline] does not, so it keeps the default height.
+                var textArea = GetTextArea(data.MemberInfo);
+                if (textArea != null)
+                {
+                    var lineHeight = field.resolvedStyle.fontSize > 0 ? field.resolvedStyle.fontSize + 3f : 15f;
+                    if (textArea.minLines > 0)
+                    {
+                        field.style.minHeight = textArea.minLines * lineHeight + 4f;
+                    }
+                    if (textArea.maxLines > 0)
+                    {
+                        field.style.maxHeight = Mathf.Max(textArea.maxLines, textArea.minLines) * lineHeight + 4f;
+                    }
+                }
+            }
             field.isDelayed = true;
             field.value = value;
             field.selectAllOnFocus = false;

@@ -95,6 +95,70 @@ namespace Ninjadini.Neuro.Editor
             return null;
         }
         
+        /// <summary>
+        /// The [Range(min, max)] on the field, if there is one. Numeric fields draw as a slider when there is.
+        /// </summary>
+        public static RangeAttribute GetRange(MemberInfo memberInfo)
+        {
+            return memberInfo?.GetCustomAttribute<RangeAttribute>(true);
+        }
+
+        static Slider CreateSlider(RangeAttribute range)
+        {
+            return new Slider(range.min, range.max) { showInputField = true };
+        }
+
+        static SliderInt CreateSliderInt(RangeAttribute range)
+        {
+            return new SliderInt((int)range.min, (int)range.max) { showInputField = true };
+        }
+
+        /// <summary>
+        /// The [TextArea] on the field, if there is one. String fields draw multiline when there is.
+        /// </summary>
+        public static TextAreaAttribute GetTextArea(MemberInfo memberInfo)
+        {
+            return memberInfo?.GetCustomAttribute<TextAreaAttribute>(true);
+        }
+
+        /// <summary>
+        /// Returns a copy of data whose setter clamps to the field's [Min], if it has one.
+        /// Ignored when the field also has a [Range], which already bounds it.
+        /// </summary>
+        static ObjectInspector.Data ApplyMinClamp(ObjectInspector.Data data)
+        {
+            var minAttribute = data.MemberInfo?.GetCustomAttribute<MinAttribute>(true);
+            if (minAttribute == null || data.setter == null)
+            {
+                return data;
+            }
+            var setter = data.setter;
+            var min = minAttribute.min;
+            var type = data.type;
+            if (type == typeof(int))
+            {
+                data.setter = v => setter(Math.Max((int)v, (int)min));
+            }
+            else if (type == typeof(uint))
+            {
+                var uMin = min > 0f ? (uint)min : 0u;
+                data.setter = v => setter(Math.Max((uint)v, uMin));
+            }
+            else if (type == typeof(long))
+            {
+                data.setter = v => setter(Math.Max((long)v, (long)min));
+            }
+            else if (type == typeof(float))
+            {
+                data.setter = v => setter(Math.Max((float)v, min));
+            }
+            else if (type == typeof(double))
+            {
+                data.setter = v => setter(Math.Max((double)v, (double)min));
+            }
+            return data;
+        }
+
         static VisualElement TryPrimitiveTypes(in ObjectInspector.Data data)
         {
             var type = data.type;
@@ -102,17 +166,26 @@ namespace Ninjadini.Neuro.Editor
             {
                 return CreateStringDrawer(data);
             }
+            var range = GetRange(data.MemberInfo);
+            // [Range] already bounds the value, so only a [Range]-less field needs the [Min] clamp.
+            var numData = range != null ? data : ApplyMinClamp(data);
             if (type == typeof(int))
             {
-                return CreateDrawer(data, new IntegerField());
+                return range != null
+                    ? CreateDrawer(numData, CreateSliderInt(range))
+                    : CreateDrawer(numData, new IntegerField());
             }
             if (type == typeof(uint))
             {
-                return CreateDrawer(data, new LongField(), obj => (uint)obj, obj => (uint)obj);
+                return range != null
+                    ? CreateDrawer(numData, CreateSliderInt(range), obj => (int)(uint)obj, v => (uint)v)
+                    : CreateDrawer(numData, new LongField(), obj => (uint)obj, obj => (uint)obj);
             }
             if (type == typeof(long))
             {
-                return CreateDrawer(data, new LongField());
+                return range != null
+                    ? CreateDrawer(numData, CreateSliderInt(range), obj => (int)(long)obj, v => (long)v)
+                    : CreateDrawer(numData, new LongField());
             }
             //if (type == typeof(ulong))
             {
@@ -120,7 +193,9 @@ namespace Ninjadini.Neuro.Editor
             }
             if (type == typeof(float))
             {
-                return CreateDrawer(data, new FloatField());
+                return range != null
+                    ? CreateDrawer(numData, CreateSlider(range))
+                    : CreateDrawer(numData, new FloatField());
             }
             if (type == typeof(bool))
             {
@@ -128,7 +203,9 @@ namespace Ninjadini.Neuro.Editor
             }
             if (type == typeof(double))
             {
-                return CreateDrawer(data, new DoubleField());
+                return range != null
+                    ? CreateDrawer(numData, CreateSlider(range), obj => (float)(double)obj, v => (double)v)
+                    : CreateDrawer(numData, new DoubleField());
             }
             if (type.IsEnum)
             {

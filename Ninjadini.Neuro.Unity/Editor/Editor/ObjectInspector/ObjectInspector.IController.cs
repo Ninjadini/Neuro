@@ -25,7 +25,12 @@ namespace Ninjadini.Neuro.Editor
 
             bool ShouldBeMultilineText(Data data)
             {
-                return data.MemberInfo?.IsDefined(typeof(MultilineAttribute)) ?? false;
+                var memberInfo = data.MemberInfo;
+                if (memberInfo == null)
+                {
+                    return false;
+                }
+                return memberInfo.IsDefined(typeof(MultilineAttribute)) || memberInfo.IsDefined(typeof(TextAreaAttribute));
             }
             
             /// Custom header of class types
