@@ -379,7 +379,7 @@ namespace Ninjadini.Neuro.CodeGen
 #pragma warning disable RS1030
             var model = context.Compilation.GetSemanticModel(initializer.SyntaxTree);
 #pragma warning restore RS1030
-            if (NeuroDefaultValues.Render(model, initializer) != null)
+            if (NeuroDefaultValues.Render(model, initializer, fieldSymbol.Type).IsValid)
             {
                 return false;
             }

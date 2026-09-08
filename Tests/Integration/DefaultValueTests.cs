@@ -7,7 +7,7 @@ namespace Ninjadini.Neuro.IntegrationTests
     /// readers have to put it back when the data does not carry it. Codegen rebuilds the initialiser into
     /// the generated Sync call, and these cover the shapes it has to rebuild - the ones it dropped used to
     /// read back as a zero without saying anything.
-    public class DefaultValueTests
+    public partial class DefaultValueTests
     {
         public struct Coord : IEquatable<Coord>
         {
@@ -25,6 +25,8 @@ namespace Ninjadini.Neuro.IntegrationTests
 
             public static readonly Coord Two = new Coord(2, 2);
 
+            public static Coord Make(int x, int y) => new Coord(x, y);
+
             public bool Equals(Coord other) => X == other.X && Y == other.Y;
 
             public override string ToString() => $"({X}, {Y})";
@@ -34,10 +36,26 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             [Neuro(1)] public int Positive = 5;
             [Neuro(2)] public int Negative = -5;
-            [Neuro(3)] public float Half = 0.5f;
+            [Neuro(3)] public float Folded = 1 / 2f;
             [Neuro(4)] public Coord FromProperty = Coord.One;
             [Neuro(5)] public Coord FromField = Coord.Two;
             [Neuro(6)] public Coord FromConstructor = new Coord(3, -4);
+            [Neuro(7)] public Coord FromMethod = Coord.Make(5, 6);
+        }
+
+        /// A private field puts the generated Sync inside this type's own partial rather than the registry
+        /// class, so the cached default has to be named from the root to be found from here.
+        public partial class PrivateFieldDefaults
+        {
+            [Neuro(1)] Coord hidden = Coord.Make(5, 6);
+
+            public Coord Hidden => hidden;
+        }
+
+        [Test]
+        public void CachedDefault_IsReachedFromATypesOwnSync()
+        {
+            Assert.That(NeuroJsonReader.Shared.Read<PrivateFieldDefaults>("{}").Hidden, Is.EqualTo(new Coord(5, 6)));
         }
 
         [Test]
@@ -80,10 +98,11 @@ namespace Ninjadini.Neuro.IntegrationTests
         {
             Assert.That(value.Positive, Is.EqualTo(5));
             Assert.That(value.Negative, Is.EqualTo(-5));
-            Assert.That(value.Half, Is.EqualTo(0.5f));
+            Assert.That(value.Folded, Is.EqualTo(0.5f));
             Assert.That(value.FromProperty, Is.EqualTo(new Coord(1, 1)));
             Assert.That(value.FromField, Is.EqualTo(new Coord(2, 2)));
             Assert.That(value.FromConstructor, Is.EqualTo(new Coord(3, -4)));
+            Assert.That(value.FromMethod, Is.EqualTo(new Coord(5, 6)));
         }
     }
 }

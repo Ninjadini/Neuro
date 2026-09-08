@@ -27,6 +27,11 @@ namespace Ninjadini.Neuro.CodeGen
             List<string> _fatalMessages;
             SyntaxTree cachedModelTree;
             SemanticModel cachedModel;
+            List<CachedDefault> cachedDefaults;
+            string registryClassName;
+
+            static readonly System.Text.RegularExpressions.Regex NonIdentifierChars = new System.Text.RegularExpressions.Regex(@"\W");
+            static readonly SymbolDisplayFormat FullyQualifiedFormat = SymbolDisplayFormat.FullyQualifiedFormat;
 
             public GenerationResult Walk(Compilation compilation_, Action<Diagnostic> onError_ = null)
             {
@@ -43,6 +48,8 @@ namespace Ninjadini.Neuro.CodeGen
                 _globalClasses = new List<TagNameLocation>();
                 _baseClasses = new Dictionary<string, List<TagNameLocation>>();
                 _fatalMessages = new List<string>();
+                cachedDefaults = new List<CachedDefault>();
+                registryClassName = NeuroCodeGenUtils.GetRegistryClassName(compilation_);
                 cachedModelTree = null;
                 cachedModel = null;
                 if (scanMode == NeuroScanMode.Skip)
@@ -69,7 +76,8 @@ namespace Ninjadini.Neuro.CodeGen
                     RegistryHooks = registryHooks,
                     FatalMessages = _fatalMessages,
                     TagsByRootClass = ToEntriesByRootClass(_baseClasses),
-                    GlobalTypeIds = ToEntries(_globalClasses)
+                    GlobalTypeIds = ToEntries(_globalClasses),
+                    CachedDefaults = cachedDefaults
                 };
             }
 
@@ -342,7 +350,7 @@ namespace Ninjadini.Neuro.CodeGen
                     var fieldType = fieldSymbol.Type;
                     EnsureClassToGenerate(classSymbol, ref classToGenerate);
 
-                    var defaultValue = GetDefaultValue(fieldSymbol, fieldType);
+                    var defaultValue = GetDefaultValue(fieldSymbol, fieldType, classToGenerate);
                     classToGenerate.Fields.Add(new FieldToGenerate()
                     {
                         Name = fieldSymbol.Name,
@@ -465,7 +473,11 @@ namespace Ninjadini.Neuro.CodeGen
             static SymbolDisplayFormat nameFormat = new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes);
             
 
-            private string GetDefaultValue(IFieldSymbol fieldSymbol, ITypeSymbol fieldType)
+            /// The expression handed to the generated `Sync` call as the field's default. One that runs
+            /// something - a property getter, a method, a constructor - is held in a static readonly field
+            /// instead, so it is built once at class init rather than on every Sync of every object.
+            /// Plain values (a literal, a const, a static field) stay inline where they read better.
+            private string GetDefaultValue(IFieldSymbol fieldSymbol, ITypeSymbol fieldType, ClassToGenerate classToGenerate)
             {
                 var syntax = fieldSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() as VariableDeclaratorSyntax;
                 var initializerValue = syntax?.Initializer?.Value;
@@ -477,16 +489,45 @@ namespace Ninjadini.Neuro.CodeGen
                 }
                 if (initializerValue != null)
                 {
-                    // A rendered initialiser is the serialization default. When it can not be rendered the
-                    // field falls back to `default` and NeuroSourceAnalyzer reports it, because silently
-                    // reading back a zero where the initialiser said otherwise is the worse outcome.
-                    var rendered = NeuroDefaultValues.Render(GetSemanticModel(initializerValue.SyntaxTree), initializerValue);
-                    if (rendered != null)
+                    // When it can not be rebuilt the field falls back to `default` and NeuroSourceAnalyzer
+                    // reports it, because silently reading back a zero where the initialiser said otherwise
+                    // is the worse outcome.
+                    var model = GetSemanticModel(initializerValue.SyntaxTree);
+                    var rendered = NeuroDefaultValues.Render(model, initializerValue, fieldType);
+                    if (rendered.IsValid)
                     {
-                        return rendered;
+                        return rendered.HasCall && NeuroDefaultValues.IsReachable(model, fieldType)
+                            ? AddCachedDefault(classToGenerate, fieldSymbol, fieldType, rendered.Expression)
+                            : rendered.Expression;
                     }
                 }
                 return "default";
+            }
+
+            /// Declares the static readonly field that holds the default, and returns how to name it from
+            /// the generated Sync - which may sit in the registry class or in the type's own partial, so it
+            /// is always named in full.
+            private string AddCachedDefault(ClassToGenerate classToGenerate, IFieldSymbol fieldSymbol, ITypeSymbol fieldType, string expression)
+            {
+                var name = "_default_" + NonIdentifierChars.Replace(classToGenerate.Name + "_" + fieldSymbol.Name, "_");
+                var existing = cachedDefaults.Count;
+                for (var i = 0; i < existing; i++)
+                {
+                    if (cachedDefaults[i].Name == name)
+                    {
+                        name += "_" + existing;
+                        break;
+                    }
+                }
+                cachedDefaults.Add(new CachedDefault()
+                {
+                    Name = name,
+                    TypeName = fieldType.ToDisplayString(FullyQualifiedFormat),
+                    Expression = expression
+                });
+                // Qualified from the root: a Sync generated into the type's own partial sits in the
+                // type's namespace, where a name of its own could shadow the registry class.
+                return "global::" + registryClassName + "." + name;
             }
             
         }
@@ -502,6 +543,9 @@ namespace Ninjadini.Neuro.CodeGen
             /// file can carry a tag map you can read without provoking a conflict first.
             public Dictionary<string, List<NeuroTagReport.Entry>> TagsByRootClass;
             public List<NeuroTagReport.Entry> GlobalTypeIds;
+
+            /// The static readonly fields the registry class holds for defaults that run something.
+            public List<CachedDefault> CachedDefaults;
 
             /// Conflicts that stopped generation, as text. Unity does not show a diagnostic reported
             /// from the generation step, so these get written into the generated source too.
@@ -522,6 +566,14 @@ namespace Ninjadini.Neuro.CodeGen
             public List<FieldToGenerate> Fields = new List<FieldToGenerate>();
         }
             
+        /// A field default that is built once at class init rather than on every Sync.
+        class CachedDefault
+        {
+            public string Name;
+            public string TypeName;
+            public string Expression;
+        }
+
         class FieldToGenerate
         {
             public string Name;

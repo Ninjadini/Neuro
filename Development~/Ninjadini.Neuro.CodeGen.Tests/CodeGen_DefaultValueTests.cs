@@ -20,6 +20,7 @@ namespace Zz
         public Vec(int x_, int y_) { x = x_; y = y_; }
         public static Vec One => new Vec(1, 1);
         public static readonly Vec Two = new Vec(2, 2);
+        public static Vec Make(int x_, int y_) => new Vec(x_, y_);
         public bool Equals(Vec other) => other.x == x && other.y == y;
     }
 }
@@ -44,11 +45,13 @@ namespace Zz
     }
 
     [Test]
-    public void StaticProperty_IsFullyQualified()
+    public void StaticProperty_IsHeldInAStaticField()
     {
         // The Vector2Int.one shape. Only static fields used to be resolved, so this read back as (0, 0).
+        // A property is a call, so the value is built once at class init rather than on every Sync.
         TestUtils.TestSourceGenerates(Wrap("public Zz.Vec A = Zz.Vec.One;"),
-            "neuro.Sync(1, nameof(value.A), ref value.A, global::Zz.Vec.One);");
+            "internal static readonly global::Zz.Vec _default_TestClass_A = global::Zz.Vec.One;",
+            "neuro.Sync(1, nameof(value.A), ref value.A, global::NeuroCodeGen_NeuroRoslyn_Test_Assembly._default_TestClass_A);");
     }
 
     [Test]
@@ -60,10 +63,38 @@ namespace Zz
     }
 
     [Test]
-    public void Constructor_IsRebuilt()
+    public void Constructor_IsHeldInAStaticField()
     {
         TestUtils.TestSourceGenerates(Wrap("public Zz.Vec A = new Zz.Vec(3, -4);"),
-            "neuro.Sync(1, nameof(value.A), ref value.A, new global::Zz.Vec(3, -4));");
+            "internal static readonly global::Zz.Vec _default_TestClass_A = new global::Zz.Vec(3, -4);",
+            "neuro.Sync(1, nameof(value.A), ref value.A, global::NeuroCodeGen_NeuroRoslyn_Test_Assembly._default_TestClass_A);");
+    }
+
+    [Test]
+    public void StaticMethod_IsHeldInAStaticField()
+    {
+        // The `fp Speed = FPUtils.FromInt(10)` and `TimeSpan.FromSeconds(0.25)` shape - the call runs once.
+        TestUtils.TestSourceGenerates(Wrap("public Zz.Vec A = Zz.Vec.Make(3, 4);"),
+            "internal static readonly global::Zz.Vec _default_TestClass_A = global::Zz.Vec.Make(3, 4);",
+            "neuro.Sync(1, nameof(value.A), ref value.A, global::NeuroCodeGen_NeuroRoslyn_Test_Assembly._default_TestClass_A);");
+    }
+
+    [Test]
+    public void ImplicitConstructor_IsHeldInAStaticField()
+    {
+        TestUtils.TestSourceGenerates(Wrap("public Zz.Vec A = new(3, 4);"),
+            "internal static readonly global::Zz.Vec _default_TestClass_A = new global::Zz.Vec(3, 4);");
+    }
+
+    [Test]
+    public void ValueNamingDefaults_StayInline()
+    {
+        // A literal or a static field is already just a value to load - a cache field would only add a
+        // name to read past.
+        var generated = TestUtils.GenerateSource(Wrap("public int A = 5;", "public Zz.Vec B = Zz.Vec.Two;"));
+        TestUtils.CompareSource(generated, "neuro.Sync(1, nameof(value.A), ref value.A, 5);");
+        TestUtils.CompareSource(generated, "neuro.Sync(2, nameof(value.B), ref value.B, global::Zz.Vec.Two);");
+        Assert.That(generated, Does.Not.Contain("_default_"));
     }
 
     [Test]
@@ -85,23 +116,35 @@ namespace Zz
     [Test]
     public void UnrenderableInitializer_Fails()
     {
-        // Silently reading back a 0 where the initialiser said 5 is the outcome worth refusing.
+        // Silently reading back a 0 where the initialiser said otherwise is the outcome worth refusing.
+        // Reaching into a static value is not one of the rebuilt forms - only naming or calling one is.
+        TestUtils.GenerateSourceExpectingError(Wrap("public int A = Zz.Vec.Two.x;"),
+            "can not be turned into a serialization default");
+    }
+
+    [Test]
+    public void ConstantExpression_IsFoldedAndCast()
+    {
+        // The cast carries the type the folded literal alone would lose, e.g. a long or a float.
+        TestUtils.TestSourceGenerates(Wrap("public long A = 1 + 2;", "public float B = 1 / 2f;"),
+            "neuro.Sync(1, nameof(value.A), ref value.A, (long)(3));",
+            "neuro.Sync(2, nameof(value.B), ref value.B, (float)(0.5));");
+    }
+
+    [Test]
+    public void PrivateStaticMember_Fails()
+    {
+        // The generated code is a class of its own, so it can not reach a private member - better said
+        // as a Neuro error than as a compile error inside generated source no one wrote.
         var src = @"
 using Ninjadini.Neuro;
         partial class TestClass
         {
-            [Neuro(1)] public int A = Compute();
-            static int Compute() => 5;
+            [Neuro(1)] public int A = Secret;
+            private static int Secret = 5;
         }
 ";
         TestUtils.GenerateSourceExpectingError(src, "can not be turned into a serialization default");
-    }
-
-    [Test]
-    public void FoldedConstantExpression_Fails()
-    {
-        // `1 + 2` is a constant to the compiler, but not one of the forms that get rebuilt - write `3`.
-        TestUtils.GenerateSourceExpectingError(Wrap("public long A = 1 + 2;"), "can not be turned into a serialization default");
     }
 
     [Test]

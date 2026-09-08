@@ -149,7 +149,7 @@ namespace Ninjadini.Neuro.CodeGen
             strBuilder.AppendLine(@"using _NeuroSyncNS = Ninjadini.Neuro.Sync;");
             strBuilder.AppendLine(@"using _NeuroSyncTypes = Ninjadini.Neuro.Sync.NeuroSyncTypes;");
             
-            var uniqueClassName = "NeuroCodeGen_" + Regex.Replace(compilation.Assembly.Name, @"\W", "_");
+            var uniqueClassName = NeuroCodeGenUtils.GetRegistryClassName(compilation);
             strBuilder.Append(@"[assembly:Ninjadini.Neuro.NeuroAssemblyAttribute(typeof(");
             strBuilder.Append(uniqueClassName);
         strBuilder.Append(@"), ""RegisterTypes"")]
@@ -158,9 +158,10 @@ namespace Ninjadini.Neuro.CodeGen
 #endif
 public static class ");
             strBuilder.Append(uniqueClassName);
-            strBuilder.Append(@"
-{
-    static bool registered;
+            strBuilder.AppendLine(@"
+{");
+            AppendCachedDefaults(strBuilder, generationResult);
+            strBuilder.Append(@"    static bool registered;
     public static void RegisterTypes()
     {
         if (registered) return;
@@ -275,6 +276,28 @@ public static class NeuroTypesRegister
     }
 }");
 */
+        }
+
+        /// Defaults that run something - a property getter, a method, a constructor - are built once here
+        /// rather than on every Sync of every object. Only ones that name a value stay inline at the call.
+        void AppendCachedDefaults(StringBuilder strBuilder, GenerationResult generationResult)
+        {
+            var cachedDefaults = generationResult.CachedDefaults;
+            if (cachedDefaults == null || cachedDefaults.Count == 0)
+            {
+                return;
+            }
+            foreach (var cachedDefault in cachedDefaults)
+            {
+                strBuilder.Append("    internal static readonly ");
+                strBuilder.Append(cachedDefault.TypeName);
+                strBuilder.Append(" ");
+                strBuilder.Append(cachedDefault.Name);
+                strBuilder.Append(" = ");
+                strBuilder.Append(cachedDefault.Expression);
+                strBuilder.AppendLine(";");
+            }
+            strBuilder.AppendLine();
         }
 
         string GetCodeGenDllDate()
