@@ -153,6 +153,14 @@ is LDR - channels clamp to 0..1, use a `Vector4` for HDR. `Gradient` stops use t
 Both directions are allocation free. Implemented in `NeuroDefaultUnityTypesHook.RegisterColorJson`
 via `NeuroJsonSyncTypes.Register<T>`, which overrides only the json path.
 
+Field initialisers work as defaults on these - `public Vector2Int Size = Vector2Int.one;` reads back
+as `(1, 1)` from json that omits `Size`. The exception is a struct that does not implement
+`IEquatable<>` of itself, which the defaulted `Sync` overload requires: `LayerMask`, `RangeInt`, `Ray`,
+`Ray2D`, `BoundingSphere`, `Keyframe`, `GradientColorKey` and `GradientAlphaKey` read back as `default`
+whatever the initialiser says, so an initialiser there is `Neuro025` - write the value into the data
+instead. See [data-model.md](data-model.md#defaults) for what an
+initialiser may be.
+
 ## Content validation
 
 ```csharp

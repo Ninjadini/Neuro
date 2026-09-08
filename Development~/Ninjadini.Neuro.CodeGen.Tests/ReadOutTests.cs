@@ -361,7 +361,7 @@ using Ninjadini.Neuro;
 ";
         TestUtils.TestSourceGenerates(src, 
             @"
-neuro.SyncEnum(1, nameof(value.e), ref value.e, (int) MyEnum.B);
+neuro.SyncEnum(1, nameof(value.e), ref value.e, (int) global::MyEnum.B);
 "
         );
     }

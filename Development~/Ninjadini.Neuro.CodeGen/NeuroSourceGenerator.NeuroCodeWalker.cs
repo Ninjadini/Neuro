@@ -469,55 +469,26 @@ namespace Ninjadini.Neuro.CodeGen
             {
                 var syntax = fieldSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() as VariableDeclaratorSyntax;
                 var initializerValue = syntax?.Initializer?.Value;
-                if (initializerValue != null && fieldType.TypeKind != TypeKind.Class)
+                if (!NeuroDefaultValues.CanCarryDefault(fieldType))
                 {
-                    if (initializerValue is LiteralExpressionSyntax)
-                    {
-                        return initializerValue.ToString();
-                    }
-                    if (initializerValue is IdentifierNameSyntax || initializerValue is MemberAccessExpressionSyntax)
-                    {
-                        var model = GetSemanticModel(initializerValue.SyntaxTree);
-                        var symbol = model?.GetSymbolInfo(initializerValue).Symbol as IFieldSymbol;
-                        if (symbol != null)
-                        {
-                            return symbol.ToString();
-                        }
-                    }
-                    //throw new System.Exception($"Unsupported initializer `{initializerValue.GetText()}` @ `{fieldSymbol}`");
+                    // Nothing to pass - the field goes to the Sync overload without a default, and the
+                    // reader resets it. NeuroSourceAnalyzer reports the initialiser that expected better.
+                    return null;
                 }
-                return ShouldHaveDefault(fieldType) ? "default" : null;
+                if (initializerValue != null)
+                {
+                    // A rendered initialiser is the serialization default. When it can not be rendered the
+                    // field falls back to `default` and NeuroSourceAnalyzer reports it, because silently
+                    // reading back a zero where the initialiser said otherwise is the worse outcome.
+                    var rendered = NeuroDefaultValues.Render(GetSemanticModel(initializerValue.SyntaxTree), initializerValue);
+                    if (rendered != null)
+                    {
+                        return rendered;
+                    }
+                }
+                return "default";
             }
             
-            static bool ShouldHaveDefault(ITypeSymbol symbol)
-            {
-                if (symbol.TypeKind == TypeKind.Class)
-                {
-                    return false;
-                }
-                if (symbol.TypeKind == TypeKind.Interface)
-                {
-                    return false;
-                }
-                if (symbol.TypeKind == TypeKind.Struct)
-                {
-                    if (symbol.Interfaces
-                        .Any(i => 
-                            i.IsGenericType 
-                            && i.Name == "IEquatable" 
-                            && i.ContainingNamespace?.Name == "System"
-                            && (i.ContainingNamespace?.ContainingNamespace?.IsGlobalNamespace ?? false)
-                            && i.TypeArguments.Length == 1
-                            && SymbolEqualityComparer.Default.Equals(i.TypeArguments[0], symbol)
-                            )
-                        )
-                    {
-                        return true;
-                    }
-                    return false;
-                }
-                return true;
-            }
         }
 
         class GenerationResult

@@ -44,6 +44,31 @@ field to go. Move the object into the value and key the dictionary by one of its
 For `byte`/`short` use `int` - values are varint encoded, so a narrow type saves nothing. For `char` use
 `string`. For `decimal` use `double`, or a `long` of scaled units.
 
+## Defaults
+
+A field initialiser is the serialization default: writers skip a field still holding it, and readers
+write it back when the data does not carry the field. Codegen rebuilds the initialiser into the
+generated `Sync` call, and it rebuilds these forms only:
+
+- a literal - `5`, `-5`, `1.5f`, `true`, `default`
+- a const, or a static field or property - `Vector2Int.one`, `float.NaN`, an enum member
+- `new T(...)` where every argument is one of these - `new Vector2Int(1, 1)`
+
+Anything else is `Neuro024` - a method call (`TimeSpan.FromSeconds(0.25)`), an expression the compiler
+would fold (`1 + 2`), an object initialiser (`new Vec { x = 1 }`), `new(...)` without the type. The
+error says so rather than guessing, because the alternative is a field that quietly reads back as
+`default`; rewrite the initialiser as one of the forms above, or as a static readonly field holding it.
+
+Two kinds of field never carry a default at all:
+
+- **Class typed fields** (including `string` and `List<>`) read back as null when the data omits them.
+  An initialiser there is not an error - `= new List<int>()` is worth writing for other reasons - it
+  just is not a default.
+- **Structs that do not implement `IEquatable<>` of themselves**, which the defaulted `Sync` overload
+  requires - among the Unity types that is `LayerMask`, `RangeInt`, `Ray`, `Ray2D`, `BoundingSphere`,
+  `Keyframe`, `GradientColorKey` and `GradientAlphaKey`. `T?` is one of these too, and always reads back
+  as null. An initialiser on one of these is `Neuro025`: write the value into the data instead.
+
 ## Referencable items
 
 ```csharp
@@ -135,7 +160,7 @@ another asmdef; `Tools > Neuro > Type Mapping Debugger` in Unity is the only vie
 
 ## Codegen errors
 
-Violations of the rules above are compile errors prefixed `Neuro` (`Neuro022`, `Neuro101`, `Neuro102`,
+Violations of the rules above are compile errors prefixed `Neuro` (`Neuro022`, `Neuro024`, `Neuro025`, `Neuro101`, `Neuro102`,
 `Neuro300`, `Neuro303`, `Neuro312`, `Neuro404`, `Neuro405`, `Neuro406`, ...). The messages state the
 cause and the fix, so read the error text rather than guessing from the code alone. Every descriptor is
 declared in one place if you need the full list: `Development~/Ninjadini.Neuro.CodeGen/NeuroSourceAnalyzer.cs`.
