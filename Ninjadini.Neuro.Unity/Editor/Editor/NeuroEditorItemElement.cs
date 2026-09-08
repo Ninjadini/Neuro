@@ -191,6 +191,7 @@ namespace Ninjadini.Neuro.Editor
                 return;
             }
             var oldRefId = dataFile.RefId;
+            var rootType = dataFile.RootType;
             // count first so that the confirmation can say how much of the database this is about to touch.
             var referencingItems = ReferencedItemsFinder.SearchInReferences(dataFile.Value, _dataProvider.References);
             var referencingCount = referencingItems.Select(r => r.referencable).Distinct().Count();
@@ -203,12 +204,16 @@ namespace Ninjadini.Neuro.Editor
                 ? "Nothing else in the data references this item."
                 : $"{referencingCount} other item(s) reference this one and will be repointed at the new id and saved.";
             message += "\n\nThe data file will be renamed. Undo moves the id back and repoints them again.";
-            message += "\nAnything outside the Neuro data that stored the old id (scenes, prefabs, save games, hard coded ids) will not be updated.";
-            if (!EditorUtility.DisplayDialog("Change RefId", message, "Change", "Cancel"))
+            message += "\n\n`Change & update assets` also sweeps every prefab, ScriptableObject and scene under Assets/ for";
+            message += $" `Reference<{dataFile.RootType?.Name}>` fields holding the old id and repoints those too - it saves the assets it changes and can not be undone.";
+            message += "\nEither way, ids stored anywhere else (save games, hard coded ids) will not be updated.";
+            var choice = EditorUtility.DisplayDialogComplex("Change RefId", message, "Change data only", "Cancel", "Change & update assets");
+            if (choice == 1)
             {
                 UpdateFilePath();
                 return;
             }
+            var updateAssets = choice == 2;
             try
             {
                 var updated = _dataProvider.ChangeRefId(dataFile, newRefId);
@@ -224,6 +229,43 @@ namespace Ninjadini.Neuro.Editor
             RecordUndo("Change RefId of");
             UpdateFilePath();
             AnyValueChanged?.Invoke();
+            if (updateAssets)
+            {
+                // After the data change is committed - the assets are a separate, non-undoable pass, and a
+                // failure there must not roll back or hide the id change that already happened.
+                RewriteAssetReferences(rootType, oldRefId, newRefId);
+            }
+        }
+
+        static void RewriteAssetReferences(Type rootType, uint oldRefId, uint newRefId)
+        {
+            NeuroAssetRefIdRewriter.Result result;
+            try
+            {
+                result = NeuroAssetRefIdRewriter.Rewrite(rootType, oldRefId, newRefId, includeScenes: true);
+            }
+            catch (Exception e)
+            {
+                EditorUtility.DisplayDialog("Could not update assets",
+                    $"The RefId was changed, but the sweep over prefabs and scenes failed:\n\n{e.Message}",
+                    "OK");
+                Debug.LogException(e);
+                return;
+            }
+            foreach (var match in result.Matches)
+            {
+                Debug.Log($"Neuro ~ repointed `{NeuroEditorUtils.DisplayRefId(oldRefId)}` -> `{NeuroEditorUtils.DisplayRefId(newRefId)}` in {match}", match.Obj);
+            }
+            var message = result.Matches.Count == 0
+                ? "No prefab, ScriptableObject or scene held the old id."
+                : $"{result.Matches.Count} reference(s) repointed in {result.ChangedFiles.Count} file(s):\n\n" +
+                  string.Join("\n", result.ChangedFiles);
+            if (result.Problems.Count > 0)
+            {
+                message += "\n\n" + string.Join("\n", result.Problems);
+            }
+            Debug.Log("Neuro ~ " + message);
+            EditorUtility.DisplayDialog("Assets updated", message, "OK");
         }
     }
 }

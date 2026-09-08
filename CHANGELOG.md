@@ -4,6 +4,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.2.1]
 
+### Changing a RefId can now repoint prefabs and scenes too
+Changing an item's RefId has always rewritten every `Reference<>` in the Neuro data. The confirmation
+dialog now offers `Change & update assets` as well as `Change data only`: the extra pass sweeps every
+prefab, ScriptableObject and scene under `Assets/` for `Reference<>` fields holding the old id and
+repoints those as well, saving the files it changed. It runs after the data change and is not undoable,
+which is why it is opt-in. Scenes are skipped in play mode, or when the open scenes have unsaved
+changes and the save prompt is declined; whatever was skipped is reported.
+
+`NeuroAssetRefIdRewriter.Rewrite(rootType, oldRefId, newRefId, includeScenes, dryRun)` exposes the same
+sweep for migration scripts, and returns the matches, the files it wrote and anything it could not do.
+
+
 ### More Unity inspector attributes work in the Neuro Editor
 These were all silently ignored before. Editor only - none of them clamp or hide anything at
 serialisation time, so existing data is untouched until someone edits the field.
