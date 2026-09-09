@@ -43,6 +43,17 @@ public class AnotherReferencableObject : Referencable
 }
 ```
 
+### One-line structs
+A small struct that is mostly used in lists reads better as one row than as a foldout per entry.
+```
+[InspectorStyle(Inline = true)]   // draws as:  0  [Stat ▾] [Value]   - no foldout, wherever it appears
+public struct StatValue
+{
+    [Neuro(1)] public Reference<Stat> Stat;                          // first field keeps the row's name
+    [InspectorStyle(horizontal: 90)] [Neuro(2)] public long Value;   // fixed width; without it, shares the row
+}
+```
+
 ### Full editor customisation
 Say you want to show the 3 values in one line without the name labels.
 And it will say an error message if any of the values have lower than 1 value

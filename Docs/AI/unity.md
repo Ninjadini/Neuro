@@ -249,9 +249,25 @@ Cheap wins: `[DisplayName]` (on a **type** - renames it in dropdowns; it is igno
 `[Multiline]` / `[TextArea(minLines, maxLines)]` (string - `[TextArea]` also sizes the box),
 `[Range(min, max)]` (draws `int`/`uint`/`long`/`float`/`double` as a slider with a number box, like
 Unity's own inspector), `[Min]` (same numeric types - clamps on edit; ignored next to a `[Range]`),
-`[Space]`, `[HideInInspector]` (field or property), `[InspectorStyle]`. Still **not** read - they
+`[Space]`, `[HideInInspector]` (field or property), `[InspectorStyle]` (`spaceBefore` / `spaceAfter`;
+`horizontal: px` puts neighbouring fields on one row). Still **not** read - they
 compile but do nothing here: `[Delayed]`, `[InspectorName]`, `[ColorUsage]`, `[GradientUsage]`,
 `[NonReorderable]`, `[ContextMenuItem]`.
+
+**One-line structs.** `[InspectorStyle(Inline = true)]` on a struct or class draws it as a single row
+instead of a foldout - wherever it appears: a list entry becomes `0  [stat ▾] [value]`, a field becomes
+`Name  [stat ▾] [value]`. The first field takes the row's name, the rest are unlabelled; give a field
+`[InspectorStyle(horizontal: 90)]` for a fixed width, otherwise it shares the remaining space. `[Header]`
+inside the type is ignored, and a null class value still shows the foldout so it can be created.
+
+```csharp
+[InspectorStyle(Inline = true)]
+public struct StatValue
+{
+    [Neuro(1)] public Reference<Stat> Stat;
+    [InspectorStyle(horizontal: 90)] [Neuro(2)] public long Value;
+}
+```
 
 Reference dropdown labels/icons: implement `INeuroRefDropDownCustomizable` /
 `INeuroRefDropDownIconCustomizable`. Full custom drawers: `ICustomNeuroEditorProvider.CreateCustomDrawer`
