@@ -42,6 +42,16 @@ public class MyFirstNeuroObject : Referencable
 }
 ```
 
+> **You don't have to keep track of the numbers yourself.** The check is a code analyzer, so your IDE
+> flags a reused number the moment you type it - a red squiggle on the attribute whose message lists
+> what is taken and what to use instead, e.g.
+> `Used tags: 1-2, 4. Next free: 3. Full list: 1=MyFirstString; 2=MyFirstInt; 4=Weapons`.
+> The same check covers `[NeuroGlobalType(#)]` across the whole project and `[Neuro(#)]` on subclasses.
+> Not sure what is free? Type `[Neuro(0)]` (or `[NeuroGlobalType(0)]`), hover the squiggle, and fill in
+> the number it suggests.
+> The only rule you need to remember is to never renumber or recycle an id that has shipped -
+> see [Backward compatibility](BackwardCompatibility.md).
+
 ### An example of supported types
 ```
     public class MyUberObject
@@ -238,6 +248,9 @@ public class PlayerCharacterEntity : CharacterEntity
 {
     [Neuro(1)] int SomeInt;
 }
+
+As with field tags, a clash on a subclass number is flagged in the IDE as you type, listing the used
+numbers across the hierarchy and the next free one, so just pick the one it suggests.
 ```
 
 ## Polymorphic types with interface as root
