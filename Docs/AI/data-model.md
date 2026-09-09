@@ -5,7 +5,7 @@
 | Attribute | Target | Meaning |
 |---|---|---|
 | `[Neuro(uint tag)]` | field | Serialised field. Tag unique within the declaring class. |
-| `[Neuro(uint tag)]` | class / struct / interface | Marks a polymorphic subtype (tag unique among all subtypes of the same root) or, on a root with no fields, declares the root. |
+| `[Neuro(uint tag)]` | class / struct / interface | Marks a polymorphic subtype (tag unique among all subtypes of the same root). On a root type the tag is never written, so bare `[Neuro]` opts it in (needed under `NEURO_FAST_CODEGEN`, or on a root with no fields). |
 | `[NeuroGlobalType(uint id)]` | class / interface | Globally unique type id. **Required** on every root `IReferencable`. Also what makes `WriteGlobalTyped`/`ReadGlobalTyped` possible. |
 | `[ReservedNeuroTag(uint tag)]` | class | Tombstones a retired tag so it can never be reused. Repeatable. |
 | `[assembly: Neuro]` | assembly | Opts the assembly in under `NEURO_FAST_CODEGEN`. |
@@ -109,9 +109,9 @@ public class BaseEntity                     // root: has fields, so no class att
 [Neuro(3)] public class Player : Character { }   // still needs its own tag, unique across the whole tree
 ```
 
-A root with **no** neuro fields must declare itself: `[Neuro(1)]` on a class (non-zero),
-`[Neuro(0)]` on an interface (an interface is the only place zero is legal, but converting that
-interface to a class later breaks compatibility).
+A root with **no** neuro fields must declare itself with `[Neuro]` (class, struct or interface - a root's
+tag is never written, so a number there is noise). Only subtypes need a non-zero tag; `[Neuro]` on a
+subtype is a `Neuro002` error.
 
 Field tags restart at 1 in each class in the chain - they are scoped to the declaring class. Subtype
 tags are scoped to the whole inheritance tree. Multiple inheritance paths (two neuro roots) are not

@@ -14,8 +14,9 @@ namespace Ninjadini.Neuro
     /// <item><description>Changing a field's type means changing its tag too, or old data reads back wrong.</description></item>
     /// </list>
     /// On a class or interface the tag identifies it among the subtypes of its base - unique across all
-    /// subclasses of that base, not just the direct siblings. It is also how you opt a type in when it has
-    /// no neuro fields of its own (0 is allowed for interfaces, classes need a non-zero number).
+    /// subclasses of that base, not just the direct siblings. On a root type - one with no Neuro base class or
+    /// interface - the tag is never written, so a bare <c>[Neuro]</c> is enough to opt it in; that is also how a
+    /// root with no neuro fields of its own declares itself. Only a subtype needs a real number.
     /// <para>
     /// To find a free tag, write 0 and read the compile error - it lists the used tags and the next free one.
     /// </para>

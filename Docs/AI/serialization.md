@@ -135,7 +135,7 @@ usable default implementation.
 
 | Define | Effect |
 |---|---|
-| `NEURO_FAST_CODEGEN` | Only types with a class-level `[Neuro(#)]`/`[NeuroGlobalType(#)]` are considered, in assemblies marked `[assembly: Neuro]`. Much faster compiles in large projects; missing attributes become `Neuro406` errors rather than silent runtime failures. (`NEURO_SELECTIVE_ASSEMBLIES` is the old name and still works.) |
+| `NEURO_FAST_CODEGEN` | Only types with a class-level `[Neuro]`/`[Neuro(#)]`/`[NeuroGlobalType(#)]` are considered, in assemblies marked `[assembly: Neuro]` (bare `[Neuro]` is enough on a root type; subtypes need their number). Much faster compiles in large projects; missing attributes become `Neuro406` errors rather than silent runtime failures. (`NEURO_SELECTIVE_ASSEMBLIES` is the old name and still works.) |
 | `NEURO_DISABLE_STATIC_REFERENCES` | No static reference resolution. `GetValue()` is gone; you must pass `GetValue(references)`. |
 | `NEURO_THREAD_STATIC_STATIC_REFERENCES` | `NeuroReferences.Default` becomes `[ThreadStatic]`; `GetValue()` resolves per thread. |
 

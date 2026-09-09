@@ -31,9 +31,13 @@ namespace Ninjadini.Neuro.CodeGen
         static readonly DiagnosticDescriptor InvalidTagRangeRule = new DiagnosticDescriptor(InvalidTagDiagnosticID, "Invalid field neuro tag", "Neuro field attribute tag of `{0}` must be between 1 and "+int.MaxValue+". {1}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor FieldTagConflictRule = new DiagnosticDescriptor(FieldTagConflictDiagnosticID, "Field attribute tag already used", "Neuro field attribute tag {0} of `{1}` is already used by another field `{2}`. {3}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor MissingClassAttributeRule = new DiagnosticDescriptor("Neuro404", "Missing neuro class attribute", "`{0}` needs neuro class attribute `[Neuro(#)]` because it's base class `{1}` is a Neuro class.", "Syntax", DiagnosticSeverity.Error, true);
-        static readonly DiagnosticDescriptor FastCodeGenClassAttributeRule = new DiagnosticDescriptor("Neuro406", "Missing neuro class attribute", "`{0}` has [Neuro] field(s) but no class level [Neuro(#)] attribute. " + NeuroCodeGenUtils.DefineSymbol_FastCodeGen + " is on, which requires every Neuro type to declare itself with a class level attribute.", "Syntax", DiagnosticSeverity.Error, true);
+        static readonly DiagnosticDescriptor FastCodeGenClassAttributeRule = new DiagnosticDescriptor("Neuro406", "Missing neuro class attribute", "`{0}` has [Neuro] field(s) but no class level [Neuro] attribute. " + NeuroCodeGenUtils.DefineSymbol_FastCodeGen + " is on, which requires every Neuro type to declare itself with a class level attribute - a bare [Neuro] on a root type, [Neuro(#)] on a subtype.", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor MultipleBaseClassRootsRule = new DiagnosticDescriptor("Neuro405", "Multiple inheritance paths not supported", "`{0}` extends from multiple inheritance paths: `{1}` and `{2}`. This is not supported for now.", "Syntax", DiagnosticSeverity.Error, true);
-        static readonly DiagnosticDescriptor InvalidClassTagRangeRule = new DiagnosticDescriptor("Neuro002", "Invalid class neuro tag",  "Neuro class attribute tag must be between 0 and "+int.MaxValue+" @ {0}", "Syntax", DiagnosticSeverity.Error, true);
+        /// The tag on a root type is never written - the root registers without one - so a bare `[Neuro]`
+        /// is enough to opt a plain class or struct in. A subtype's tag is the wire format, so there it has
+        /// to be a real number.
+        static readonly DiagnosticDescriptor InvalidClassTagRangeRule = new DiagnosticDescriptor("Neuro002", "Invalid class neuro tag",  "Neuro class attribute tag must be between 1 and "+int.MaxValue+" @ {0}. `{0}` is a subtype of the Neuro type `{1}`, so the tag is written to data and identifies it. A bare `[Neuro]` is only enough on a root type.", "Syntax", DiagnosticSeverity.Error, true);
+        static readonly DiagnosticDescriptor ClassTagTooLargeRule = new DiagnosticDescriptor("Neuro002", "Invalid class neuro tag",  "Neuro class attribute tag must be below "+int.MaxValue+" @ {0}", "Syntax", DiagnosticSeverity.Error, true);
         static readonly DiagnosticDescriptor PartialClassRule = new DiagnosticDescriptor("Neuro101", "Non-partial Neuro class",  "{0} is not a partial class. It is required so Neuro can write to private fields without reflection.", "Syntax", DiagnosticSeverity.Error, true);
         public static readonly DiagnosticDescriptor ClassTagConflictRule = new DiagnosticDescriptor("Neuro303", "Class attribute tag already used", "Neuro class attribute tag {0} of `{1}` is already used by another class `{2}`. {3}", "Syntax", DiagnosticSeverity.Error, true);
         public static readonly DiagnosticDescriptor ClassTagReservedRule = new DiagnosticDescriptor("Neuro304", "Class attribute tag reserved", "Neuro class attribute tag {0} of `{1}` is marked as reserved `[ReservedNeuroTag({0})]`. {2}", "Syntax", DiagnosticSeverity.Error, true);
@@ -75,6 +79,7 @@ namespace Ninjadini.Neuro.CodeGen
             FastCodeGenClassAttributeRule,
             MultipleBaseClassRootsRule,
             InvalidClassTagRangeRule, 
+            ClassTagTooLargeRule,
             PartialClassRule, 
             ClassTagConflictRule,
             ClassTagReservedRule,
@@ -574,11 +579,12 @@ namespace Ninjadini.Neuro.CodeGen
             if(classAttribute != null)
             {
                 tag = NeuroCodeGenUtils.GetNeuroTag(classAttribute);
-                if ((tag == 0 && classSymbol.TypeKind != TypeKind.Interface) || tag >= int.MaxValue)
+                if (tag >= int.MaxValue)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(InvalidClassTagRangeRule, NeuroCodeGenUtils.GetLocation(classAttribute), classSymbol.ToString()));
+                    context.ReportDiagnostic(Diagnostic.Create(ClassTagTooLargeRule, NeuroCodeGenUtils.GetLocation(classAttribute), classSymbol.ToString()));
                     return;
                 }
+                // A zero tag is only a problem on a subtype - decided below, once the base chain is known.
             }
             var globalAttribute = NeuroCodeGenUtils.FindNeuroGlobalTypeAttribute(classSymbol);
             if (globalAttribute != null)
@@ -623,6 +629,12 @@ namespace Ninjadini.Neuro.CodeGen
                 if (classAttribute == null)
                 {
                     context.ReportDiagnostic(Diagnostic.Create(MissingClassAttributeRule, classSymbol.Locations.FirstOrDefault(), classSymbol.ToString(), baseClassSymbol.ToString()));
+                }
+                else if (tag == 0)
+                {
+                    // The generator reports the same thing with the list of used tags (Neuro305), but Unity
+                    // does not surface generator diagnostics, so the analyzer has to say it too.
+                    context.ReportDiagnostic(Diagnostic.Create(InvalidClassTagRangeRule, NeuroCodeGenUtils.GetLocation(classAttribute), classSymbol.ToString(), baseClassSymbol.ToString()));
                 }
                 else
                 {

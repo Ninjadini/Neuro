@@ -255,14 +255,13 @@ numbers across the hierarchy and the next free one, so just pick the one it sugg
 
 ## Polymorphic types with interface as root
 ```
-[Neuro(0)] // Because you will not have any fields, this is how you tell neuro that this is the root
-  // for interfaces, the number can be zero, but if you change it to class later, it will break back-compact
+[Neuro] // Because you will not have any fields, this is how you tell neuro that this is the root.
+  // A root's tag is never written, so no number is needed - only subtypes need one.
 public interface IBaseEntity
 {
 }
 
-[Neuro(1)] // Because you will not have any fields, this is how you tell neuro that this is the root
-  // for classes it needs to be a non-zero number.
+[Neuro] // Same for a class root
 public class BaseEntity
 {
 // A class with no neuro fields
