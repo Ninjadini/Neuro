@@ -45,6 +45,14 @@ namespace Ninjadini.Neuro
         /// </summary>
         public bool Inline;
 
+        /// <summary>
+        /// With <see cref="Inline"/>: keep each field's own name as a small label in the row, the way Unity
+        /// draws a Vector2 as "X [ ] Y [ ]", and put the row's name in front. Off, the first field takes the
+        /// row's name and the rest are unlabelled - right when the first field says what the row is (a
+        /// stat dropdown), wrong for a vector where every component needs its letter.
+        /// </summary>
+        public bool InlineFieldNames;
+
         public InspectorStyleAttribute(uint spaceBefore = 0,uint spaceAfter = 0, uint horizontal = 0)
         {
             SpaceBefore = spaceBefore;

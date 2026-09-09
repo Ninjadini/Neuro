@@ -71,22 +71,23 @@ public struct MathematicsTypeHooks : INeuroCustomTypesRegistryHook
 {
     public void Register()
     {
-        if (NeuroSyncTypes.IsEmpty<int2>())
+        if (NeuroSyncTypes.IsEmpty<float2>())     // int2/3/4 are already covered by NeuroDefaultUnityTypesHook
         {
-            NeuroSyncTypes.Register((INeuroSync neuro, ref int2 value) =>
+            NeuroSyncTypes.Register((INeuroSync neuro, ref float2 value) =>
             {
                 neuro.Sync(1, nameof(value.x), ref value.x);   // number = binary tag, string = json name
                 neuro.Sync(2, nameof(value.y), ref value.y);
             });
-            // tell the Neuro editor which members to draw
-            NeuroSyncEditorFields.AddField(typeof(int2), nameof(int2.x));
-            NeuroSyncEditorFields.AddField(typeof(int2), nameof(int2.y));
+            // tell the Neuro editor which members to draw, and to draw them on one row as "x [ ] y [ ]"
+            NeuroSyncEditorFields.AddField(typeof(float2), nameof(float2.x));
+            NeuroSyncEditorFields.AddField(typeof(float2), nameof(float2.y));
+            NeuroSyncEditorFields.SetInline(typeof(float2), showFieldNames: true);
         }
     }
 }
 ```
 
-`NeuroSyncEditorFields.AddField` / `.AddProperty` are `[Conditional("UNITY_EDITOR")]`, so both the calls
+`NeuroSyncEditorFields.AddField` / `.AddProperty` / `.SetInline` are `[Conditional("UNITY_EDITOR")]`, so both the calls
 and their arguments vanish from player builds. `NeuroSyncTypes.Register` also takes an explicit
 `FieldSizeType` (`VarInt`, `Fixed32`, `Fixed64`, `Length`, `Child`) for single-value types, and
 `RegisterEqualityCheck<T>` customises default-value comparison. `RegisterSubClass<TBase,TSub>(tag, d)`

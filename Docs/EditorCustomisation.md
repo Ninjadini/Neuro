@@ -52,6 +52,13 @@ public struct StatValue
     [Neuro(1)] public Reference<Stat> Stat;                          // first field keeps the row's name
     [InspectorStyle(horizontal: 90)] [Neuro(2)] public long Value;   // fixed width; without it, shares the row
 }
+
+// Vectors want every field's letter kept, not just the row's name:  Size  x [ ] y [ ]
+[InspectorStyle(Inline = true, InlineFieldNames = true)]
+public struct Size2 { [Neuro(1)] public int x; [Neuro(2)] public int y; }
+
+// A struct you can't attribute (Unity's, a package's) - alongside its NeuroSyncEditorFields.AddField calls:
+NeuroSyncEditorFields.SetInline(typeof(float2), showFieldNames: true);
 ```
 
 ### Full editor customisation

@@ -12,6 +12,8 @@ namespace Ninjadini.Neuro.Editor
     public static class NeuroCustomEditorFieldRegistry
     {
         static Dictionary<Type, List<string>> fields = new Dictionary<Type, List<string>>();
+        /// value = show field names, see InspectorStyleAttribute.InlineFieldNames
+        static Dictionary<Type, bool> inlineTypes = new Dictionary<Type, bool>();
 
         static NeuroCustomEditorFieldRegistry()
         {
@@ -19,7 +21,20 @@ namespace Ninjadini.Neuro.Editor
             {
                 RegisterMember(type, name, isProperty);
             });
+            NeuroSyncEditorFields.SetInlineEditorHook(RegisterInline);
         }
+
+        /// Editor-side equivalent of <see cref="NeuroSyncEditorFields.SetInline"/>.
+        public static void RegisterInline(Type type, bool showFieldNames = false)
+        {
+            if (type == null) throw new ArgumentNullException(nameof(type));
+            inlineTypes[type] = showFieldNames;
+        }
+
+        /// True if the type was registered via <see cref="NeuroSyncEditorFields.SetInline"/> or
+        /// <see cref="RegisterInline"/>. The [InspectorStyle(Inline = true)] attribute is checked separately
+        /// by ObjectInspector.IsInlineType, which is what drawing code should call.
+        public static bool IsRegisteredInline(Type type, out bool showFieldNames) => inlineTypes.TryGetValue(type, out showFieldNames);
 
         public static void RegisterFieldOf<T>(string fieldName)
         {

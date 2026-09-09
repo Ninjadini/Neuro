@@ -170,7 +170,9 @@ obj.Icon.LoadSceneAsync();
 `NeuroDefaultUnityTypesHook` registers the common Unity structs so they need no attributes:
 `Vector2/3/4`, `Vector2Int`, `Vector3Int`, `Quaternion`, `Matrix4x4`, `Color`, `Color32`,
 `Gradient`, `AnimationCurve`, `Hash128`, `LayerMask`, `BoundingSphere`, `RangeInt`, `Plane`,
-`Ray`, `Ray2D`, `RectOffset`.
+`Ray`, `Ray2D`, `RectOffset`. When `com.unity.mathematics` is in the project (built into the editor
+from 6000.5, a registry package before that) it also covers `int2`, `int3` and `int4`, drawn as one row;
+the block is gated on the `NEURO_UNITY_MATHEMATICS` define the runtime asmdef sets from that package.
 
 Most write as an object (`"Pos": {"x": 1, "y": 2}`). **`Color` and `Color32` are hex strings** -
 `"FFCC00"`, or `"FFCC0080"` when the alpha is not fully opaque - so hand-writing one as
@@ -258,8 +260,13 @@ compile but do nothing here: `[Delayed]`, `[InspectorName]`, `[ColorUsage]`, `[G
 **One-line structs.** `[InspectorStyle(Inline = true)]` on a struct or class draws it as a single row
 instead of a foldout - wherever it appears: a list entry becomes `0  [stat ▾] [value]`, a field becomes
 `Name  [stat ▾] [value]`. The first field takes the row's name, the rest are unlabelled; give a field
-`[InspectorStyle(horizontal: 90)]` for a fixed width, otherwise it shares the remaining space. `[Header]`
-inside the type is ignored, and a null class value still shows the foldout so it can be created.
+`[InspectorStyle(horizontal: 90)]` for a fixed width, otherwise it shares the remaining space. Add
+`InlineFieldNames = true` when every field needs its own name - a vector's `x` `y` - and the row becomes
+`Name  x [ ] y [ ]` with the row's name as its own leading label. `[Header]` inside the type is ignored,
+and a null class value still shows the foldout so it can be created. For a struct you cannot attribute
+(Unity's, a package's) call `NeuroSyncEditorFields.SetInline(typeof(float2), showFieldNames: true)` from
+the same `INeuroCustomTypesRegistryHook` that registers its fields; the effect is identical, and the call
+is stripped from player builds like `AddField`.
 
 ```csharp
 [InspectorStyle(Inline = true)]

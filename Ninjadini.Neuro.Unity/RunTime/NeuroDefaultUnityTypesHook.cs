@@ -4,6 +4,9 @@ using System.Globalization;
 using System.Text;
 using Ninjadini.Neuro;
 using UnityEngine;
+#if NEURO_UNITY_MATHEMATICS
+using Unity.Mathematics;
+#endif
 
 [assembly:Neuro(0)]
 
@@ -26,6 +29,9 @@ namespace Ninjadini.Neuro.Sync
             _registered = true;
             
             AssetAddress.RegisterType();
+#if NEURO_UNITY_MATHEMATICS
+            RegisterMathematics();
+#endif
             
             if(NeuroSyncTypes.IsEmpty<Color32>())
                 NeuroSyncTypes.Register(FieldSizeType.VarInt, (INeuroSync neuro, ref Color32 value) => {
@@ -643,6 +649,52 @@ namespace Ninjadini.Neuro.Sync
             value = 0;
             return false;
         }
+
+#if NEURO_UNITY_MATHEMATICS
+        /// com.unity.mathematics is built into the editor from Unity 6000.5 and a registry package before
+        /// that, so this is gated on the package being resolved (NEURO_UNITY_MATHEMATICS comes from the
+        /// asmdef's versionDefines) rather than on a Unity version. The int vectors are drawn as one row,
+        /// with their x y z w letters like Unity's own vector fields.
+        static void RegisterMathematics()
+        {
+            if(NeuroSyncTypes.IsEmpty<int2>())
+            {
+                NeuroSyncTypes.Register((INeuroSync neuro, ref int2 value) => {
+                    neuro.Sync(1, nameof(value.x), ref value.x, 0);
+                    neuro.Sync(2, nameof(value.y), ref value.y, 0);
+                });
+                NeuroSyncEditorFields.AddField(typeof(int2), nameof(int2.x));
+                NeuroSyncEditorFields.AddField(typeof(int2), nameof(int2.y));
+                NeuroSyncEditorFields.SetInline(typeof(int2), showFieldNames: true);
+            }
+            if(NeuroSyncTypes.IsEmpty<int3>())
+            {
+                NeuroSyncTypes.Register((INeuroSync neuro, ref int3 value) => {
+                    neuro.Sync(1, nameof(value.x), ref value.x, 0);
+                    neuro.Sync(2, nameof(value.y), ref value.y, 0);
+                    neuro.Sync(3, nameof(value.z), ref value.z, 0);
+                });
+                NeuroSyncEditorFields.AddField(typeof(int3), nameof(int3.x));
+                NeuroSyncEditorFields.AddField(typeof(int3), nameof(int3.y));
+                NeuroSyncEditorFields.AddField(typeof(int3), nameof(int3.z));
+                NeuroSyncEditorFields.SetInline(typeof(int3), showFieldNames: true);
+            }
+            if(NeuroSyncTypes.IsEmpty<int4>())
+            {
+                NeuroSyncTypes.Register((INeuroSync neuro, ref int4 value) => {
+                    neuro.Sync(1, nameof(value.x), ref value.x, 0);
+                    neuro.Sync(2, nameof(value.y), ref value.y, 0);
+                    neuro.Sync(3, nameof(value.z), ref value.z, 0);
+                    neuro.Sync(4, nameof(value.w), ref value.w, 0);
+                });
+                NeuroSyncEditorFields.AddField(typeof(int4), nameof(int4.x));
+                NeuroSyncEditorFields.AddField(typeof(int4), nameof(int4.y));
+                NeuroSyncEditorFields.AddField(typeof(int4), nameof(int4.z));
+                NeuroSyncEditorFields.AddField(typeof(int4), nameof(int4.w));
+                NeuroSyncEditorFields.SetInline(typeof(int4), showFieldNames: true);
+            }
+        }
+#endif
 
         /// ulong.Parse over a span - no substring, no allocation.
         static ulong ParseUlong(ReadOnlySpan<char> chars)
