@@ -25,7 +25,7 @@ public class MyOtherReferencableObject : Referencable, INeuroRefDropDownIconCust
 
 ### Basic editor customisation
 ```
-[DisplayName("Test > AnotherReferencableObject")] // < The type name used in editor dropdown list
+[DisplayName("Test / AnotherReferencableObject")] // < The type name used in editor dropdown list - `/` nests it under a "Test" header
 [ToolTip("Tooltip for this class... Shows up when you mouse over any of the elements of this clas (but not if you are in play mode)")] // You can also use [Description()] 
 public class AnotherReferencableObject : Referencable
 {

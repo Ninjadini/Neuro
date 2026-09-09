@@ -244,7 +244,8 @@ public class TroopBuildProcessor : INeuroBundledDataResourcesForBuildProcessor
 
 ## Customising the editor UI
 
-Cheap wins: `[DisplayName]` (on a **type** - renames it in dropdowns; it is ignored on a field),
+Cheap wins: `[DisplayName]` (on a **type** - renames it in dropdowns, and `"Core / Stats []"` nests it under
+a "Core" header like a Unity menu path; it is ignored on a field),
 `[Tooltip]` / `[Description]` (type or field), `[Header("> foldout")]`,
 `[Multiline]` / `[TextArea(minLines, maxLines)]` (string - `[TextArea]` also sizes the box),
 `[Range(min, max)]` (draws `int`/`uint`/`long`/`float`/`double` as a slider with a number box, like

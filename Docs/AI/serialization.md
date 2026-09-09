@@ -8,7 +8,7 @@ the same three pairs. Each has a `.Shared` singleton instance; construct your ow
 | | Write | Read | When |
 |---|---|---|---|
 | Generic | `Write(value)` | `Read<T>(data)` | Type known at compile time. Almost always this. |
-| Runtime type | `WriteObject(value)` | `ReadObject(data, type)` | You only hold a `System.Type`. Identical data format, one reflection lookup per type. |
+| Runtime type | `WriteObject(value)` | `ReadObject(data, type)` | You only hold a `System.Type`. Identical data format, one reflection lookup per type. | For a **struct** type pass an existing boxed instance via the `ref result` overload, or use the generic `Read<T>`: with no target the struct path unboxes `null` and throws `NullReferenceException`. |
 | Global type | `WriteGlobalTyped(value)` | `ReadGlobalTyped(data)` | The reader cannot know the type. Embeds the `[NeuroGlobalType]` id in the data. **Not** interchangeable with the other two. |
 
 Binary writers return `ReadOnlySpan<byte>`; readers accept a `BytesChunk`, which `byte[]` implicitly

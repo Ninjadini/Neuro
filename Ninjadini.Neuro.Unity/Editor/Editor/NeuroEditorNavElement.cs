@@ -10,6 +10,10 @@ namespace Ninjadini.Neuro.Editor
 {
     public class NeuroEditorNavElement : VisualElement
     {
+        /// "Core / Stats []" shows as "Stats []" under a "Core" header in the type dropdown, the same `/`
+        /// convention as Unity's own menu paths.
+        public const string TypeGroupSeparator = "/";
+
         SearchablePopupField<string> typeDropdown;
         NeuroReferencablesDropdownField itemDropdown;
         Type[] allTypes;
@@ -62,6 +66,7 @@ namespace Ninjadini.Neuro.Editor
             typeDropdown.style.flexGrow = 1f;
             typeDropdown.style.flexShrink = 1f;
             typeDropdown.BeforePopupShown = OnBeforeTypesPopupShown;
+            typeDropdown.GroupSeparator = TypeGroupSeparator;
             typeDropdown.RegisterValueChangedCallback(OnTypeDropDownChanged);
             topBar.Add(typeDropdown);
 
