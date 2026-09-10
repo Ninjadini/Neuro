@@ -653,8 +653,10 @@ namespace Ninjadini.Neuro.Sync
 #if NEURO_UNITY_MATHEMATICS
         /// com.unity.mathematics is built into the editor from Unity 6000.5 and a registry package before
         /// that, so this is gated on the package being resolved (NEURO_UNITY_MATHEMATICS comes from the
-        /// asmdef's versionDefines) rather than on a Unity version. The int vectors are drawn as one row,
-        /// with their x y z w letters like Unity's own vector fields.
+        /// asmdef's versionDefines) rather than on a Unity version. The 2- and 3-vectors are drawn as one
+        /// row with their x y z letters like Unity's own vector fields; four wide does not fit a row, so the
+        /// 4-vectors, quaternion and float4x4 keep the foldout. double/half and the other matrix sizes are
+        /// left out as nobody authors them - register them from your own hook if you need one.
         static void RegisterMathematics()
         {
             if(NeuroSyncTypes.IsEmpty<int2>())
@@ -691,7 +693,141 @@ namespace Ninjadini.Neuro.Sync
                 NeuroSyncEditorFields.AddField(typeof(int4), nameof(int4.y));
                 NeuroSyncEditorFields.AddField(typeof(int4), nameof(int4.z));
                 NeuroSyncEditorFields.AddField(typeof(int4), nameof(int4.w));
-                NeuroSyncEditorFields.SetInline(typeof(int4), showFieldNames: true);
+                // four wide is too much for one row - stays a foldout of x y z w.
+            }
+            if(NeuroSyncTypes.IsEmpty<float2>())
+            {
+                NeuroSyncTypes.Register((INeuroSync neuro, ref float2 value) => {
+                    neuro.Sync(1, nameof(value.x), ref value.x, 0f);
+                    neuro.Sync(2, nameof(value.y), ref value.y, 0f);
+                });
+                NeuroSyncEditorFields.AddField(typeof(float2), nameof(float2.x));
+                NeuroSyncEditorFields.AddField(typeof(float2), nameof(float2.y));
+                NeuroSyncEditorFields.SetInline(typeof(float2), showFieldNames: true);
+            }
+            if(NeuroSyncTypes.IsEmpty<float3>())
+            {
+                NeuroSyncTypes.Register((INeuroSync neuro, ref float3 value) => {
+                    neuro.Sync(1, nameof(value.x), ref value.x, 0f);
+                    neuro.Sync(2, nameof(value.y), ref value.y, 0f);
+                    neuro.Sync(3, nameof(value.z), ref value.z, 0f);
+                });
+                NeuroSyncEditorFields.AddField(typeof(float3), nameof(float3.x));
+                NeuroSyncEditorFields.AddField(typeof(float3), nameof(float3.y));
+                NeuroSyncEditorFields.AddField(typeof(float3), nameof(float3.z));
+                NeuroSyncEditorFields.SetInline(typeof(float3), showFieldNames: true);
+            }
+            if(NeuroSyncTypes.IsEmpty<float4>())
+            {
+                NeuroSyncTypes.Register((INeuroSync neuro, ref float4 value) => {
+                    neuro.Sync(1, nameof(value.x), ref value.x, 0f);
+                    neuro.Sync(2, nameof(value.y), ref value.y, 0f);
+                    neuro.Sync(3, nameof(value.z), ref value.z, 0f);
+                    neuro.Sync(4, nameof(value.w), ref value.w, 0f);
+                });
+                NeuroSyncEditorFields.AddField(typeof(float4), nameof(float4.x));
+                NeuroSyncEditorFields.AddField(typeof(float4), nameof(float4.y));
+                NeuroSyncEditorFields.AddField(typeof(float4), nameof(float4.z));
+                NeuroSyncEditorFields.AddField(typeof(float4), nameof(float4.w));
+                // four wide is too much for one row - stays a foldout of x y z w.
+            }
+            if(NeuroSyncTypes.IsEmpty<uint2>())
+            {
+                NeuroSyncTypes.Register((INeuroSync neuro, ref uint2 value) => {
+                    neuro.Sync(1, nameof(value.x), ref value.x, 0u);
+                    neuro.Sync(2, nameof(value.y), ref value.y, 0u);
+                });
+                NeuroSyncEditorFields.AddField(typeof(uint2), nameof(uint2.x));
+                NeuroSyncEditorFields.AddField(typeof(uint2), nameof(uint2.y));
+                NeuroSyncEditorFields.SetInline(typeof(uint2), showFieldNames: true);
+            }
+            if(NeuroSyncTypes.IsEmpty<uint3>())
+            {
+                NeuroSyncTypes.Register((INeuroSync neuro, ref uint3 value) => {
+                    neuro.Sync(1, nameof(value.x), ref value.x, 0u);
+                    neuro.Sync(2, nameof(value.y), ref value.y, 0u);
+                    neuro.Sync(3, nameof(value.z), ref value.z, 0u);
+                });
+                NeuroSyncEditorFields.AddField(typeof(uint3), nameof(uint3.x));
+                NeuroSyncEditorFields.AddField(typeof(uint3), nameof(uint3.y));
+                NeuroSyncEditorFields.AddField(typeof(uint3), nameof(uint3.z));
+                NeuroSyncEditorFields.SetInline(typeof(uint3), showFieldNames: true);
+            }
+            if(NeuroSyncTypes.IsEmpty<uint4>())
+            {
+                NeuroSyncTypes.Register((INeuroSync neuro, ref uint4 value) => {
+                    neuro.Sync(1, nameof(value.x), ref value.x, 0u);
+                    neuro.Sync(2, nameof(value.y), ref value.y, 0u);
+                    neuro.Sync(3, nameof(value.z), ref value.z, 0u);
+                    neuro.Sync(4, nameof(value.w), ref value.w, 0u);
+                });
+                NeuroSyncEditorFields.AddField(typeof(uint4), nameof(uint4.x));
+                NeuroSyncEditorFields.AddField(typeof(uint4), nameof(uint4.y));
+                NeuroSyncEditorFields.AddField(typeof(uint4), nameof(uint4.z));
+                NeuroSyncEditorFields.AddField(typeof(uint4), nameof(uint4.w));
+                // four wide is too much for one row - stays a foldout of x y z w.
+            }
+            if(NeuroSyncTypes.IsEmpty<bool2>())
+            {
+                NeuroSyncTypes.Register((INeuroSync neuro, ref bool2 value) => {
+                    neuro.Sync(1, nameof(value.x), ref value.x, false);
+                    neuro.Sync(2, nameof(value.y), ref value.y, false);
+                });
+                NeuroSyncEditorFields.AddField(typeof(bool2), nameof(bool2.x));
+                NeuroSyncEditorFields.AddField(typeof(bool2), nameof(bool2.y));
+                NeuroSyncEditorFields.SetInline(typeof(bool2), showFieldNames: true);
+            }
+            if(NeuroSyncTypes.IsEmpty<bool3>())
+            {
+                NeuroSyncTypes.Register((INeuroSync neuro, ref bool3 value) => {
+                    neuro.Sync(1, nameof(value.x), ref value.x, false);
+                    neuro.Sync(2, nameof(value.y), ref value.y, false);
+                    neuro.Sync(3, nameof(value.z), ref value.z, false);
+                });
+                NeuroSyncEditorFields.AddField(typeof(bool3), nameof(bool3.x));
+                NeuroSyncEditorFields.AddField(typeof(bool3), nameof(bool3.y));
+                NeuroSyncEditorFields.AddField(typeof(bool3), nameof(bool3.z));
+                NeuroSyncEditorFields.SetInline(typeof(bool3), showFieldNames: true);
+            }
+            if(NeuroSyncTypes.IsEmpty<bool4>())
+            {
+                NeuroSyncTypes.Register((INeuroSync neuro, ref bool4 value) => {
+                    neuro.Sync(1, nameof(value.x), ref value.x, false);
+                    neuro.Sync(2, nameof(value.y), ref value.y, false);
+                    neuro.Sync(3, nameof(value.z), ref value.z, false);
+                    neuro.Sync(4, nameof(value.w), ref value.w, false);
+                });
+                NeuroSyncEditorFields.AddField(typeof(bool4), nameof(bool4.x));
+                NeuroSyncEditorFields.AddField(typeof(bool4), nameof(bool4.y));
+                NeuroSyncEditorFields.AddField(typeof(bool4), nameof(bool4.z));
+                NeuroSyncEditorFields.AddField(typeof(bool4), nameof(bool4.w));
+                // four wide is too much for one row - stays a foldout of x y z w.
+            }
+            if(NeuroSyncTypes.IsEmpty<quaternion>())
+            {
+                // x y z w straight off the inner float4, so json reads {"x":..,"w":..} like Quaternion does.
+                NeuroSyncTypes.Register((INeuroSync neuro, ref quaternion value) => {
+                    neuro.Sync(1, nameof(value.value.x), ref value.value.x, 0f);
+                    neuro.Sync(2, nameof(value.value.y), ref value.value.y, 0f);
+                    neuro.Sync(3, nameof(value.value.z), ref value.value.z, 0f);
+                    neuro.Sync(4, nameof(value.value.w), ref value.value.w, 0f);
+                });
+                // the only field is the float4, drawn as a foldout of x y z w like float4 itself.
+                NeuroSyncEditorFields.AddField(typeof(quaternion), nameof(quaternion.value));
+            }
+            if(NeuroSyncTypes.IsEmpty<float4x4>())
+            {
+                // by column, each a float4 - a foldout of four x y z w rows in the editor.
+                NeuroSyncTypes.Register((INeuroSync neuro, ref float4x4 value) => {
+                    neuro.Sync(1, nameof(value.c0), ref value.c0, default);
+                    neuro.Sync(2, nameof(value.c1), ref value.c1, default);
+                    neuro.Sync(3, nameof(value.c2), ref value.c2, default);
+                    neuro.Sync(4, nameof(value.c3), ref value.c3, default);
+                });
+                NeuroSyncEditorFields.AddField(typeof(float4x4), nameof(float4x4.c0));
+                NeuroSyncEditorFields.AddField(typeof(float4x4), nameof(float4x4.c1));
+                NeuroSyncEditorFields.AddField(typeof(float4x4), nameof(float4x4.c2));
+                NeuroSyncEditorFields.AddField(typeof(float4x4), nameof(float4x4.c3));
             }
         }
 #endif

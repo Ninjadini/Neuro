@@ -171,8 +171,11 @@ obj.Icon.LoadSceneAsync();
 `Vector2/3/4`, `Vector2Int`, `Vector3Int`, `Quaternion`, `Matrix4x4`, `Color`, `Color32`,
 `Gradient`, `AnimationCurve`, `Hash128`, `LayerMask`, `BoundingSphere`, `RangeInt`, `Plane`,
 `Ray`, `Ray2D`, `RectOffset`. When `com.unity.mathematics` is in the project (built into the editor
-from 6000.5, a registry package before that) it also covers `int2`, `int3` and `int4`, drawn as one row;
-the block is gated on the `NEURO_UNITY_MATHEMATICS` define the runtime asmdef sets from that package.
+from 6000.5, a registry package before that) it also covers `int2/3/4`, `uint2/3/4`, `float2/3/4`,
+`bool2/3/4`, `quaternion` (json `x y z w`, like `Quaternion`) and `float4x4` (by column `c0..c3`). The
+vectors draw as one row with their letters; the block is gated on the `NEURO_UNITY_MATHEMATICS` define
+the runtime asmdef sets from that package. `double`/`half` vectors and other matrix sizes are not
+registered - add them from your own hook if you author them.
 
 Most write as an object (`"Pos": {"x": 1, "y": 2}`). **`Color` and `Color32` are hex strings** -
 `"FFCC00"`, or `"FFCC0080"` when the alpha is not fully opaque - so hand-writing one as
