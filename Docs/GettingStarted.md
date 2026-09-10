@@ -42,6 +42,16 @@ public class MyFirstNeuroObject : Referencable
 }
 ```
 
+> **You don't have to keep track of the numbers yourself.** The check is a code analyzer, so your IDE
+> flags a reused number the moment you type it - a red squiggle on the attribute whose message lists
+> what is taken and what to use instead, e.g.
+> `Used tags: 1-2, 4. Next free: 3. Full list: 1=MyFirstString; 2=MyFirstInt; 4=Weapons`.
+> The same check covers `[NeuroGlobalType(#)]` across the whole project and `[Neuro(#)]` on subclasses.
+> Not sure what is free? Type `[Neuro(0)]` (or `[NeuroGlobalType(0)]`), hover the squiggle, and fill in
+> the number it suggests.
+> The only rule you need to remember is to never renumber or recycle an id that has shipped -
+> see [Backward compatibility](BackwardCompatibility.md).
+
 ### An example of supported types
 ```
     public class MyUberObject
@@ -159,14 +169,16 @@ It can only be run once, and it says so if you try again. A name made only of di
 is why the project records that it has been done. Commit your data before running it.
 
 ### Changing an item's RefId
-Type a new id into the `RefId` field at the top of the editor and press enter. You will be asked to confirm, and
-told how many other items reference this one.
+Type a new id into the `RefId` field at the top of the editor and press enter. You are told how many other
+items reference this one, then pick a confirm button:
 
-On confirm Neuro checks the id is free, repoints every `Reference<>` in the data that pointed at the old id,
-renames the data file and saves everything it changed.
+- **Change data only** - checks the id is free, repoints every `Reference<>` in the data, renames the data
+  file and saves what it changed. Undo puts it all back.
+- **Change & update assets** - also sweeps every prefab, ScriptableObject and scene under `Assets/` for
+  `Reference<>` fields holding the old id. Not undoable, so commit first. Scenes are skipped in play mode,
+  or if you decline the prompt to save the open ones; anything skipped is reported.
 
-Undo moves the id back and repoints the other items again. What it can not do for you: ids stored outside the
-Neuro data - in scenes, prefabs, save games or hard coded in your code - are not updated.
+Neither can reach ids stored where Neuro cannot see them - save games, or numbers hard coded in your code.
 
 ### How to read from referencable/config at runtime
 ```
@@ -236,18 +248,20 @@ public class PlayerCharacterEntity : CharacterEntity
 {
     [Neuro(1)] int SomeInt;
 }
+
+As with field tags, a clash on a subclass number is flagged in the IDE as you type, listing the used
+numbers across the hierarchy and the next free one, so just pick the one it suggests.
 ```
 
 ## Polymorphic types with interface as root
 ```
-[Neuro(0)] // Because you will not have any fields, this is how you tell neuro that this is the root
-  // for interfaces, the number can be zero, but if you change it to class later, it will break back-compact
+[Neuro] // Because you will not have any fields, this is how you tell neuro that this is the root.
+  // A root's tag is never written, so no number is needed - only subtypes need one.
 public interface IBaseEntity
 {
 }
 
-[Neuro(1)] // Because you will not have any fields, this is how you tell neuro that this is the root
-  // for classes it needs to be a non-zero number.
+[Neuro] // Same for a class root
 public class BaseEntity
 {
 // A class with no neuro fields

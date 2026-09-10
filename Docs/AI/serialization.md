@@ -8,7 +8,7 @@ the same three pairs. Each has a `.Shared` singleton instance; construct your ow
 | | Write | Read | When |
 |---|---|---|---|
 | Generic | `Write(value)` | `Read<T>(data)` | Type known at compile time. Almost always this. |
-| Runtime type | `WriteObject(value)` | `ReadObject(data, type)` | You only hold a `System.Type`. Identical data format, one reflection lookup per type. |
+| Runtime type | `WriteObject(value)` | `ReadObject(data, type)` | You only hold a `System.Type`. Identical data format, one reflection lookup per type. | For a **struct** type pass an existing boxed instance via the `ref result` overload, or use the generic `Read<T>`: with no target the struct path unboxes `null` and throws `NullReferenceException`. |
 | Global type | `WriteGlobalTyped(value)` | `ReadGlobalTyped(data)` | The reader cannot know the type. Embeds the `[NeuroGlobalType]` id in the data. **Not** interchangeable with the other two. |
 
 Binary writers return `ReadOnlySpan<byte>`; readers accept a `BytesChunk`, which `byte[]` implicitly
@@ -71,22 +71,23 @@ public struct MathematicsTypeHooks : INeuroCustomTypesRegistryHook
 {
     public void Register()
     {
-        if (NeuroSyncTypes.IsEmpty<int2>())
+        if (NeuroSyncTypes.IsEmpty<float2>())     // int2/3/4 are already covered by NeuroDefaultUnityTypesHook
         {
-            NeuroSyncTypes.Register((INeuroSync neuro, ref int2 value) =>
+            NeuroSyncTypes.Register((INeuroSync neuro, ref float2 value) =>
             {
                 neuro.Sync(1, nameof(value.x), ref value.x);   // number = binary tag, string = json name
                 neuro.Sync(2, nameof(value.y), ref value.y);
             });
-            // tell the Neuro editor which members to draw
-            NeuroSyncEditorFields.AddField(typeof(int2), nameof(int2.x));
-            NeuroSyncEditorFields.AddField(typeof(int2), nameof(int2.y));
+            // tell the Neuro editor which members to draw, and to draw them on one row as "x [ ] y [ ]"
+            NeuroSyncEditorFields.AddField(typeof(float2), nameof(float2.x));
+            NeuroSyncEditorFields.AddField(typeof(float2), nameof(float2.y));
+            NeuroSyncEditorFields.SetInline(typeof(float2), showFieldNames: true);
         }
     }
 }
 ```
 
-`NeuroSyncEditorFields.AddField` / `.AddProperty` are `[Conditional("UNITY_EDITOR")]`, so both the calls
+`NeuroSyncEditorFields.AddField` / `.AddProperty` / `.SetInline` are `[Conditional("UNITY_EDITOR")]`, so both the calls
 and their arguments vanish from player builds. `NeuroSyncTypes.Register` also takes an explicit
 `FieldSizeType` (`VarInt`, `Fixed32`, `Fixed64`, `Length`, `Child`) for single-value types, and
 `RegisterEqualityCheck<T>` customises default-value comparison. `RegisterSubClass<TBase,TSub>(tag, d)`
@@ -135,7 +136,7 @@ usable default implementation.
 
 | Define | Effect |
 |---|---|
-| `NEURO_FAST_CODEGEN` | Only types with a class-level `[Neuro(#)]`/`[NeuroGlobalType(#)]` are considered, in assemblies marked `[assembly: Neuro]`. Much faster compiles in large projects; missing attributes become `Neuro406` errors rather than silent runtime failures. (`NEURO_SELECTIVE_ASSEMBLIES` is the old name and still works.) |
+| `NEURO_FAST_CODEGEN` | Only types with a class-level `[Neuro]`/`[Neuro(#)]`/`[NeuroGlobalType(#)]` are considered, in assemblies marked `[assembly: Neuro]` (bare `[Neuro]` is enough on a root type; subtypes need their number). Much faster compiles in large projects; missing attributes become `Neuro406` errors rather than silent runtime failures. (`NEURO_SELECTIVE_ASSEMBLIES` is the old name and still works.) |
 | `NEURO_DISABLE_STATIC_REFERENCES` | No static reference resolution. `GetValue()` is gone; you must pass `GetValue(references)`. |
 | `NEURO_THREAD_STATIC_STATIC_REFERENCES` | `NeuroReferences.Default` becomes `[ThreadStatic]`; `GetValue()` resolves per thread. |
 

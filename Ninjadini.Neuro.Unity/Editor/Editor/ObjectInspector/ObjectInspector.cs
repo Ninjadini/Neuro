@@ -24,6 +24,10 @@ namespace Ninjadini.Neuro.Editor
         protected VisualElement fieldsParent;
         bool? openFoldout;
         VisualElement _horizontalRow;
+        /// True while drawing a type marked [InspectorStyle(Inline = true)] as a single row, see IsInlineType.
+        bool _inline;
+        /// With _inline: fields keep their own names as small labels, see InspectorStyleAttribute.InlineFieldNames.
+        bool _inlineFieldNames;
 
         public ObjectInspector()
         {
@@ -88,7 +92,9 @@ namespace Ninjadini.Neuro.Editor
             existsToggle = null;
             foldout = null;
             var obj = data.getter();
-            if (data.setter != null && (data.Controller?.ShouldAddFoldOut(data, obj) ?? true))
+            _inline = obj != null && IsInlineType(obj.GetType(), out _inlineFieldNames);
+            style.flexDirection = _inline ? FlexDirection.Row : FlexDirection.Column;
+            if (!_inline && data.setter != null && (data.Controller?.ShouldAddFoldOut(data, obj) ?? true))
             {
                 foldout = new Foldout();
                 if (!string.IsNullOrEmpty(data.path))
@@ -243,6 +249,11 @@ namespace Ninjadini.Neuro.Editor
                     continue;
                 }
                 var fieldData = CreateDataForField(data, obj, fieldInfo);
+                if (_inline)
+                {
+                    AddInlineField(fieldData, fieldInfo);
+                    continue;
+                }
                 CreateFieldHeader(fieldData, ref container);
                 var element = ObjectInspectorFields.CreateFieldWithStandardStyle(fieldData);
                 if (element != null)
@@ -307,6 +318,87 @@ namespace Ninjadini.Neuro.Editor
                     messageType = HelpBoxMessageType.Warning
                 });
             }
+        }
+
+        /// One field of an [InspectorStyle(Inline = true)] type. A field without a Horizontal width grows to
+        /// share the remaining space. Without InlineFieldNames the first field carries the row's name and the
+        /// rest are unlabelled; with it the row's name is its own leading label and every field keeps its
+        /// name, shrunk to the text - "Size  x [ ] y [ ]".
+        void AddInlineField(Data fieldData, FieldInfo fieldInfo)
+        {
+            var isFirst = fieldsParent.childCount == 0;
+            if (_inlineFieldNames)
+            {
+                if (isFirst && !string.IsNullOrEmpty(data.name))
+                {
+                    var rowLabel = ObjectInspectorFields.AddFieldNameLabel(fieldsParent, data.name);
+                    if (int.TryParse(data.name, out _))
+                    {
+                        CompactIndexLabel(rowLabel);
+                    }
+                }
+            }
+            else
+            {
+                fieldData.name = isFirst ? data.name : "";
+            }
+            var element = ObjectInspectorFields.CreateField(fieldData);
+            if (element == null)
+            {
+                return;
+            }
+            element.userData = fieldInfo;
+            ObjectInspectorFields.ApplyTooltip(element, fieldInfo, fieldInfo.FieldType);
+            ApplyStyles(fieldData, element);
+            if (!(ObjectInspectorFields.GetVisualStyle(fieldInfo)?.Horizontal > 0))
+            {
+                element.style.flexGrow = 1;
+                element.style.flexShrink = 1;
+            }
+            var label = element.Q<Label>(className: BaseField<int>.labelUssClassName);
+            if (label != null)
+            {
+                if (_inlineFieldNames)
+                {
+                    // the stock label column is as wide as a full field name; this one is just "x".
+                    label.style.minWidth = 0;
+                    label.style.flexBasis = StyleKeyword.Auto;
+                    label.style.marginRight = 4;
+                }
+                else if (isFirst && int.TryParse(fieldData.name, out _))
+                {
+                    CompactIndexLabel(label);
+                }
+            }
+            fieldsParent.Add(element);
+        }
+
+        /// In a list an inline row's name is just its index, and the stock label column - sized for a real
+        /// field name - would leave a wide gap before the first field. Shrink it to the digits.
+        static void CompactIndexLabel(Label label)
+        {
+            label.style.minWidth = InlineIndexLabelWidth;
+            label.style.width = InlineIndexLabelWidth;
+            label.style.marginRight = 4;
+            label.style.unityTextAlign = TextAnchor.MiddleRight;
+        }
+
+        const float InlineIndexLabelWidth = 24;
+
+        /// Drawn as a single row of its fields: marked [InspectorStyle(Inline = true)], or registered through
+        /// NeuroSyncEditorFields.SetInline for a type that cannot be attributed.
+        public static bool IsInlineType(Type type) => IsInlineType(type, out _);
+
+        /// <paramref name="showFieldNames"/> is InspectorStyleAttribute.InlineFieldNames for the type.
+        public static bool IsInlineType(Type type, out bool showFieldNames)
+        {
+            if (NeuroCustomEditorFieldRegistry.IsRegisteredInline(type, out showFieldNames))
+            {
+                return true;
+            }
+            var style = type.GetCustomAttribute<InspectorStyleAttribute>(true);
+            showFieldNames = style?.InlineFieldNames ?? false;
+            return style?.Inline ?? false;
         }
 
         static void ApplyStyles(Data data, VisualElement element)
@@ -517,6 +609,13 @@ namespace Ninjadini.Neuro.Editor
                 var newObj = data.getter();
                 if (newObj != drawnObj)
                 {
+                    if (_inline != (newObj != null && IsInlineType(newObj.GetType(), out _)))
+                    {
+                        // An inline class went null, or a null one was created: the row and the foldout
+                        // are different structures, so rebuild from the top.
+                        Draw(data);
+                        return;
+                    }
                     if (!data.type.IsValueType || (newObj != null) != (drawnObj != null))
                     {
                         RedrawFields(newObj);

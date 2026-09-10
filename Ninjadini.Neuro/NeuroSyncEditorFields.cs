@@ -10,8 +10,11 @@ namespace Ninjadini.Neuro
     /// INeuroCustomTypesRegistryHook). The actual editor-side wiring is plugged in by the editor assembly
     /// via <see cref="SetEditorHook"/>; runtime calls made before the hook is set are queued and replayed.
     ///
-    /// AddField/AddProperty are marked [Conditional("UNITY_EDITOR")], so calls to them are stripped from
-    /// player builds at compile time — there is no runtime cost outside the editor.
+    /// <see cref="SetInline"/> does the same for the inline (single row) layout that
+    /// [InspectorStyle(Inline = true)] gives a type you own.
+    ///
+    /// AddField/AddProperty/SetInline are marked [Conditional("UNITY_EDITOR")], so calls to them are stripped
+    /// from player builds at compile time — there is no runtime cost outside the editor.
     /// </summary>
 #if UNITY_6000_5_OR_NEWER
     [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
@@ -22,6 +25,8 @@ namespace Ninjadini.Neuro
         public delegate void EditorRegisterDelegate(Type type, string memberName, bool isProperty);
         static List<(Type type, string name, bool isProperty)> _pending;
         static EditorRegisterDelegate _hook;
+        static List<(Type type, bool fieldNames)> _pendingInline;
+        static Action<Type, bool> _inlineHook;
 #endif
 
         [Conditional("UNITY_EDITOR")]
@@ -29,6 +34,26 @@ namespace Ninjadini.Neuro
 
         [Conditional("UNITY_EDITOR")]
         public static void AddProperty(Type type, string propertyName) => Add(type, propertyName, true);
+
+        /// <summary>
+        /// Draw this type as a single row of its fields instead of a foldout, exactly as if it carried
+        /// [InspectorStyle(Inline = true)] - for a type you cannot attribute (Unity's, a package's).
+        /// <paramref name="showFieldNames"/> is InspectorStyleAttribute.InlineFieldNames: keep each field's
+        /// name as a small label ("x [ ] y [ ]"), rather than the first field taking the row's name.
+        /// </summary>
+        [Conditional("UNITY_EDITOR")]
+        public static void SetInline(Type type, bool showFieldNames = false)
+        {
+#if UNITY_EDITOR
+            if (type == null) throw new ArgumentNullException(nameof(type));
+            if (_inlineHook != null)
+            {
+                _inlineHook(type, showFieldNames);
+                return;
+            }
+            (_pendingInline ??= new List<(Type, bool)>()).Add((type, showFieldNames));
+#endif
+        }
 
         static void Add(Type type, string name, bool isProperty)
         {
@@ -58,6 +83,21 @@ namespace Ninjadini.Neuro
                 hook(entry.type, entry.name, entry.isProperty);
             }
             _pending = null;
+        }
+
+        /// <summary>
+        /// Called by the editor assembly to install the sink for <see cref="SetInline"/>.
+        /// Any types registered before this call are flushed to the hook immediately.
+        /// </summary>
+        public static void SetInlineEditorHook(Action<Type, bool> hook)
+        {
+            _inlineHook = hook;
+            if (hook == null || _pendingInline == null) return;
+            foreach (var entry in _pendingInline)
+            {
+                hook(entry.type, entry.fieldNames);
+            }
+            _pendingInline = null;
         }
 #endif
     }

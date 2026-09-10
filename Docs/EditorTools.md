@@ -11,6 +11,7 @@
 | **Reload + Read all data** | Same, then deserialises everything and reports how long it took - a quick way to catch a broken data file. |
 | **Save Data To Resources** | Bake the data to the binary resource used in builds. Runs automatically at build time. |
 | **Save Resources data as JSON** | The reverse - writes the baked binary back out as JSON. |
+| **Migrate Renamed Field...** | Moves data from a field's old json name onto its new one after you rename it in code - see below. |
 | **Migrate RefIds to base36...** | One time migration, see [GettingStarted](GettingStarted.md#migrating-data-from-before-base36-refids). |
 | **Bake AutoTypesRegister Script** | Writes the generated types register out as a normal script. Only needed if you turn the automatic version off. |
 
@@ -30,6 +31,37 @@ Set *Format* to JSON or Binary to match. For data written with `WriteGlobalTyped
 You can add your own sources by subclassing `NeuroContentDebugger.ContentProvider` - the demo project
 does this in
 [CraftClickerGameSaveContentProvider.cs](https://github.com/Ninjadini/NeuroExampleProject/blob/main/Assets/Scripts/CraftClicker/Editor/CraftClickerGameSaveContentProvider.cs).
+
+## Migrate Renamed Field
+
+JSON is keyed by field *name*, binary by *tag*. So renaming a `[Neuro]` field costs nothing in binary,
+but every JSON data file still holds the old key - which the reader does not recognise any more, and the
+value is quietly dropped the next time it loads. This tool renames the key in the data files so the value
+comes back.
+
+1. Pick the **class**.
+2. Pick the field from the list of that class's `[Neuro]` fields - this is where the value should end up.
+3. Type the **old field name**, the one still in the JSON.
+4. **Preview** lists exactly what would change. **Migrate** does it.
+
+Only the key is rewritten, in place, at its exact position in the file - formatting, field order and
+everything else are left alone, so the diff shows nothing but the renamed keys.
+
+The data files are walked with your C# types alongside them, so every JSON object knows which class it
+belongs to, `-subType` and all. That means:
+
+- the rename is scoped to the class you picked - a field of the same name on some other class is not touched,
+- it finds the class wherever it appears, nested inside other objects, in lists and in dictionaries,
+- an object that already has the new field is left alone rather than ending up with both, and reported.
+
+Each file is read back before it is written, and left untouched if it would not parse.
+
+You can drive the same thing from a script:
+
+```csharp
+var result = new NeuroJsonFieldRenamer().Rename(typeof(TowerAttack), "Damage", "Dmg", dryRun: false);
+// result.Renamed / .Skipped / .ChangedFiles / .Problems
+```
 
 ## Project Settings > Ninjadini ❖ Neuro
 

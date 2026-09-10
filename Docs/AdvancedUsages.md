@@ -302,11 +302,12 @@ is worth looking at properly.
 
 ### The extra rule
 Normally a type takes part in Neuro if the class *or any of its fields* is attributed. Under fast code gen only
-the class level attribute counts:
+the class level attribute counts. A root type's tag is never written, so a bare `[Neuro]` is enough there;
+only subtypes need a number:
 
 ```csharp
 // Fine, the class says what it is.
-[Neuro(1)]
+[Neuro]
 public partial class Item
 {
     [Neuro(1)] public int Id;
@@ -320,7 +321,7 @@ public partial class Item
 ```
 
 `[NeuroGlobalType(#)]` counts as opting in too, and `INeuroCustomTypesRegistryHook` implementations are still
-found without any attribute. A subclass of a Neuro class still has to carry its own `[Neuro(#)]`, same as always.
+found without any attribute. A subclass of a Neuro class still has to carry its own numbered `[Neuro(#)]`, same as always.
 
 If you forget one you get a compile error pointing at the type, not a silent "type is not registered" at runtime.
 

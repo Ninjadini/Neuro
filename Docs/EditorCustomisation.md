@@ -25,7 +25,7 @@ public class MyOtherReferencableObject : Referencable, INeuroRefDropDownIconCust
 
 ### Basic editor customisation
 ```
-[DisplayName("Test > AnotherReferencableObject")] // < The type name used in editor dropdown list
+[DisplayName("Test / AnotherReferencableObject")] // < The type name used in editor dropdown list - `/` nests it under a "Test" header
 [ToolTip("Tooltip for this class... Shows up when you mouse over any of the elements of this clas (but not if you are in play mode)")] // You can also use [Description()] 
 public class AnotherReferencableObject : Referencable
 {
@@ -41,6 +41,24 @@ public class AnotherReferencableObject : Referencable
     [Neuro(2)] public string Value1;
     [Neuro(3)] public string Value2;
 }
+```
+
+### One-line structs
+A small struct that is mostly used in lists reads better as one row than as a foldout per entry.
+```
+[InspectorStyle(Inline = true)]   // draws as:  0  [Stat ▾] [Value]   - no foldout, wherever it appears
+public struct StatValue
+{
+    [Neuro(1)] public Reference<Stat> Stat;                          // first field keeps the row's name
+    [InspectorStyle(horizontal: 90)] [Neuro(2)] public long Value;   // fixed width; without it, shares the row
+}
+
+// Vectors want every field's letter kept, not just the row's name:  Size  x [ ] y [ ]
+[InspectorStyle(Inline = true, InlineFieldNames = true)]
+public struct Size2 { [Neuro(1)] public int x; [Neuro(2)] public int y; }
+
+// A struct you can't attribute (Unity's, a package's) - alongside its NeuroSyncEditorFields.AddField calls:
+NeuroSyncEditorFields.SetInline(typeof(float2), showFieldNames: true);
 ```
 
 ### Full editor customisation

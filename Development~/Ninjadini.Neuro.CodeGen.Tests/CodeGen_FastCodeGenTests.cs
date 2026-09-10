@@ -5,7 +5,7 @@ namespace Ninjadini.Neuro.CodeGen.Tests;
 /// <summary>
 /// NEURO_FAST_CODEGEN narrows what the code gen has to look at, so that it can decide from the source text
 /// alone whether a type is worth binding. Two rules make that possible:
-/// the assembly opts in with [assembly:Neuro(0)], and every Neuro type opts in with a class level [Neuro(#)].
+/// the assembly opts in with [assembly:Neuro(0)], and every Neuro type opts in with a class level [Neuro] (numbered on subtypes).
 /// </summary>
 public class CodeGen_FastCodeGenTests
 {
@@ -36,7 +36,7 @@ public partial class Data
     [Neuro(1)] public int Id;
 }
 ";
-        TestUtils.GenerateSourceExpectingError(src, "no class level [Neuro(#)] attribute", Define);
+        TestUtils.GenerateSourceExpectingError(src, "no class level [Neuro] attribute", Define);
     }
 
     [Test]
