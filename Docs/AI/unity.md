@@ -261,7 +261,8 @@ a "Core" header like a Unity menu path; it is ignored on a field),
 `[Range(min, max)]` (draws `int`/`uint`/`long`/`float`/`double` as a slider with a number box, like
 Unity's own inspector), `[Min]` (same numeric types - clamps on edit; ignored next to a `[Range]`),
 `[Space]`, `[HideInInspector]` (field or property), `[InspectorStyle]` (`spaceBefore` / `spaceAfter`;
-`horizontal: px` puts neighbouring fields on one row). Still **not** read - they
+`horizontal: px` puts neighbouring fields on one row, `HideName = true` drops a field's name label - for a
+horizontal row of a dropdown, an enum and a number that read fine on their own). Still **not** read - they
 compile but do nothing here: `[Delayed]`, `[InspectorName]`, `[ColorUsage]`, `[GradientUsage]`,
 `[NonReorderable]`, `[ContextMenuItem]`.
 

@@ -255,11 +255,13 @@ namespace Ninjadini.Neuro.Editor
                     continue;
                 }
                 CreateFieldHeader(fieldData, ref container);
+                ApplyHideName(ref fieldData);
                 var element = ObjectInspectorFields.CreateFieldWithStandardStyle(fieldData);
                 if (element != null)
                 {
                     element.userData = fieldInfo;
                     ObjectInspectorFields.ApplyTooltip(element, fieldInfo, fieldInfo.FieldType);
+                    ApplyHiddenNameTooltip(fieldData, element);
                     ApplyStyles(fieldData, element);
                     ResolveContainer(container, fieldData).Add(element);
                 }
@@ -299,11 +301,13 @@ namespace Ninjadini.Neuro.Editor
                         path = data.path + ">" + propInfo.Name
                     };
                     CreateFieldHeader(fieldData, ref container);
+                    ApplyHideName(ref fieldData);
                     var element = ObjectInspectorFields.CreateField(fieldData);
                     if (element != null)
                     {
                         element.userData = propInfo;
                         ObjectInspectorFields.ApplyTooltip(element, propInfo, propInfo.PropertyType);
+                        ApplyHiddenNameTooltip(fieldData, element);
                         ApplyStyles(fieldData, element);
                         ResolveContainer(container, fieldData).Add(element);
                     }
@@ -432,6 +436,25 @@ namespace Ninjadini.Neuro.Editor
                 }
             }
             data.Controller?.ApplyStyle(data, element);
+        }
+
+        /// InspectorStyleAttribute.HideName: the field is created with no name so no label column is made at
+        /// all, rather than hiding one after the fact.
+        static void ApplyHideName(ref Data fieldData)
+        {
+            if (ObjectInspectorFields.GetVisualStyle(fieldData.MemberInfo)?.HideName ?? false)
+            {
+                fieldData.name = "";
+            }
+        }
+
+        /// A field drawn without its name still says what it is on hover, unless a [Tooltip] already does.
+        static void ApplyHiddenNameTooltip(Data fieldData, VisualElement element)
+        {
+            if (string.IsNullOrEmpty(fieldData.name) && string.IsNullOrEmpty(element.tooltip) && fieldData.MemberInfo != null)
+            {
+                element.tooltip = fieldData.MemberInfo.Name;
+            }
         }
 
         /// Fields with InspectorStyleAttribute.Horizontal set are laid out next to each other on a shared row,
