@@ -258,12 +258,6 @@ namespace Ninjadini.Neuro.Editor
             var newObj = obj as IReferencable;
             if (newObj != null)
             {
-                if (selectedItem.Value.RefId != newObj.RefId)
-                {
-                    NeuroObjectInspector.ShowRefIdChangedError(selectedItem.Value.RefId, newObj.RefId);
-                    debugDisplay.Refresh();
-                    return;
-                }
                 selectedItem.Value = newObj;
                 dataProvider.SaveData(newObj);
                 NeuroEditorUndoRedos.RecordChange(selectedItem, "Edit", EditorWindow);

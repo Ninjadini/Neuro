@@ -65,6 +65,11 @@ spelling. Hover the `RefId` field in the editor to see the plain number, or turn
 free, repoints every `Reference<>` in the data, renames the file and saves everything it touched. Undo
 moves the id back and repoints the other items again.
 
+The RefId box in `NeuroEditorItemElement` is the one path that moves an id (`TryChangeRefId`). If a custom
+drawer writes `RefId` on the drawn object directly, the item element notices on the next value change,
+puts the old id back and routes the request through that same confirm-and-rename flow, so the table,
+the file name and undo never disagree with the object. `NeuroObjectInspector` itself has no id guard.
+
 The confirmation offers `Change & update assets` as well as `Change data only`. The asset sweep walks
 every prefab, ScriptableObject and scene under `Assets/` for `Reference<>` fields holding the old id and
 repoints those too, saving what it changed. It runs after the data change is committed, is **not**

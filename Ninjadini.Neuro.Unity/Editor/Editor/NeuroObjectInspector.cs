@@ -14,18 +14,13 @@ namespace Ninjadini.Neuro.Editor
 #endif
     public class NeuroObjectInspector : ObjectInspector, ObjectInspector.IController
     {
-        public bool AllowIdChange;
         public readonly NeuroReferences References;
         public readonly NeuroEditorHistory _history;
 
         public Action AnyValueChanged;
 
         ICustomNeuroObjectInspectorController neuroController;
-        NeuroBytesWriter writer;
-        NeuroBytesReader reader;
-
         object drawnObj;
-        uint idBefore;
 
         static readonly Type NeuroAttribute = typeof(NeuroAttribute);
 
@@ -41,25 +36,7 @@ namespace Ninjadini.Neuro.Editor
         {
             neuroController = SharedNeuroController;
             drawData.Controller = this;
-            if (reader == null)
-            {
-                writer = new NeuroBytesWriter();
-                reader = new NeuroBytesReader();
-            }
-
             drawnObj = drawData.getter();
-            if (drawnObj is IReferencable referencable)
-            {
-                idBefore = referencable.RefId;
-                try
-                {
-                    writer.WriteObject((object)drawnObj);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogWarning(e);
-                }
-            }
 
             base.Draw(drawData);
             
@@ -171,30 +148,6 @@ namespace Ninjadini.Neuro.Editor
 
         void IController.OnValueChanged(object holderObject)
         {
-            if (drawnObj is IReferencable referencable)
-            {
-                var idNow = referencable.RefId;
-                if (!AllowIdChange && idBefore != idNow)
-                {
-                    ShowRefIdChangedError(idBefore, idNow);
-                    reader.Read(writer.GetCurrentBytesChunk(), ref drawnObj);
-                    // the fields still show the rejected value until they are told the object went back.
-                    // Deferred by a tick because this is running inside the changed field's own callback,
-                    // and redrawing clears the element the event is being dispatched to.
-                    schedule.Execute(ForceRedraw);
-                    return;
-                }
-                try
-                {
-                    writer.WriteObject(drawnObj);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogWarning(e);
-                }
-                idBefore = idNow;
-            }
-
             AnyValueChanged?.Invoke();
             neuroController.OnValueChanged(holderObject);
         }
@@ -209,11 +162,6 @@ namespace Ninjadini.Neuro.Editor
         }
 
         NeuroEditorHistory IController.History => _history;
-
-        public static void ShowRefIdChangedError(uint idBefore, uint idAfter)
-        {
-            EditorUtility.DisplayDialog("", $"RefId was changed from {NeuroEditorUtils.DisplayRefId(idBefore)} to {NeuroEditorUtils.DisplayRefId(idAfter)} but this is not allowed (yet).", "OK");
-        }
 
         public static Type[] GetPossibleCreationTypesOf(Type type)
         {
