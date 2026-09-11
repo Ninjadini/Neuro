@@ -14,6 +14,9 @@ namespace Ninjadini.Neuro.Editor
             public IController Controller;
             public MemberInfo MemberInfo;
             public string path;
+            /// The nearest enclosing member's NeuroReferenceFilterAttributes, carried down to nested
+            /// references (list elements, struct fields). Null when nothing above declared one.
+            public NeuroReferenceFilterAttribute[] InheritedFilters;
 
             public object GetValue()
             {

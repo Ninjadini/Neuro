@@ -13,8 +13,11 @@ namespace Ninjadini.Neuro
     /// "(filtered out)", and can still be reselected or cleared. Such a value is reported as a content
     /// validation problem instead, in the editor's Tests section and by <c>NeuroContentTestsRunner</c>;
     /// set <see cref="Validate"/> to false for a filter that is only a convenience.
-    /// <para>The attribute applies to the field it sits on. It is not inherited by references nested in a
-    /// struct or list element under that field.</para>
+    /// <para>It also reaches down: put it on a list, struct or class field and every reference nested under
+    /// that field picks it up - each element of a <c>List&lt;StatValue&gt;</c>, say - unless a member closer to
+    /// the reference carries its own filter attribute, which then replaces it entirely (nearest wins, no
+    /// merging). Override <see cref="AppliesTo"/> so a filter meant for one referencable type is ignored by
+    /// references to other types that happen to share the container.</para>
     /// </remarks>
     /// <example>
     /// <code>
@@ -39,5 +42,12 @@ namespace Ninjadini.Neuro
 
         /// <summary>Return true to list <paramref name="item"/> in the dropdown.</summary>
         public abstract bool Include(IReferencable item, NeuroReferences references);
+
+        /// <summary>
+        /// Whether this filter concerns references to <paramref name="referencableType"/> (the root type of the
+        /// <c>Reference&lt;T&gt;</c>). Matters when the attribute sits on a container and is inherited by several
+        /// kinds of reference beneath it; a filter that does not apply is simply skipped. Default: applies to all.
+        /// </summary>
+        public virtual bool AppliesTo(Type referencableType) => true;
     }
 }

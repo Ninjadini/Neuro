@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using Ninjadini.Neuro;
 using Ninjadini.Neuro.Utils;
 using Ninjadini.Neuro.Editor;
@@ -67,9 +66,10 @@ public class StandardNeuroValidators
         }
     }
 
-    /// Reports a reference whose value is rejected by a <see cref="NeuroReferenceFilterAttribute"/> on its
-    /// field, unless that attribute has Validate = false. Only direct fields and properties are covered, the
-    /// same scope the dropdown filter has: a reference inside a list element has no field of its own.
+    /// Reports a reference whose value is rejected by a <see cref="NeuroReferenceFilterAttribute"/>, unless that
+    /// attribute has Validate = false. Uses the same rule as the dropdown: the nearest member from the reference
+    /// outwards that carries filter attributes decides, so an attribute on a list or struct field covers every
+    /// reference nested beneath it.
     public class NeuroReferenceFilterValidator : INeuroContentValidator<INeuroReference>
     {
         public bool Enabled = true;
@@ -87,28 +87,20 @@ public class StandardNeuroValidators
             {
                 return;
             }
-            var self = context.GetParentInStack(0);
-            var parent = context.GetParentInStack(1);
-            if (self == null || parent?.Object == null || self.Value.ListIndex.HasValue || string.IsNullOrEmpty(self.Value.Name))
-            {
-                return;
-            }
-            var member = FindMember(parent.Value.Object.GetType(), self.Value.Name);
-            if (member == null)
+            var filters = NeuroReferenceFilters.Applicable(NeuroReferenceFilters.FromStack(context.Stack), type);
+            if (filters == null)
             {
                 return;
             }
             IReferencable item = null;
-            var itemLoaded = false;
-            foreach (var attribute in member.GetCustomAttributes<NeuroReferenceFilterAttribute>(true))
+            foreach (var attribute in filters)
             {
                 if (!attribute.Validate)
                 {
                     continue;
                 }
-                if (!itemLoaded)
+                if (item == null)
                 {
-                    itemLoaded = true;
                     item = context.References.GetTable(type)?.Get(refId);
                     if (item == null)
                     {
@@ -117,33 +109,10 @@ public class StandardNeuroValidators
                 }
                 if (!attribute.Include(item, context.References))
                 {
-                    var attributeName = attribute.GetType().Name;
-                    if (attributeName.EndsWith("Attribute"))
-                    {
-                        attributeName = attributeName.Substring(0, attributeName.Length - "Attribute".Length);
-                    }
+                    var attributeName = NeuroReferenceFilters.TrimAttributeSuffix(attribute.GetType().Name);
                     context.AddProblem($"{NeuroEditorUtils.DisplayIdAndName(item)} is not allowed here by [{attributeName}]");
                 }
             }
-        }
-
-        static MemberInfo FindMember(Type type, string name)
-        {
-            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            for (var t = type; t != null; t = t.BaseType)
-            {
-                var field = t.GetField(name, flags | BindingFlags.DeclaredOnly);
-                if (field != null)
-                {
-                    return field;
-                }
-                var property = t.GetProperty(name, flags | BindingFlags.DeclaredOnly);
-                if (property != null)
-                {
-                    return property;
-                }
-            }
-            return null;
         }
     }
 }

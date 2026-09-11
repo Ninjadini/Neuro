@@ -298,6 +298,7 @@ namespace Ninjadini.Neuro.Editor
                             : null,
                         Controller = data.Controller,
                         MemberInfo = propInfo,
+                        InheritedFilters = NeuroReferenceFilters.GetOwn(propInfo) ?? data.InheritedFilters,
                         path = data.path + ">" + propInfo.Name
                     };
                     CreateFieldHeader(fieldData, ref container);
@@ -495,6 +496,7 @@ namespace Ninjadini.Neuro.Editor
                 },
                 Controller = data.Controller,
                 MemberInfo = fieldInfo,
+                InheritedFilters = NeuroReferenceFilters.GetOwn(fieldInfo) ?? data.InheritedFilters,
                 path = data.path + ">" + fieldInfo.Name
             };
         }

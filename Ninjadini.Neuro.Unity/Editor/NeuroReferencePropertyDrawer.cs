@@ -22,7 +22,7 @@ namespace Ninjadini.Neuro.Editor
             var dropdown = new NeuroReferencablesDropdownField(references);
             dropdown.label = string.IsNullOrEmpty(preferredLabel) ? field.Name : preferredLabel;
             dropdown.IncludeNullOption = true;
-            dropdown.SetFilterFrom(field);
+            dropdown.SetFilters(NeuroReferenceFilters.FromSerializedProperty(property), type);
             dropdown.RegisterValueChangedCallback(delegate(ChangeEvent<uint> evt)
             {
                 refIdProp.uintValue = evt.newValue;
@@ -63,23 +63,12 @@ namespace Ninjadini.Neuro.Editor
         List<string> guiNames = new List<string>();
         List<IReferencable> guiItems = new List<IReferencable>();
 
-        bool PassesFilter(IReferencable item, NeuroReferences references)
+        static Func<IReferencable, bool> FilterFor(SerializedProperty property, Type refType, NeuroReferences references)
         {
-            var field = fieldInfo;
-            if (field == null)
-            {
-                return true;
-            }
-            foreach (var attribute in field.GetCustomAttributes<NeuroReferenceFilterAttribute>(true))
-            {
-                if (!attribute.Include(item, references))
-                {
-                    return false;
-                }
-            }
-            return true;
+            var filters = NeuroReferenceFilters.Applicable(NeuroReferenceFilters.FromSerializedProperty(property), refType);
+            return NeuroReferenceFilters.ToPredicate(filters, references);
         }
-        
+
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             var type = FindRefType();
@@ -100,10 +89,11 @@ namespace Ninjadini.Neuro.Editor
             
             guiNames.Add("0 : null");
             var prevIndex = 0;
+            var filter = FilterFor(property, type, references);
             foreach (var referencable in table.SelectAll())
             {
                 var isCurrent = refId == referencable.RefId;
-                var passes = PassesFilter(referencable, references);
+                var passes = filter == null || filter(referencable);
                 if (!passes && !isCurrent)
                 {
                     continue;

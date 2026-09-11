@@ -42,27 +42,24 @@ namespace Ninjadini.Neuro.Editor
 
         /// <summary>
         /// Installs <see cref="Filter"/> from the <see cref="NeuroReferenceFilterAttribute"/>s on a field or
-        /// property, if it has any. Several attributes must all accept an item. Returns true if one was found.
+        /// property, if it has any. Returns true if one was found. Does not look at enclosing members; the
+        /// Neuro editor resolves those itself and calls <see cref="SetFilters"/>.
         /// </summary>
-        public bool SetFilterFrom(MemberInfo memberInfo)
+        public bool SetFilterFrom(MemberInfo memberInfo, Type refType = null)
         {
-            var attributes = memberInfo?.GetCustomAttributes<NeuroReferenceFilterAttribute>(true)?.ToArray();
-            if (attributes == null || attributes.Length == 0)
-            {
-                return false;
-            }
-            var refs = references;
-            FilterName = string.Join(" ", attributes.Select(a => "[" + TrimAttributeSuffix(a.GetType().Name) + "]"));
-            Filter = attributes.Length == 1
-                ? item => attributes[0].Include(item, refs)
-                : item => attributes.All(a => a.Include(item, refs));
-            return true;
+            return SetFilters(NeuroReferenceFilters.GetOwn(memberInfo), refType);
         }
 
-        static string TrimAttributeSuffix(string name)
+        /// <summary>
+        /// Installs <see cref="Filter"/> from already resolved attributes, keeping only those that apply to
+        /// <paramref name="refType"/> (when given). Several must all accept an item. Returns true if any applied.
+        /// </summary>
+        public bool SetFilters(IEnumerable<NeuroReferenceFilterAttribute> filters, Type refType = null)
         {
-            const string suffix = "Attribute";
-            return name.EndsWith(suffix) && name.Length > suffix.Length ? name.Substring(0, name.Length - suffix.Length) : name;
+            var applicable = NeuroReferenceFilters.Applicable(filters, refType);
+            Filter = NeuroReferenceFilters.ToPredicate(applicable, references);
+            FilterName = NeuroReferenceFilters.DisplayName(applicable);
+            return Filter != null;
         }
 
         string BuildFooterText()

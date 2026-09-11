@@ -40,8 +40,9 @@ namespace Ninjadini.Neuro.Editor
             dropdown = new NeuroReferencablesDropdownField(references);
             dropdown.IncludeNullOption = true;
             dropdown.label = data.name;
-            dropdown.SetFilterFrom(data.MemberInfo);
-            dropdown.SetValue(NeuroReferences.GetRootReferencable(elementType), GetRefId());
+            var rootType = NeuroReferences.GetRootReferencable(elementType);
+            dropdown.SetFilters(data.InheritedFilters ?? NeuroReferenceFilters.GetOwn(data.MemberInfo), rootType);
+            dropdown.SetValue(rootType, GetRefId());
             dropdown.RegisterValueChangedCallback(OnDropDownChanged);
 
             Add(dropdown);

@@ -294,9 +294,17 @@ the attribute on the `Reference<T>` field or property. Both the Neuro Editor and
 one field must all accept an item. The dropdown never restricts the data; instead a stored value the
 filter rejects is a content validation problem (`NeuroReferenceFilterValidator`, built in), so it shows
 red in the editor's Tests section and fails `NeuroContentTestsRunner`. Pass `Validate = false` for a
-filter that is only a convenience. It applies to the field it sits on and is **not** inherited by
-references nested in a struct or list element beneath it, for the dropdown or the validator.
-The dropdown says when it is narrowed: a footer reads "Showing 32 of 50, filtered by [ArmourOnly]".
+filter that is only a convenience. The dropdown says when it is narrowed: a footer reads
+"Showing 32 of 50, filtered by [ArmourOnly]".
+
+**It reaches down.** Put it on a list, struct or class field and every reference nested under that field
+inherits it - each `Stat` inside a `List<StatValue>`, say - which is how a shared struct gets a different
+filter per place it is used. The nearest member on the way out from the reference that carries any filter
+attribute wins outright (no merging with outer ones); collection elements have no member of their own and
+fall through to the collection's field. Override `AppliesTo(Type)` so a filter for one referencable type
+is skipped by other reference types sharing the container - a `Reference<LocText>` next to the stat.
+The Unity inspector drawer follows the same rule along the serialized property path, and so does the
+validator, which reports the path (`Values[3].Property: #1e:damage is not allowed here by [ArmourOnly]`).
 
 **Add a filter whenever you declare a `Reference<T>` field whose valid targets are a known subset** -
 a category, a slot, a tag, a subtype - rather than leaving the dropdown open and relying on a comment.
@@ -308,10 +316,12 @@ public class ArmourOnlyAttribute : NeuroReferenceFilterAttribute
 {
     public override bool Include(IReferencable item, NeuroReferences refs)
         => item is Item i && i.Slot == ItemSlot.Armour;
+    public override bool AppliesTo(Type refType) => typeof(Item).IsAssignableFrom(refType);
 }
 
 [ArmourOnly] [Neuro(1)] public Reference<Item> Chest;
 [ArmourOnly(Validate = false)] [Neuro(2)] public Reference<Item> Preferred;   // dropdown only
+[ArmourOnly] [Neuro(3)] public List<ItemStack> Wardrobe;   // every ItemStack.Item inside inherits it
 ```
 
 Reference dropdown labels/icons: implement `INeuroRefDropDownCustomizable` /
