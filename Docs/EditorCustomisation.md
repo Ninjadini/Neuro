@@ -63,6 +63,9 @@ public class AnotherReferencableObject : Referencable
     [Header("> A header with fold out")] // < if you start the header text with "> ", it'll do a fold out
     [Neuro(2)] public string Value1;
     [Neuro(3)] public string Value2;
+
+    [ContextMenu("Clear values")] // < right click the object in the editor to run it, just like in unity
+    void ClearValues() { Value1 = Value2 = null; } // saved + undoable afterwards
 }
 ```
 

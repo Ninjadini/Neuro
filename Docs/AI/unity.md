@@ -266,6 +266,19 @@ horizontal row of a dropdown, an enum and a number that read fine on their own).
 compile but do nothing here: `[Delayed]`, `[InspectorName]`, `[ColorUsage]`, `[GradientUsage]`,
 `[NonReorderable]`, `[ContextMenuItem]`.
 
+**`[ContextMenu]` methods** work as they do on a component: an instance method with no parameters marked
+`[ContextMenu("Path")]` shows when its object is right-clicked - its foldout header, its fields' labels,
+the space around them (a text box keeps its own cut / copy / paste). This works in any `ObjectInspector`,
+not only the Neuro Editor. `/` in the path nests, `priority` orders, base classes' methods are included and
+an override shows once. `[ContextMenu("Path", true)]` on a `bool` method with the same path greys the item
+out when it returns false. The nearest object's items are at the top level and every enclosing object's go
+under a submenu named after its type, so the root item's methods are reachable from inside a nested struct
+too. When the method returns - or throws, since it may have half-changed the object - the change goes down
+the normal edit path (saved to disk, one undo step) and the object is redrawn. A struct's method runs on a
+copy that is then written back to its field. Items are greyed out where the controller's `CanEdit` says no.
+Implemented in `ObjectInspector.ContextMenu.cs`; only an object whose type has such methods takes the
+right-click, so an object without them never swallows a menu the host UI has of its own.
+
 **One-line structs.** `[InspectorStyle(Inline = true)]` on a struct or class draws it as a single row
 instead of a foldout - wherever it appears: a list entry becomes `0  [stat ▾] [value]`, a field becomes
 `Name  [stat ▾] [value]`. The first field takes the row's name, the rest are unlabelled; give a field
