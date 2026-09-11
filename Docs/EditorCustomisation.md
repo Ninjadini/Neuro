@@ -23,6 +23,25 @@ public class MyOtherReferencableObject : Referencable, INeuroRefDropDownIconCust
 }
 ```
 
+### Filtering a reference drop down
+Narrow which items a `Reference<T>` field offers. Subclass `NeuroReferenceFilterAttribute` and put it on the field; the Neuro Editor and the Unity inspector drawer both honour it. The current value is always listed, marked "(filtered out)" if it no longer passes, so nothing becomes invisible. A stored value the filter rejects is reported by the built-in `NeuroReferenceFilterValidator` (editor Tests section and `NeuroContentTestsRunner`); pass `Validate = false` to only narrow the dropdown. The dropdown shows a footer ("Showing 32 of 50, filtered by [ArmourOnly]") while it is narrowed. Not inherited by references nested in structs or list elements under the field.
+```
+public class ArmourOnlyAttribute : NeuroReferenceFilterAttribute
+{
+    public override bool Include(IReferencable item, NeuroReferences references)
+        => item is Item i && i.Slot == ItemSlot.Armour;
+}
+
+public class Loadout : Referencable
+{
+    [ArmourOnly]
+    [Neuro(1)] public Reference<Item> Chest;
+
+    [ArmourOnly(Validate = false)]   // narrows the dropdown, accepts any stored value
+    [Neuro(2)] public Reference<Item> Preferred;
+}
+```
+
 ### Basic editor customisation
 ```
 [DisplayName("Test / AnotherReferencableObject")] // < The type name used in editor dropdown list - `/` nests it under a "Test" header

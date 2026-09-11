@@ -286,6 +286,34 @@ public struct StatValue
 }
 ```
 
+**Narrowing a reference dropdown.** Subclass `NeuroReferenceFilterAttribute` (runtime assembly, so the
+attribute can sit on model fields) and decide per item in `Include(IReferencable, NeuroReferences)`; put
+the attribute on the `Reference<T>` field or property. Both the Neuro Editor and the Unity inspector's
+`Reference<T>` drawer list only the items it accepts, plus the current value, which is kept and marked
+"(filtered out)" when it fails, so a stale selection can still be seen and changed. Several attributes on
+one field must all accept an item. The dropdown never restricts the data; instead a stored value the
+filter rejects is a content validation problem (`NeuroReferenceFilterValidator`, built in), so it shows
+red in the editor's Tests section and fails `NeuroContentTestsRunner`. Pass `Validate = false` for a
+filter that is only a convenience. It applies to the field it sits on and is **not** inherited by
+references nested in a struct or list element beneath it, for the dropdown or the validator.
+The dropdown says when it is narrowed: a footer reads "Showing 32 of 50, filtered by [ArmourOnly]".
+
+**Add a filter whenever you declare a `Reference<T>` field whose valid targets are a known subset** -
+a category, a slot, a tag, a subtype - rather than leaving the dropdown open and relying on a comment.
+Reuse an existing filter attribute if the project has one for that type; write a small subclass if not.
+A filter you are unsure about is still worth adding with `Validate = false`.
+
+```csharp
+public class ArmourOnlyAttribute : NeuroReferenceFilterAttribute
+{
+    public override bool Include(IReferencable item, NeuroReferences refs)
+        => item is Item i && i.Slot == ItemSlot.Armour;
+}
+
+[ArmourOnly] [Neuro(1)] public Reference<Item> Chest;
+[ArmourOnly(Validate = false)] [Neuro(2)] public Reference<Item> Preferred;   // dropdown only
+```
+
 Reference dropdown labels/icons: implement `INeuroRefDropDownCustomizable` /
 `INeuroRefDropDownIconCustomizable`. Full custom drawers: `ICustomNeuroEditorProvider.CreateCustomDrawer`
 returns a `VisualElement` for types you take over, `null` otherwise, with helpers on

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -11,6 +12,18 @@ namespace Ninjadini.Neuro.Editor
         const int DefaultHeight = 22;
         
         public bool IncludeNullOption;
+
+        /// <summary>
+        /// Optional predicate over the candidate items. Only items it accepts are listed, plus the
+        /// currently selected one, which is kept (and marked) so a stale value can still be seen and changed.
+        /// </summary>
+        public Func<IReferencable, bool> Filter;
+
+        /// <summary>
+        /// Short name of what installed <see cref="Filter"/>, shown in the dropdown's footer. Filled in by
+        /// <see cref="SetFilterFrom"/> from the attribute names; set it yourself when assigning Filter directly.
+        /// </summary>
+        public string FilterName;
 
         readonly NeuroReferences references;
         Type type;
@@ -26,6 +39,53 @@ namespace Ninjadini.Neuro.Editor
         }
 
         public bool HasGoToRefBtn() => gotoRefBtnCallback != null;
+
+        /// <summary>
+        /// Installs <see cref="Filter"/> from the <see cref="NeuroReferenceFilterAttribute"/>s on a field or
+        /// property, if it has any. Several attributes must all accept an item. Returns true if one was found.
+        /// </summary>
+        public bool SetFilterFrom(MemberInfo memberInfo)
+        {
+            var attributes = memberInfo?.GetCustomAttributes<NeuroReferenceFilterAttribute>(true)?.ToArray();
+            if (attributes == null || attributes.Length == 0)
+            {
+                return false;
+            }
+            var refs = references;
+            FilterName = string.Join(" ", attributes.Select(a => "[" + TrimAttributeSuffix(a.GetType().Name) + "]"));
+            Filter = attributes.Length == 1
+                ? item => attributes[0].Include(item, refs)
+                : item => attributes.All(a => a.Include(item, refs));
+            return true;
+        }
+
+        static string TrimAttributeSuffix(string name)
+        {
+            const string suffix = "Attribute";
+            return name.EndsWith(suffix) && name.Length > suffix.Length ? name.Substring(0, name.Length - suffix.Length) : name;
+        }
+
+        string BuildFooterText()
+        {
+            if (Filter == null || type == null)
+            {
+                return null;
+            }
+            var total = references?.GetTable(type)?.GetIds().Count() ?? 0;
+            var shown = choices.Count(id => id != 0);
+            var by = string.IsNullOrEmpty(FilterName) ? "" : " by " + FilterName;
+            return $"Showing {shown} of {total}, filtered{by} · {nameof(NeuroReferenceFilterAttribute)}";
+        }
+
+        bool PassesFilter(uint id)
+        {
+            if (Filter == null || id == 0 || type == null)
+            {
+                return true;
+            }
+            var item = references?.GetTable(type)?.Get(id);
+            return item == null || Filter(item);
+        }
 
         public void AddGoToReferenceBtn(Action<Type, uint> callback)
         {
@@ -71,15 +131,13 @@ namespace Ninjadini.Neuro.Editor
             }
             var idStr = NeuroEditorUtils.DisplayRefId(id);
             var refName = type != null ? references?.GetTable(type).GetRefName(id) : null;
-            if (string.IsNullOrEmpty(refName))
-            {
-                return idStr;
-            }
-            return idStr + " : " + refName;
+            var result = string.IsNullOrEmpty(refName) ? idStr : idStr + " : " + refName;
+            return PassesFilter(id) ? result : result + " (filtered out)";
         }
 
         protected override void SetupWindow(SearchListPopupWindow window)
         {
+            window.FooterText = BuildFooterText();
             ICustomNeuroEditorProvider.MakeRefItemDelegate makeFunc = MakeItemOverride;
             ICustomNeuroEditorProvider.BindRefItemDelegate bindFunc = BindItemOverride;
             foreach (var customProvider in NeuroObjectInspector.CustomProviders)
@@ -205,7 +263,21 @@ namespace Ninjadini.Neuro.Editor
             {
                 list.Add(0);
             }
-            list.AddRange(references.GetTable(type).GetIds().OrderBy(x => x));
+            var table = references.GetTable(type);
+            var filter = Filter;
+            if (filter == null)
+            {
+                list.AddRange(table.GetIds().OrderBy(x => x));
+            }
+            else
+            {
+                var current = value;
+                // Snapshot first: Get() lazily loads items, which mutates the table while GetIds() enumerates it.
+                var ids = table.GetIds().ToList();
+                list.AddRange(ids
+                    .Where(id => id == current || filter(table.Get(id)))
+                    .OrderBy(x => x));
+            }
             choices = list;
         }
     }

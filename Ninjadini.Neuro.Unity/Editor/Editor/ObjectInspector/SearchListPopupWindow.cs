@@ -93,6 +93,9 @@ namespace Ninjadini.Neuro.Editor
             /// See SearchablePopupField.GroupSeparator. Set before the window is shown.
             public string GroupSeparator;
 
+            /// Optional one-line note under the list, e.g. "Showing 32 of 50". Set before the window is shown.
+            public string FooterText;
+
             const float GroupIndent = 14;
             const string CurrentMarker = "✔ ";
             const string NotCurrentMarker = "    ";
@@ -164,7 +167,24 @@ namespace Ninjadini.Neuro.Editor
                 
                 listView.makeItem = MakeItem;
                 listView.bindItem = BindItem;
+                listView.style.flexGrow = 1;
+                listView.style.flexShrink = 1;
                 container.Add(listView);
+                if (!string.IsNullOrEmpty(FooterText))
+                {
+                    var footer = new Label(FooterText);
+                    footer.style.flexShrink = 0;
+                    footer.style.unityTextAlign = TextAnchor.MiddleLeft;
+                    footer.style.unityFontStyleAndWeight = FontStyle.Italic;
+                    footer.style.fontSize = 10;
+                    footer.style.paddingLeft = 5;
+                    footer.style.paddingTop = 2;
+                    footer.style.paddingBottom = 3;
+                    footer.style.opacity = 0.7f;
+                    footer.style.borderTopWidth = 1;
+                    footer.style.borderTopColor = new Color(0f, 0f, 0f, 0.3f);
+                    container.Add(footer);
+                }
                 RefreshChoices();
             }
             

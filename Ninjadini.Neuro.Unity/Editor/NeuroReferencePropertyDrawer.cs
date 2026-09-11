@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Ninjadini.Neuro.Sync;
 using UnityEditor;
 using UnityEngine;
@@ -21,6 +22,7 @@ namespace Ninjadini.Neuro.Editor
             var dropdown = new NeuroReferencablesDropdownField(references);
             dropdown.label = string.IsNullOrEmpty(preferredLabel) ? field.Name : preferredLabel;
             dropdown.IncludeNullOption = true;
+            dropdown.SetFilterFrom(field);
             dropdown.RegisterValueChangedCallback(delegate(ChangeEvent<uint> evt)
             {
                 refIdProp.uintValue = evt.newValue;
@@ -59,6 +61,24 @@ namespace Ninjadini.Neuro.Editor
         }
 
         List<string> guiNames = new List<string>();
+        List<IReferencable> guiItems = new List<IReferencable>();
+
+        bool PassesFilter(IReferencable item, NeuroReferences references)
+        {
+            var field = fieldInfo;
+            if (field == null)
+            {
+                return true;
+            }
+            foreach (var attribute in field.GetCustomAttributes<NeuroReferenceFilterAttribute>(true))
+            {
+                if (!attribute.Include(item, references))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
         
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
@@ -74,19 +94,26 @@ namespace Ninjadini.Neuro.Editor
                 return;
             }
             guiNames.Clear();
+            guiItems.Clear();
             var refIdProp = property.FindPropertyRelative(NeuroConstants.Reference_RefId_FieldName);
             var refId = refIdProp.uintValue;
             
             guiNames.Add("0 : null");
             var prevIndex = 0;
-            var count = 0;
             foreach (var referencable in table.SelectAll())
             {
-                count++;
-                guiNames.Add(NeuroEditorUtils.DisplayRefId(referencable.RefId) + " : "+referencable.RefName);
-                if (refId == referencable.RefId)
+                var isCurrent = refId == referencable.RefId;
+                var passes = PassesFilter(referencable, references);
+                if (!passes && !isCurrent)
                 {
-                    prevIndex = count;
+                    continue;
+                }
+                guiItems.Add(referencable);
+                var name = NeuroEditorUtils.DisplayRefId(referencable.RefId) + " : " + referencable.RefName;
+                guiNames.Add(passes ? name : name + " (filtered out)");
+                if (isCurrent)
+                {
+                    prevIndex = guiItems.Count;
                 }
             }
             position.width -= 24;
@@ -96,11 +123,10 @@ namespace Ninjadini.Neuro.Editor
                 var newId = 0u;
                 if (newIndex > 0)
                 {
-                    newId = table.SelectAll().ElementAt(newIndex - 1).RefId;
+                    newId = guiItems[newIndex - 1].RefId;
                 }
                 refIdProp.uintValue = newId;
             }
-            guiNames.Clear();
 
             position.x += position.width;
             position.width = 24;
@@ -108,9 +134,11 @@ namespace Ninjadini.Neuro.Editor
             {
                 var window = EditorWindow.GetWindow<NeuroEditorWindow>();
                 window.Show();
-                var id = newIndex > 0 ? table.SelectAll().ElementAt(newIndex - 1).RefId : 0u;
+                var id = newIndex > 0 ? guiItems[newIndex - 1].RefId : 0u;
                 window.EditorElement.SetSelectedItem(type, id);
             }
+            guiNames.Clear();
+            guiItems.Clear();
         }
     }
 }
