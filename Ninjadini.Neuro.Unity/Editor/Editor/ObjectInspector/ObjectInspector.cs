@@ -92,6 +92,8 @@ namespace Ninjadini.Neuro.Editor
             existsToggle = null;
             foldout = null;
             var obj = data.getter();
+            // here as well as RedrawFields: a closed foldout draws no fields, but its header still takes the right-click.
+            UpdateContextMenu(obj);
             _inline = obj != null && IsInlineType(obj.GetType(), out _inlineFieldNames);
             style.flexDirection = _inline ? FlexDirection.Row : FlexDirection.Column;
             if (!_inline && data.setter != null && (data.Controller?.ShouldAddFoldOut(data, obj) ?? true))
@@ -196,6 +198,7 @@ namespace Ninjadini.Neuro.Editor
             var canEdit = data.Controller.CanEdit(data.type, obj);
             
             drawnObj = obj;
+            UpdateContextMenu(obj);
             var type = obj != null ? obj.GetType() : data.type;
             var controller = data.Controller;
             
