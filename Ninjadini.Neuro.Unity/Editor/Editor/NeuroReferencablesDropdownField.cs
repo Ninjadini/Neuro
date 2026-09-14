@@ -32,10 +32,20 @@ namespace Ninjadini.Neuro.Editor
         VisualElement selectedItemCustomOverlay;
         ICustomNeuroEditorProvider.BindRefItemDelegate  selectedItemOverlayBind;
         
+        /// Set while the popup's 'Show all' button has been pressed - lasts only as long as that popup is open,
+        /// the filter is back on next time the dropdown is opened.
+        bool showAllOverride;
+
         public NeuroReferencablesDropdownField(NeuroReferences references) : base()
         {
             this.references = references;
-            BeforePopupShown += RefreshChoices;
+            BeforePopupShown += OnBeforePopupShown;
+        }
+
+        void OnBeforePopupShown()
+        {
+            showAllOverride = false;
+            RefreshChoices();
         }
 
         public bool HasGoToRefBtn() => gotoRefBtnCallback != null;
@@ -68,11 +78,17 @@ namespace Ninjadini.Neuro.Editor
             {
                 return null;
             }
-            var total = references?.GetTable(type)?.GetIds().Count() ?? 0;
-            var shown = choices.Count(id => id != 0);
+            var total = TotalCount();
             var by = string.IsNullOrEmpty(FilterName) ? "" : " by " + FilterName;
+            if (showAllOverride)
+            {
+                return $"Showing all {total}, filter{by} off · {nameof(NeuroReferenceFilterAttribute)}";
+            }
+            var shown = choices.Count(id => id != 0);
             return $"Showing {shown} of {total}, filtered{by} · {nameof(NeuroReferenceFilterAttribute)}";
         }
+
+        int TotalCount() => references?.GetTable(type)?.GetIds().Count() ?? 0;
 
         bool PassesFilter(uint id)
         {
@@ -135,6 +151,11 @@ namespace Ninjadini.Neuro.Editor
         protected override void SetupWindow(SearchListPopupWindow window)
         {
             window.FooterText = BuildFooterText();
+            if (Filter != null && type != null && choices.Count(id => id != 0) < TotalCount())
+            {
+                window.FooterButtonText = "Show all";
+                window.FooterButtonClicked = ShowAllInPopup;
+            }
             ICustomNeuroEditorProvider.MakeRefItemDelegate makeFunc = MakeItemOverride;
             ICustomNeuroEditorProvider.BindRefItemDelegate bindFunc = BindItemOverride;
             foreach (var customProvider in NeuroObjectInspector.CustomProviders)
@@ -153,6 +174,14 @@ namespace Ninjadini.Neuro.Editor
                     break;
                 }
             }
+        }
+
+        void ShowAllInPopup(SearchablePopupField<uint>.SearchListPopupWindow window)
+        {
+            showAllOverride = true;
+            RefreshChoices();
+            window.SetFooterText(BuildFooterText());
+            window.RefreshList();
         }
 
         VisualElement MakeItemOverride()
@@ -261,7 +290,7 @@ namespace Ninjadini.Neuro.Editor
                 list.Add(0);
             }
             var table = references.GetTable(type);
-            var filter = Filter;
+            var filter = showAllOverride ? null : Filter;
             if (filter == null)
             {
                 list.AddRange(table.GetIds().OrderBy(x => x));

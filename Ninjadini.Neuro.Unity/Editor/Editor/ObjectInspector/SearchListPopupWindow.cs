@@ -86,6 +86,9 @@ namespace Ninjadini.Neuro.Editor
             Action cancelledAct;
             ToolbarSearchField searchField;
             ListView listView;
+            Label footerLabel;
+            Button footerButton;
+            string searchTerm;
 
             public Func<VisualElement> MakeItemOverride;
             public Action<VisualElement, TValueChoice> BindItemOverride;
@@ -95,6 +98,14 @@ namespace Ninjadini.Neuro.Editor
 
             /// Optional one-line note under the list, e.g. "Showing 32 of 50". Set before the window is shown.
             public string FooterText;
+
+            /// Optional button at the right of the footer, e.g. "Show all". Only shown when <see cref="FooterText"/>
+            /// is set too. Set before the window is shown.
+            public string FooterButtonText;
+
+            /// Called when the footer button is clicked, with the window itself so the handler can change what the
+            /// choices list holds and then call <see cref="SetFooterText"/> / <see cref="RefreshList"/> to show it.
+            public Action<SearchListPopupWindow> FooterButtonClicked;
 
             const float GroupIndent = 14;
             const string CurrentMarker = "✔ ";
@@ -172,17 +183,37 @@ namespace Ninjadini.Neuro.Editor
                 container.Add(listView);
                 if (!string.IsNullOrEmpty(FooterText))
                 {
-                    var footer = new Label(FooterText);
+                    var footer = new VisualElement();
+                    footer.style.flexDirection = FlexDirection.Row;
+                    footer.style.alignItems = Align.Center;
                     footer.style.flexShrink = 0;
-                    footer.style.unityTextAlign = TextAnchor.MiddleLeft;
-                    footer.style.unityFontStyleAndWeight = FontStyle.Italic;
-                    footer.style.fontSize = 10;
-                    footer.style.paddingLeft = 5;
                     footer.style.paddingTop = 2;
                     footer.style.paddingBottom = 3;
-                    footer.style.opacity = 0.7f;
                     footer.style.borderTopWidth = 1;
                     footer.style.borderTopColor = new Color(0f, 0f, 0f, 0.3f);
+
+                    footerLabel = new Label(FooterText);
+                    footerLabel.style.flexGrow = 1;
+                    footerLabel.style.flexShrink = 1;
+                    footerLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
+                    footerLabel.style.unityFontStyleAndWeight = FontStyle.Italic;
+                    footerLabel.style.fontSize = 10;
+                    footerLabel.style.paddingLeft = 5;
+                    footerLabel.style.opacity = 0.7f;
+                    footerLabel.style.whiteSpace = WhiteSpace.Normal;
+                    footer.Add(footerLabel);
+
+                    if (!string.IsNullOrEmpty(FooterButtonText) && FooterButtonClicked != null)
+                    {
+                        footerButton = new Button(OnFooterButtonClicked)
+                        {
+                            text = FooterButtonText
+                        };
+                        footerButton.style.flexShrink = 0;
+                        footerButton.style.fontSize = 10;
+                        footerButton.style.marginRight = 4;
+                        footer.Add(footerButton);
+                    }
                     container.Add(footer);
                 }
                 RefreshChoices();
@@ -257,6 +288,38 @@ namespace Ninjadini.Neuro.Editor
                 base.OnClose();
             }
 
+            void OnFooterButtonClicked()
+            {
+                var cb = FooterButtonClicked;
+                if (cb == null)
+                {
+                    return;
+                }
+                // The handler is expected to change the choices list and then refresh what the footer says;
+                // hide the button first so a one-shot action such as 'show all' can't be run twice.
+                if (footerButton != null)
+                {
+                    footerButton.style.display = DisplayStyle.None;
+                }
+                cb(this);
+            }
+
+            /// Replaces the footer note, e.g. after the footer button changed what the list shows.
+            public void SetFooterText(string text)
+            {
+                FooterText = text;
+                if (footerLabel != null)
+                {
+                    footerLabel.text = text;
+                }
+            }
+
+            /// Rebuilds the rows from the choices list, keeping the current search term.
+            public void RefreshList()
+            {
+                RefreshChoices(searchTerm);
+            }
+
             void OnSearchFieldChanged(ChangeEvent<string> evt)
             {
                 RefreshChoices(evt.newValue);
@@ -264,6 +327,7 @@ namespace Ninjadini.Neuro.Editor
             
             void RefreshChoices(string searchTerm = null)
             {
+                this.searchTerm = searchTerm;
                 BuildRows(rows, fullChoices, getStringFunc, GroupSeparator, searchTerm);
                 listView.itemsSource = rows;
                 listView.Rebuild();

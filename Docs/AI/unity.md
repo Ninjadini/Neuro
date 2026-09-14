@@ -308,7 +308,8 @@ one field must all accept an item. The dropdown never restricts the data; instea
 filter rejects is a content validation problem (`NeuroReferenceFilterValidator`, built in), so it shows
 red in the editor's Tests section and fails `NeuroContentTestsRunner`. Pass `Validate = false` for a
 filter that is only a convenience. The dropdown says when it is narrowed: a footer reads
-"Showing 32 of 50, filtered by [ArmourOnly]".
+"Showing 32 of 50, filtered by [ArmourOnly]", with a **Show all** button beside it that drops the
+filter for that one popup (it is back on next time the dropdown is opened).
 
 **It reaches down.** Put it on a list, struct or class field and every reference nested under that field
 inherits it - each `Stat` inside a `List<StatValue>`, say - which is how a shared struct gets a different
