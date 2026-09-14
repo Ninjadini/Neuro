@@ -96,6 +96,21 @@ unique per. A subclass there is a compile error (`Neuro315`), because every subc
 root's table: the stored id could be any subclass of the root, so `Reference<Sub>` would be a static type
 the data never promised. Declare the root and cast the resolved value where the subclass is needed.
 
+### Subclassing a referencable root
+
+Subclasses of a root referencable are allowed and land in the root's table: `[NeuroGlobalType(26)] class
+Perk : Referencable` with `[Neuro(1)] class PassivePerk : Perk`, `[Neuro(2)] class ModPerk : Perk`. A
+`Reference<Perk>` resolves to whichever subclass the item is, and the json file carries `"-subType":
+"2:ModPerk"` at the top level. Two things the generator needs for this to work:
+
+- **Put a bare `[Neuro]` on the root next to `[NeuroGlobalType]`.** Under `NEURO_FAST_CODEGEN` the
+  generator only recognises a base class by its class-level `[Neuro]`; with the global type id alone it
+  emits no `RegisterSubClass` for the subclasses, every file reads back as the root type, and asking for
+  a subclass tag throws `Base type X, requested by Y is not registered`.
+- **Do not make the root `abstract`.** The generated sync constructs the root itself and NREs on read
+  (`NeuroTypesRegister.cs` inside `RegisterTypes`). Keep it concrete and refuse a bare root in a content
+  validator instead.
+
 ## Polymorphism
 
 ```csharp

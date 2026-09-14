@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -12,6 +13,18 @@ namespace Ninjadini.Neuro.Editor
         
         public bool IncludeNullOption;
 
+        /// <summary>
+        /// Optional predicate over the candidate items. Only items it accepts are listed, plus the
+        /// currently selected one, which is kept (and marked) so a stale value can still be seen and changed.
+        /// </summary>
+        public Func<IReferencable, bool> Filter;
+
+        /// <summary>
+        /// Short name of what installed <see cref="Filter"/>, shown in the dropdown's footer. Filled in by
+        /// <see cref="SetFilterFrom"/> from the attribute names; set it yourself when assigning Filter directly.
+        /// </summary>
+        public string FilterName;
+
         readonly NeuroReferences references;
         Type type;
         IReadOnlyDictionary<uint, IReferencable> dictionary;
@@ -19,13 +32,73 @@ namespace Ninjadini.Neuro.Editor
         VisualElement selectedItemCustomOverlay;
         ICustomNeuroEditorProvider.BindRefItemDelegate  selectedItemOverlayBind;
         
+        /// Set while the popup's 'Show all' button has been pressed - lasts only as long as that popup is open,
+        /// the filter is back on next time the dropdown is opened.
+        bool showAllOverride;
+
         public NeuroReferencablesDropdownField(NeuroReferences references) : base()
         {
             this.references = references;
-            BeforePopupShown += RefreshChoices;
+            BeforePopupShown += OnBeforePopupShown;
+        }
+
+        void OnBeforePopupShown()
+        {
+            showAllOverride = false;
+            RefreshChoices();
         }
 
         public bool HasGoToRefBtn() => gotoRefBtnCallback != null;
+
+        /// <summary>
+        /// Installs <see cref="Filter"/> from the <see cref="NeuroReferenceFilterAttribute"/>s on a field or
+        /// property, if it has any. Returns true if one was found. Does not look at enclosing members; the
+        /// Neuro editor resolves those itself and calls <see cref="SetFilters"/>.
+        /// </summary>
+        public bool SetFilterFrom(MemberInfo memberInfo, Type refType = null)
+        {
+            return SetFilters(NeuroReferenceFilters.GetOwn(memberInfo), refType);
+        }
+
+        /// <summary>
+        /// Installs <see cref="Filter"/> from already resolved attributes, keeping only those that apply to
+        /// <paramref name="refType"/> (when given). Several must all accept an item. Returns true if any applied.
+        /// </summary>
+        public bool SetFilters(IEnumerable<NeuroReferenceFilterAttribute> filters, Type refType = null)
+        {
+            var applicable = NeuroReferenceFilters.Applicable(filters, refType);
+            Filter = NeuroReferenceFilters.ToPredicate(applicable, references);
+            FilterName = NeuroReferenceFilters.DisplayName(applicable);
+            return Filter != null;
+        }
+
+        string BuildFooterText()
+        {
+            if (Filter == null || type == null)
+            {
+                return null;
+            }
+            var total = TotalCount();
+            var by = string.IsNullOrEmpty(FilterName) ? "" : " by " + FilterName;
+            if (showAllOverride)
+            {
+                return $"Showing all {total}, filter{by} off · {nameof(NeuroReferenceFilterAttribute)}";
+            }
+            var shown = choices.Count(id => id != 0);
+            return $"Showing {shown} of {total}, filtered{by} · {nameof(NeuroReferenceFilterAttribute)}";
+        }
+
+        int TotalCount() => references?.GetTable(type)?.GetIds().Count() ?? 0;
+
+        bool PassesFilter(uint id)
+        {
+            if (Filter == null || id == 0 || type == null)
+            {
+                return true;
+            }
+            var item = references?.GetTable(type)?.Get(id);
+            return item == null || Filter(item);
+        }
 
         public void AddGoToReferenceBtn(Action<Type, uint> callback)
         {
@@ -71,15 +144,18 @@ namespace Ninjadini.Neuro.Editor
             }
             var idStr = NeuroEditorUtils.DisplayRefId(id);
             var refName = type != null ? references?.GetTable(type).GetRefName(id) : null;
-            if (string.IsNullOrEmpty(refName))
-            {
-                return idStr;
-            }
-            return idStr + " : " + refName;
+            var result = string.IsNullOrEmpty(refName) ? idStr : idStr + " : " + refName;
+            return PassesFilter(id) ? result : result + " (filtered out)";
         }
 
         protected override void SetupWindow(SearchListPopupWindow window)
         {
+            window.FooterText = BuildFooterText();
+            if (Filter != null && type != null && choices.Count(id => id != 0) < TotalCount())
+            {
+                window.FooterButtonText = "Show all";
+                window.FooterButtonClicked = ShowAllInPopup;
+            }
             ICustomNeuroEditorProvider.MakeRefItemDelegate makeFunc = MakeItemOverride;
             ICustomNeuroEditorProvider.BindRefItemDelegate bindFunc = BindItemOverride;
             foreach (var customProvider in NeuroObjectInspector.CustomProviders)
@@ -98,6 +174,14 @@ namespace Ninjadini.Neuro.Editor
                     break;
                 }
             }
+        }
+
+        void ShowAllInPopup(SearchablePopupField<uint>.SearchListPopupWindow window)
+        {
+            showAllOverride = true;
+            RefreshChoices();
+            window.SetFooterText(BuildFooterText());
+            window.RefreshList();
         }
 
         VisualElement MakeItemOverride()
@@ -205,7 +289,21 @@ namespace Ninjadini.Neuro.Editor
             {
                 list.Add(0);
             }
-            list.AddRange(references.GetTable(type).GetIds().OrderBy(x => x));
+            var table = references.GetTable(type);
+            var filter = showAllOverride ? null : Filter;
+            if (filter == null)
+            {
+                list.AddRange(table.GetIds().OrderBy(x => x));
+            }
+            else
+            {
+                var current = value;
+                // Snapshot first: Get() lazily loads items, which mutates the table while GetIds() enumerates it.
+                var ids = table.GetIds().ToList();
+                list.AddRange(ids
+                    .Where(id => id == current || filter(table.Get(id)))
+                    .OrderBy(x => x));
+            }
             choices = list;
         }
     }

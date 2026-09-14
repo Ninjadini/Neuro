@@ -53,6 +53,13 @@ namespace Ninjadini.Neuro
         /// </summary>
         public bool InlineFieldNames;
 
+        /// <summary>
+        /// Draw the field without its name label. Meant for a <see cref="Horizontal"/> row where the value
+        /// says what it is - a dropdown, an enum - and the name would only take room from it:
+        /// <c>[InspectorStyle(horizontal: 110, HideName = true)]</c>. The name still shows in the tooltip.
+        /// </summary>
+        public bool HideName;
+
         public InspectorStyleAttribute(uint spaceBefore = 0,uint spaceAfter = 0, uint horizontal = 0)
         {
             SpaceBefore = spaceBefore;

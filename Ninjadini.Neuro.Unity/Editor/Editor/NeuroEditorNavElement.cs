@@ -20,6 +20,8 @@ namespace Ninjadini.Neuro.Editor
         Type selectedType;
         NeuroDataFile selectedItem;
         NeuroEditorItemElement itemEditor;
+        VisualElement emptyPanel;
+        Label emptyLabel;
         NeuroItemDebugDisplay debugDisplay;
         NeuroEditorDataProvider dataProvider;
         NeuroEditorHistory history;
@@ -155,6 +157,21 @@ namespace Ninjadini.Neuro.Editor
             itemEditor.style.flexShrink = 1f;
             scrollView.Add(itemEditor);
 
+            // shown in place of the item editor when the selected type has no items yet - the type's script is
+            // still worth being able to jump to from here.
+            emptyPanel = NeuroUiUtils.AddHorizontal(scrollView);
+            emptyPanel.style.alignItems = Align.Center;
+            emptyPanel.style.display = DisplayStyle.None;
+            emptyLabel = NeuroUiUtils.AddLabel(emptyPanel, "");
+            emptyLabel.style.flexGrow = 1f;
+            NeuroUiUtils.AddButton(emptyPanel, "⌨ Code", () =>
+            {
+                if (selectedType != null)
+                {
+                    NeuroUiUtils.OpenScript(selectedType);
+                }
+            });
+
             debugDisplay = new NeuroItemDebugDisplay(dataProvider.References, () => selectedItem?.Value, SetValueFromDebug);
             debugDisplay.style.bottom = 0;
             debugDisplay.style.flexShrink = 0.01f;
@@ -258,12 +275,6 @@ namespace Ninjadini.Neuro.Editor
             var newObj = obj as IReferencable;
             if (newObj != null)
             {
-                if (selectedItem.Value.RefId != newObj.RefId)
-                {
-                    NeuroObjectInspector.ShowRefIdChangedError(selectedItem.Value.RefId, newObj.RefId);
-                    debugDisplay.Refresh();
-                    return;
-                }
                 selectedItem.Value = newObj;
                 dataProvider.SaveData(newObj);
                 NeuroEditorUndoRedos.RecordChange(selectedItem, "Edit", EditorWindow);
@@ -329,6 +340,7 @@ namespace Ninjadini.Neuro.Editor
                 }
                 itemDropdown.SetValue(selectedType, selectedItem.Value.RefId, false);
                 itemEditor.style.display = DisplayStyle.Flex;
+                emptyPanel.style.display = DisplayStyle.None;
                 itemEditor.Draw(dataProvider, selectedType, selectedItem);
                 debugDisplay.Refresh();
                 deleteBtn.SetEnabled(true);
@@ -340,6 +352,8 @@ namespace Ninjadini.Neuro.Editor
                 selectedItem = null;
                 itemDropdown.SetValue(selectedType, 0, false);
                 itemEditor.style.display = DisplayStyle.None;
+                emptyPanel.style.display = selectedType != null ? DisplayStyle.Flex : DisplayStyle.None;
+                emptyLabel.text = selectedType != null ? $"No {selectedType.Name} items yet." : "";
                 deleteBtn.SetEnabled(false);
             }
             itemDropdown.SetEnabled(!typeof(ISingletonReferencable).IsAssignableFrom(selectedType));

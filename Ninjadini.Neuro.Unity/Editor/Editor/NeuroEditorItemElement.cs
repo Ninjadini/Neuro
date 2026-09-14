@@ -122,6 +122,24 @@ namespace Ninjadini.Neuro.Editor
 
         void OnAnyValueChanged()
         {
+            var value = dataFile.Value;
+            if (value.RefId != dataFile.RefId)
+            {
+                // Something drew RefId as an editable field and wrote to it directly. The id is also the table key,
+                // the file name and the undo key, so that write can not stand on its own - undo it and put the
+                // request through the same rename flow the RefId box uses.
+                var requested = value.RefId;
+                value.RefId = dataFile.RefId;
+                TryChangeRefId(requested);
+                if (dataFile.RefId != requested)
+                {
+                    // declined or failed - the field still shows the rejected id until the object is redrawn.
+                    // Deferred by a tick because this runs inside the field's own change callback.
+                    schedule.Execute(() => objectInspector.Draw(dataFile.RootType, dataFile.Value, OnValueSet));
+                    _dataProvider.SaveData(dataFile);
+                }
+                return;
+            }
             RecordUndo("Edit");
             UpdateFilePath();
             AnyValueChanged?.Invoke();
@@ -183,6 +201,13 @@ namespace Ninjadini.Neuro.Editor
                 UpdateFilePath();
                 return;
             }
+            TryChangeRefId(newRefId);
+        }
+
+        /// The one place an item's id moves. Confirms with the user, then repoints the data, renames the file and
+        /// records undo. dataFile.RefId is left unchanged when the user declines or it fails.
+        void TryChangeRefId(uint newRefId)
+        {
             var problem = _dataProvider.GetRefIdChangeProblem(dataFile, newRefId);
             if (problem != null)
             {

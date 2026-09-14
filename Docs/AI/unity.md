@@ -65,6 +65,11 @@ spelling. Hover the `RefId` field in the editor to see the plain number, or turn
 free, repoints every `Reference<>` in the data, renames the file and saves everything it touched. Undo
 moves the id back and repoints the other items again.
 
+The RefId box in `NeuroEditorItemElement` is the one path that moves an id (`TryChangeRefId`). If a custom
+drawer writes `RefId` on the drawn object directly, the item element notices on the next value change,
+puts the old id back and routes the request through that same confirm-and-rename flow, so the table,
+the file name and undo never disagree with the object. `NeuroObjectInspector` itself has no id guard.
+
 The confirmation offers `Change & update assets` as well as `Change data only`. The asset sweep walks
 every prefab, ScriptableObject and scene under `Assets/` for `Reference<>` fields holding the old id and
 repoints those too, saving what it changed. It runs after the data change is committed, is **not**
@@ -256,9 +261,23 @@ a "Core" header like a Unity menu path; it is ignored on a field),
 `[Range(min, max)]` (draws `int`/`uint`/`long`/`float`/`double` as a slider with a number box, like
 Unity's own inspector), `[Min]` (same numeric types - clamps on edit; ignored next to a `[Range]`),
 `[Space]`, `[HideInInspector]` (field or property), `[InspectorStyle]` (`spaceBefore` / `spaceAfter`;
-`horizontal: px` puts neighbouring fields on one row). Still **not** read - they
+`horizontal: px` puts neighbouring fields on one row, `HideName = true` drops a field's name label - for a
+horizontal row of a dropdown, an enum and a number that read fine on their own). Still **not** read - they
 compile but do nothing here: `[Delayed]`, `[InspectorName]`, `[ColorUsage]`, `[GradientUsage]`,
 `[NonReorderable]`, `[ContextMenuItem]`.
+
+**`[ContextMenu]` methods** work as they do on a component: an instance method with no parameters marked
+`[ContextMenu("Path")]` shows when its object is right-clicked - its foldout header, its fields' labels,
+the space around them (a text box keeps its own cut / copy / paste). This works in any `ObjectInspector`,
+not only the Neuro Editor. `/` in the path nests, `priority` orders, base classes' methods are included and
+an override shows once. `[ContextMenu("Path", true)]` on a `bool` method with the same path greys the item
+out when it returns false. The nearest object's items are at the top level and every enclosing object's go
+under a submenu named after its type, so the root item's methods are reachable from inside a nested struct
+too. When the method returns - or throws, since it may have half-changed the object - the change goes down
+the normal edit path (saved to disk, one undo step) and the object is redrawn. A struct's method runs on a
+copy that is then written back to its field. Items are greyed out where the controller's `CanEdit` says no.
+Implemented in `ObjectInspector.ContextMenu.cs`; only an object whose type has such methods takes the
+right-click, so an object without them never swallows a menu the host UI has of its own.
 
 **One-line structs.** `[InspectorStyle(Inline = true)]` on a struct or class draws it as a single row
 instead of a foldout - wherever it appears: a list entry becomes `0  [stat ▾] [value]`, a field becomes
@@ -278,6 +297,45 @@ public struct StatValue
     [Neuro(1)] public Reference<Stat> Stat;
     [InspectorStyle(horizontal: 90)] [Neuro(2)] public long Value;
 }
+```
+
+**Narrowing a reference dropdown.** Subclass `NeuroReferenceFilterAttribute` (runtime assembly, so the
+attribute can sit on model fields) and decide per item in `Include(IReferencable, NeuroReferences)`; put
+the attribute on the `Reference<T>` field or property. Both the Neuro Editor and the Unity inspector's
+`Reference<T>` drawer list only the items it accepts, plus the current value, which is kept and marked
+"(filtered out)" when it fails, so a stale selection can still be seen and changed. Several attributes on
+one field must all accept an item. The dropdown never restricts the data; instead a stored value the
+filter rejects is a content validation problem (`NeuroReferenceFilterValidator`, built in), so it shows
+red in the editor's Tests section and fails `NeuroContentTestsRunner`. Pass `Validate = false` for a
+filter that is only a convenience. The dropdown says when it is narrowed: a footer reads
+"Showing 32 of 50, filtered by [ArmourOnly]", with a **Show all** button beside it that drops the
+filter for that one popup (it is back on next time the dropdown is opened).
+
+**It reaches down.** Put it on a list, struct or class field and every reference nested under that field
+inherits it - each `Stat` inside a `List<StatValue>`, say - which is how a shared struct gets a different
+filter per place it is used. The nearest member on the way out from the reference that carries any filter
+attribute wins outright (no merging with outer ones); collection elements have no member of their own and
+fall through to the collection's field. Override `AppliesTo(Type)` so a filter for one referencable type
+is skipped by other reference types sharing the container - a `Reference<LocText>` next to the stat.
+The Unity inspector drawer follows the same rule along the serialized property path, and so does the
+validator, which reports the path (`Values[3].Property: #1e:damage is not allowed here by [ArmourOnly]`).
+
+**Add a filter whenever you declare a `Reference<T>` field whose valid targets are a known subset** -
+a category, a slot, a tag, a subtype - rather than leaving the dropdown open and relying on a comment.
+Reuse an existing filter attribute if the project has one for that type; write a small subclass if not.
+A filter you are unsure about is still worth adding with `Validate = false`.
+
+```csharp
+public class ArmourOnlyAttribute : NeuroReferenceFilterAttribute
+{
+    public override bool Include(IReferencable item, NeuroReferences refs)
+        => item is Item i && i.Slot == ItemSlot.Armour;
+    public override bool AppliesTo(Type refType) => typeof(Item).IsAssignableFrom(refType);
+}
+
+[ArmourOnly] [Neuro(1)] public Reference<Item> Chest;
+[ArmourOnly(Validate = false)] [Neuro(2)] public Reference<Item> Preferred;   // dropdown only
+[ArmourOnly] [Neuro(3)] public List<ItemStack> Wardrobe;   // every ItemStack.Item inside inherits it
 ```
 
 Reference dropdown labels/icons: implement `INeuroRefDropDownCustomizable` /
