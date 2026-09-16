@@ -160,6 +160,17 @@ during a repaint wants. `NeuroAssetAddressValidator` only checks `Resources.Load
 `AssetDatabase.GUIDToAssetPath`, so content tests pass on a non-Addressable asset too, and the
 missing Addressables entry surfaces only as a failed load in a build.
 
+**Whenever you point an `AssetAddress` at an asset, make that asset Addressable in the same change**
+(unless it lives under `Resources`). The inspector's picker offers to do this for you, but anything
+that writes an address without it does not: an editor script, an `eval`, or hand-edited neuro JSON.
+Nothing else will catch it - the editor loads it, content validation passes, and the build fails.
+From an editor script call `AssetAddressEditorUtils.MakeAddressable(obj)`. It adds the asset to the
+default group, does nothing if the asset is already Addressable, and pops a dialog (so it isn't a
+silent no-op) if Addressables isn't set up or the asset is under `Resources`. To check first, use
+`AssetAddressEditorUtils.IsAddressablePath(path)`. The Addressables key it sets is only a label.
+Loads go by GUID, so changing the key does not break anything. That needs the group to keep
+*Include GUIDs in Catalog* on, which is the default.
+
 ```csharp
 [AssetType(typeof(Sprite))]                  // optional; filters the editor's picker
 [Neuro(1)] public AssetAddress Icon;
