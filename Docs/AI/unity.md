@@ -279,6 +279,43 @@ copy that is then written back to its field. Items are greyed out where the cont
 Implemented in `ObjectInspector.ContextMenu.cs`; only an object whose type has such methods takes the
 right-click, so an object without them never swallows a menu the host UI has of its own.
 
+## Changing one field across a whole table
+
+Right-click a number field in the Neuro Editor for **Multiply all…**, **Add to all…** and **Set all…** — the
+same field, on every item of the table being edited. A popup asks for the number, says how many fields in
+how many items it is about to touch, and previews what the one in front of you becomes. Applying saves every
+item it changed and records **one** undo step for the whole sweep.
+
+It works at any depth — `Attack > Damage` inside a nested struct, a field of a list element — because the
+field is identified by a `NeuroFieldPath`, the chain of Neuro field names from the root, which is then
+followed on the other items with `NeuroEditVisitor`. That walk hands out a writable `ref` all the way down,
+so a number inside a struct inside a list lands back where it came from. **An index in the path is a
+wildcard**: right-clicking `Rounds[2] > Count` changes the Count of *every* round of every item, not only the
+third — which is the reading a bulk edit wants, and why the count is on screen before you apply.
+
+Not offered where it would not mean anything: a read-only field, and anything inside a **dictionary** (the
+walk reports a key and its value under the same name and index, so no path picks out one of them).
+
+**A number is whatever is registered as one.** `int`/`uint`/`long`/`ulong`/`short`/`ushort`/`byte`/`sbyte`/
+`float`/`double` are built in. Register your own next to its `NeuroSyncTypes.Register`, and a field of that
+type gets the menu too, including one drawn by your own `ICustomNeuroEditorProvider`:
+
+```csharp
+NeuroBulkFieldEdit.Register<fp>(value => (double)value, number => (fp)number);
+```
+
+The pair is the same conversion the type's drawer already does. Arithmetic happens on the type itself, not
+on whatever integer it is stored as, so a fixed-point value quantises exactly as saving the file would. An
+integer takes the nearest whole number (×1.5 on a 5 gives 8, not 7) and stops at the ends of its range.
+
+`NeuroBulkFieldEdit.Apply(provider, rootType, path, operation, operand, dryRun)` is the whole of it if you
+want to drive it from a script; `dryRun: true` counts without writing.
+
+Two hooks make this reachable from other inspectors: `IController.HasFieldContextMenu(Data)` and
+`PopulateFieldContextMenu(Data, evt)` put items on a single field's right-click menu (the `[ContextMenu]`
+mechanism above is per *object*). `NeuroObjectInspector` offers the bulk edit only when whoever drew it set
+`BulkFieldEdit` to say which table the item came from, so a preview or debug view has no such menu.
+
 **One-line structs.** `[InspectorStyle(Inline = true)]` on a struct or class draws it as a single row
 instead of a foldout - wherever it appears: a list entry becomes `0  [stat ▾] [value]`, a field becomes
 `Name  [stat ▾] [value]`. The first field takes the row's name, the rest are unlabelled; give a field

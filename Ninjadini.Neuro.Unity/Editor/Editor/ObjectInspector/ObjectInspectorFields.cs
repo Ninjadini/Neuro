@@ -15,6 +15,13 @@ namespace Ninjadini.Neuro.Editor
         
         public static VisualElement CreateField(in ObjectInspector.Data data)
         {
+            var element = CreateFieldElement(data);
+            AddFieldContextMenu(data, element);
+            return element;
+        }
+
+        static VisualElement CreateFieldElement(in ObjectInspector.Data data)
+        {
             var customDrawer = data.Controller?.CreateCustomDrawer(data);
             if (customDrawer != null)
             {
@@ -25,14 +32,32 @@ namespace Ninjadini.Neuro.Editor
 
             result = TryUnityStructs(data);
             if (result != null)  return result;
-            
+
             result = TryCollectionTypes(data);
             if (result != null)  return result;
-            
+
             result = TryObjectTypes(data);
             if (result != null)  return result;
 
             return CreateUnsupportedDrawer(data.name, data.type, data.getter);
+        }
+
+        /// Every field passes through here - the ones drawn from a type's own fields, list elements, and the
+        /// custom drawers - so this is the one place a controller's per field menu can be hung on all of them.
+        /// A type with a custom drawer of its own is the reason it goes here rather than next to the number
+        /// fields: Toolkit's `fp` draws itself and never touches CreateDrawer, and it is a number like any other.
+        static void AddFieldContextMenu(in ObjectInspector.Data data, VisualElement element)
+        {
+            var controller = data.Controller;
+            if (element == null || controller == null || !controller.HasFieldContextMenu(data))
+            {
+                return;
+            }
+            var dataCopy = data;
+            element.AddManipulator(new ContextualMenuManipulator(evt =>
+            {
+                controller.PopulateFieldContextMenu(dataCopy, evt);
+            }));
         }
         
         public static VisualElement CreateFieldWithStandardStyle(in ObjectInspector.Data data)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Ninjadini.Neuro.Sync;
 using UnityEditor;
@@ -9,17 +10,18 @@ namespace Ninjadini.Neuro.Editor
     /// Undo/redo for the Neuro editor, on top of Unity's own undo stack - so Ctrl+Z / Ctrl+Y and the Edit menu
     /// work the same as they do for a scene or an inspector, and Neuro edits interleave correctly with other undos.
     ///
-    /// How it works: a hidden ScriptableObject holds one serialized <see cref="State"/> - a json snapshot of a
-    /// single item. To record a change, the state is set to how the item was, `Undo.RegisterCompleteObjectUndo`
-    /// takes a copy of that, then the state is set to how the item is now. An undo puts the old state back into the
-    /// object, a redo puts the new one back, and `Undo.undoRedoPerformed` is where whichever state landed gets
-    /// written into the real data and saved to disk.
+    /// How it works: a hidden ScriptableObject holds one serialized set of <see cref="State"/>s - a json snapshot
+    /// per item the entry covers. To record a change, the states are set to how the items were,
+    /// `Undo.RegisterCompleteObjectUndo` takes a copy of that, then the states are set to how the items are now. An
+    /// undo puts the old states back into the objects, a redo puts the new ones back, and `Undo.undoRedoPerformed`
+    /// is where whichever states landed get written into the real data and saved to disk.
     ///
     /// The "before" side of an entry comes from the snapshot taken when the item was last drawn or last recorded
     /// (see <see cref="Snapshot"/>), so a change made to the data behind the editor's back - a script, a file
     /// reload - is not undoable; it just becomes the new "before" the next time the item is drawn.
-    /// Only the one item that was edited is in an entry. A RefId change is the exception in spirit: undoing it
-    /// calls `ChangeRefId` back, which also repoints the other items again.
+    /// Most entries hold the single item that was edited; a bulk edit across a table holds all of them, so one
+    /// Ctrl+Z takes the whole sweep back (see <see cref="RecordChanges"/>). A RefId change is the exception in
+    /// spirit: undoing it calls `ChangeRefId` back, which also repoints the other items again.
 #if UNITY_6000_5_OR_NEWER
     [Unity.Scripting.LifecycleManagement.NoAutoStaticsCleanup]
 #endif
@@ -28,10 +30,6 @@ namespace Ninjadini.Neuro.Editor
         [Serializable]
         public struct State
         {
-            /// Increments on every recorded change, so two consecutive states never serialize the same (Unity
-            /// may drop an undo entry that changed nothing) and so the undo callback can tell whether the undo it
-            /// is being told about touched this object at all.
-            public int serial;
             public uint typeId;
             /// The item's id in this state.
             public uint refId;
@@ -49,9 +47,13 @@ namespace Ninjadini.Neuro.Editor
             public bool Exists => !string.IsNullOrEmpty(json);
         }
 
-        [SerializeField] State state;
+        /// Increments on every recorded change, so two consecutive entries never serialize the same (Unity may
+        /// drop an undo entry that changed nothing) and so the undo callback can tell whether the undo it is
+        /// being told about touched this object at all.
+        [SerializeField] int serial;
+        [SerializeField] State[] states = Array.Empty<State>();
 
-        /// serial of the state the data currently reflects - set when a change is recorded or a state is applied.
+        /// serial of the entry the data currently reflects - set when a change is recorded or an entry is applied.
         /// Not serialized: an undo must not roll it back, or it would stop matching what was actually applied.
         [NonSerialized] int appliedSerial;
 
@@ -102,9 +104,9 @@ namespace Ninjadini.Neuro.Editor
                 return null;
             }
             var found = all[0];
-            // Coming back after a domain reload, what is in `state` is by definition what the data reflects.
-            found.appliedSerial = found.state.serial;
-            _nextSerial = Math.Max(_nextSerial, found.state.serial + 1);
+            // Coming back after a domain reload, what is in `states` is by definition what the data reflects.
+            found.appliedSerial = found.serial;
+            _nextSerial = Math.Max(_nextSerial, found.serial + 1);
             return found;
         }
 
@@ -137,14 +139,63 @@ namespace Ninjadini.Neuro.Editor
                 return;
             }
             var before = box.Value;
-            if (before.json == after.json && (before.refName ?? "") == (after.refName ?? "") && before.refId == after.refId)
+            if (IsSame(before, after))
             {
                 return;
             }
             before.otherRefId = after.refId;
             after.otherRefId = before.refId;
-            Push(before, after, action, window);
+            Push(new[] { before }, new[] { after }, action, window);
             box.Value = after;
+        }
+
+        /// Records one change that touched several items, as a single undo entry - a bulk field edit across a
+        /// table. Every item must have been <see cref="Snapshot"/>ed before it was changed, which for items the
+        /// editor has never drawn means the caller doing it; without that there is no "before" to go back to and
+        /// the item is quietly left out of the entry rather than half of it being undoable.
+        public static void RecordChanges(IReadOnlyList<NeuroDataFile> dataFiles, string action, EditorWindow window = null)
+        {
+            if (!Enabled || dataFiles == null || dataFiles.Count == 0)
+            {
+                return;
+            }
+            var befores = new List<State>(dataFiles.Count);
+            var afters = new List<State>(dataFiles.Count);
+            var boxes = new List<StrongBox<State>>(dataFiles.Count);
+            foreach (var dataFile in dataFiles)
+            {
+                if (dataFile?.Value == null || !Snapshots.TryGetValue(dataFile, out var box))
+                {
+                    continue;
+                }
+                var after = Capture(dataFile);
+                var before = box.Value;
+                if (IsSame(before, after))
+                {
+                    continue;
+                }
+                before.otherRefId = after.refId;
+                after.otherRefId = before.refId;
+                befores.Add(before);
+                afters.Add(after);
+                boxes.Add(box);
+            }
+            if (befores.Count == 0)
+            {
+                return;
+            }
+            Push(befores.ToArray(), afters.ToArray(), action, window);
+            for (var i = 0; i < boxes.Count; i++)
+            {
+                boxes[i].Value = afters[i];
+            }
+        }
+
+        static bool IsSame(State before, State after)
+        {
+            return before.json == after.json
+                   && (before.refName ?? "") == (after.refName ?? "")
+                   && before.refId == after.refId;
         }
 
         /// Records that the item was just added to the data provider.
@@ -157,7 +208,7 @@ namespace Ninjadini.Neuro.Editor
             var after = Capture(dataFile);
             var before = after;
             before.json = null;
-            Push(before, after, "Create", window);
+            Push(new[] { before }, new[] { after }, "Create", window);
             Snapshots.GetOrCreateValue(dataFile).Value = after;
         }
 
@@ -172,7 +223,7 @@ namespace Ninjadini.Neuro.Editor
             var before = Capture(dataFile);
             var after = before;
             after.json = null;
-            Push(before, after, "Delete", window);
+            Push(new[] { before }, new[] { after }, "Delete", window);
             Snapshots.Remove(dataFile);
         }
 
@@ -191,42 +242,66 @@ namespace Ninjadini.Neuro.Editor
             };
         }
 
-        static void Push(State before, State after, string action, EditorWindow window)
+        static void Push(State[] before, State[] after, string action, EditorWindow window)
         {
             var instance = Instance;
-            before.window = window;
-            after.window = window;
-            before.serial = _nextSerial++;
-            after.serial = _nextSerial++;
+            for (var i = 0; i < before.Length; i++)
+            {
+                before[i].window = window;
+                after[i].window = window;
+            }
+            var type = NeuroGlobalTypes.FindTypeById(after[0].typeId);
+            string undoName;
+            if (after.Length == 1)
+            {
+                var itemName = string.IsNullOrEmpty(after[0].refName)
+                    ? NeuroEditorUtils.DisplayRefId(after[0].refId)
+                    : $"{NeuroEditorUtils.DisplayRefId(after[0].refId)}:{after[0].refName}";
+                undoName = $"Neuro {action} {type?.Name} {itemName}";
+            }
+            else
+            {
+                undoName = $"Neuro {action} {after.Length} {type?.Name} items";
+            }
 
-            var type = NeuroGlobalTypes.FindTypeById(after.typeId);
-            var itemName = string.IsNullOrEmpty(after.refName)
-                ? NeuroEditorUtils.DisplayRefId(after.refId)
-                : $"{NeuroEditorUtils.DisplayRefId(after.refId)}:{after.refName}";
-            var undoName = $"Neuro {action} {type?.Name} {itemName}";
-
-            instance.state = before;
+            instance.states = before;
+            instance.serial = _nextSerial++;
             Undo.RegisterCompleteObjectUndo(instance, undoName);
-            instance.state = after;
-            instance.appliedSerial = after.serial;
+            instance.states = after;
+            instance.serial = _nextSerial++;
+            instance.appliedSerial = instance.serial;
         }
 
         static void OnUndoRedoPerformed()
         {
             // not via Instance - if nothing has been recorded there is nothing to do, and no reason to create one.
             var instance = _instance;
-            if (!instance || instance.state.serial == instance.appliedSerial)
+            if (!instance || instance.serial == instance.appliedSerial)
             {
                 return;
             }
-            instance.appliedSerial = instance.state.serial;
-            try
+            instance.appliedSerial = instance.serial;
+            var states = instance.states;
+            if (states == null || states.Length == 0)
             {
-                Apply(instance.state);
+                return;
             }
-            catch (Exception e)
+            foreach (var state in states)
             {
-                Debug.LogError($"Neuro ~ undo/redo could not be applied to the data: {e.Message}\n{e}");
+                try
+                {
+                    Apply(state);
+                }
+                catch (Exception e)
+                {
+                    // One item of a bulk entry failing must not strand the rest half undone.
+                    Debug.LogError($"Neuro ~ undo/redo could not be applied to the data: {e.Message}\n{e}");
+                }
+            }
+            // Only the one item, so a bulk undo does not fight the user for what the editor is showing.
+            if (states.Length == 1)
+            {
+                ShowInWindow(states[0], NeuroGlobalTypes.FindTypeById(states[0].typeId));
             }
         }
 
@@ -279,7 +354,6 @@ namespace Ninjadini.Neuro.Editor
                 provider.ApplyJson(dataFile, state.json);
                 Snapshots.GetOrCreateValue(dataFile).Value = state;
             }
-            ShowInWindow(state, type);
         }
 
         static void ShowInWindow(State state, Type type)
