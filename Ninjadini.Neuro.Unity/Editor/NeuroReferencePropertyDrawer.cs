@@ -30,22 +30,32 @@ namespace Ninjadini.Neuro.Editor
                 refIdProp.serializedObject.ApplyModifiedProperties();
             });
             dropdown.SetValue(type, refId, false);
+            Button createBtn = null;
             if (CanCreate(type))
             {
-                var createBtn = new Button()
+                createBtn = new Button()
                 {
                     text = "+",
                     tooltip = $"Create a new {type?.Name}, assign it here and go to it"
                 };
                 createBtn.clicked += () => CreateNewAndAssign(type, refIdProp.serializedObject.targetObjects, refIdProp.propertyPath, createBtn);
                 dropdown.Add(createBtn);
-                void UpdateCreateBtn(SerializedProperty prop)
-                {
-                    createBtn.style.display = prop.uintValue == 0 ? DisplayStyle.Flex : DisplayStyle.None;
-                }
-                UpdateCreateBtn(refIdProp);
-                dropdown.TrackPropertyValue(refIdProp, UpdateCreateBtn);
             }
+            void OnPropertyValueChanged(SerializedProperty prop)
+            {
+                // The dropdown isn't bound, so a change made elsewhere (the '+' button, undo) has to be pulled in.
+                var id = prop.uintValue;
+                if (dropdown.value != id)
+                {
+                    dropdown.SetValue(type, id, false);
+                }
+                if (createBtn != null)
+                {
+                    createBtn.style.display = id == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+                }
+            }
+            OnPropertyValueChanged(refIdProp);
+            dropdown.TrackPropertyValue(refIdProp, OnPropertyValueChanged);
             dropdown.AddGoToReferenceBtn(delegate(Type type, uint u)
             {
                 var window = EditorWindow.GetWindow<NeuroEditorWindow>();
