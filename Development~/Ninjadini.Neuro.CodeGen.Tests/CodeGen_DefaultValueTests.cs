@@ -132,6 +132,18 @@ namespace Zz
     }
 
     [Test]
+    public void LiteralOfAnotherType_IsCast()
+    {
+        // `ref uint` and an int literal give Sync<T> two candidates for T (CS0411 in the generated file),
+        // so a literal that is not already the field's type goes through the cast. Negative ones too.
+        TestUtils.TestSourceGenerates(Wrap("public uint A = 1;", "public long B = -5;", "public float C = 2;", "public ulong D = 3;"),
+            "neuro.Sync(1, nameof(value.A), ref value.A, (uint)(1));",
+            "neuro.Sync(2, nameof(value.B), ref value.B, (long)(-5));",
+            "neuro.Sync(3, nameof(value.C), ref value.C, (float)(2));",
+            "neuro.Sync(4, nameof(value.D), ref value.D, (ulong)(3));");
+    }
+
+    [Test]
     public void PrivateStaticMember_Fails()
     {
         // The generated code is a class of its own, so it can not reach a private member - better said
