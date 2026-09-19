@@ -290,6 +290,26 @@ copy that is then written back to its field. Items are greyed out where the cont
 Implemented in `ObjectInspector.ContextMenu.cs`; only an object whose type has such methods takes the
 right-click, so an object without them never swallows a menu the host UI has of its own.
 
+## Searching the data
+
+**⌕ Search**, next to the type dropdown in the Neuro Editor, finds a piece of text in field names (the code
+side) or in values (the data side), across every file or only the item being edited. Type and the list
+updates; each line is one field, `Rounds[2].Count = 12`, prefixed by the item it is in - `CreepTemplate > 2 :
+hound` - unless the search is limited to this item. Clicking a line opens that item; Enter takes the first.
+The two scope toggles and the this-item tick are remembered per user. It stops at 500 matches and says so.
+
+Matching is a case-insensitive substring test on strings, nothing cleverer: a number matches what it prints,
+an enum its name, a `Reference<>` its target's RefId (base36, as displayed) and RefName, a bool `true` /
+`false`. The item's own RefName is searchable as the value of `RefName` even though it is not a `[Neuro]`
+field. A field's name is tested once, on the field - not again on each element of a list it holds - and a
+value only on a leaf, so a struct or list that matched by name shows `{n items}` / `{TypeName}` as its value.
+
+The walk is `NeuroVisitor` with primitives on, which also hands over **enums** - both visitors do, since
+0.2.1, whenever `visitPrimitiveValues` is true. `NeuroDataSearch` is the whole of it for a script:
+`new NeuroDataSearch(references).Search(item, "damage", NeuroDataSearch.Scope.Both, results)`, and the
+`IEnumerable<IReferencable>` overload for many items. `NeuroDataSearch.DescribeValue` is the text a value
+matches on.
+
 ## Changing one field across a whole table
 
 Right-click a number field in the Neuro Editor for **Multiply all…**, **Add to all…** and **Set all…** — the
