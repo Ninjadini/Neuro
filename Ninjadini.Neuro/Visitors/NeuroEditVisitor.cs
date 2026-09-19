@@ -114,6 +114,12 @@ namespace Ninjadini.Neuro
 
         void INeuroSync.SyncEnum<T>(uint key, string name, ref T value, int defaultValue)
         {
+            // An enum is a value the way a number is: handed over only when the visitor asked to see primitives.
+            if (includePrimitiveValues)
+            {
+                visitor.BeginVisit(ref value, name, null);
+                visitor.EndVisit();
+            }
         }
 
         void INeuroSync.Sync<T>(uint key, string name, ref T value)

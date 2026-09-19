@@ -4,6 +4,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.2.1]
 
+### Search across the data
+`⌕ Search`, next to the type dropdown in the Neuro Editor, finds text in field names or in values - across
+every file, or only the item being edited. The list updates as you type, one line per field with its path and
+value (`Rounds[2].Count = 12`), prefixed by the item it belongs to; click a line to open that item. Matching is
+a plain case-insensitive substring test: numbers as they print, enums by name, a `Reference<>` by its target's
+RefId and RefName. `NeuroDataSearch` is the same thing for scripts.
+
+`NeuroVisitor` and `NeuroEditVisitor` now hand over enum fields when `visitPrimitiveValues` is true, the way
+they already did numbers and strings. Nothing changes for a walk that did not ask for primitives.
+
 ### Migrating a renamed field's data
 `Tools > Neuro > Migrate Renamed Field...` moves a value from its old json field name onto the new one,
 for when a `[Neuro]` field is renamed in code. Binary data does not care - it is keyed by tag - but json

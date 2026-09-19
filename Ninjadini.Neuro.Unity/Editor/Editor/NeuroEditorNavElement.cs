@@ -41,6 +41,7 @@ namespace Ninjadini.Neuro.Editor
         Button backBtn;
         Button recentBtn;
         Button forwardBtn;
+        Button searchBtn;
 
         public NeuroEditorNavElement(NeuroEditorDataProvider dataProvider_, NeuroEditorHistory historyData_, EditorWindow editorWindow_ = null)
         {
@@ -83,6 +84,25 @@ namespace Ninjadini.Neuro.Editor
             });
             settingsBtn.tooltip = "Open Project Settings > Neuro";
             settingsBtn.style.width = 70;
+
+            searchBtn = NeuroUiUtils.AddButton(topBar, "", OnSearchBtnClicked);
+            searchBtn.tooltip = "Search field names and values, in this item or across every file";
+            searchBtn.style.width = 30;
+            searchBtn.style.justifyContent = Justify.Center;
+            searchBtn.style.alignItems = Align.Center;
+            var searchIcon = EditorGUIUtility.IconContent("Search Icon")?.image;
+            if (searchIcon != null)
+            {
+                var icon = new Image { image = searchIcon, scaleMode = ScaleMode.ScaleToFit };
+                icon.style.width = 16;
+                icon.style.height = 16;
+                icon.style.flexShrink = 0;
+                searchBtn.Add(icon);
+            }
+            else
+            {
+                searchBtn.text = "⌕";
+            }
             
             var reloadBtn = NeuroUiUtils.AddButton(topBar, "↻", () =>
             {
@@ -365,6 +385,24 @@ namespace Ninjadini.Neuro.Editor
         void OnAddBtnClicked()
         {
             CreateNewItem(selectedType, this, SetSelectedItem);
+        }
+
+        void OnSearchBtnClicked()
+        {
+            // Anchored to the whole top bar rather than the button, so the popup opens under the bar and spans
+            // the editor's width instead of hanging off its right edge.
+            var bar = searchBtn.parent.worldBound;
+            var width = Mathf.Max(320, (int)bar.width);
+            var popup = new NeuroDataSearchPopup(dataProvider, () => selectedItem, OnSearchResultPicked, width);
+            UnityEditor.PopupWindow.Show(bar, popup);
+        }
+
+        void OnSearchResultPicked(NeuroDataSearch.Match match)
+        {
+            if (selectedItem?.Value != match.Item)
+            {
+                SetSelectedItem(match.RootType, match.Item.RefId);
+            }
         }
 
         /// <summary>
