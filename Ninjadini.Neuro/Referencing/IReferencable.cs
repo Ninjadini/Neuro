@@ -4,12 +4,15 @@ namespace Ninjadini.Neuro
     {
         uint RefId { get; set; }
         string RefName { get; set; }
+        
+        string RefIdText => NeuroRefId.ToString(RefId);
     }
     
     public abstract class Referencable : IReferencable
     {
         public uint RefId { get; set; }
         public string RefName { get; set; }
+        public string RefIdText => NeuroRefId.ToString(RefId);
     }
     
     /// Expects only 1 item in references list
