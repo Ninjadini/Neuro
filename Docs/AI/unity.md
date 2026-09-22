@@ -160,6 +160,17 @@ during a repaint wants. `NeuroAssetAddressValidator` only checks `Resources.Load
 `AssetDatabase.GUIDToAssetPath`, so content tests pass on a non-Addressable asset too, and the
 missing Addressables entry surfaces only as a failed load in a build.
 
+**Whenever you point an `AssetAddress` at an asset, make that asset Addressable in the same change**
+(unless it lives under `Resources`). The inspector's picker offers to do this for you, but anything
+that writes an address without it does not: an editor script, an `eval`, or hand-edited neuro JSON.
+Nothing else will catch it - the editor loads it, content validation passes, and the build fails.
+From an editor script call `AssetAddressEditorUtils.MakeAddressable(obj)`. It adds the asset to the
+default group, does nothing if the asset is already Addressable, and pops a dialog (so it isn't a
+silent no-op) if Addressables isn't set up or the asset is under `Resources`. To check first, use
+`AssetAddressEditorUtils.IsAddressablePath(path)`. The Addressables key it sets is only a label.
+Loads go by GUID, so changing the key does not break anything. That needs the group to keep
+*Include GUIDs in Catalog* on, which is the default.
+
 ```csharp
 [AssetType(typeof(Sprite))]                  // optional; filters the editor's picker
 [Neuro(1)] public AssetAddress Icon;
@@ -278,6 +289,63 @@ the normal edit path (saved to disk, one undo step) and the object is redrawn. A
 copy that is then written back to its field. Items are greyed out where the controller's `CanEdit` says no.
 Implemented in `ObjectInspector.ContextMenu.cs`; only an object whose type has such methods takes the
 right-click, so an object without them never swallows a menu the host UI has of its own.
+
+## Searching the data
+
+**⌕ Search**, next to the type dropdown in the Neuro Editor, finds a piece of text in field names (the code
+side) or in values (the data side), across every file or only the item being edited. Type and the list
+updates; each line is one field, `Rounds[2].Count = 12`, prefixed by the item it is in - `CreepTemplate > 2 :
+hound` - unless the search is limited to this item. Clicking a line opens that item; Enter takes the first.
+The two scope toggles and the this-item tick are remembered per user. It stops at 500 matches and says so.
+
+Matching is a case-insensitive substring test on strings, nothing cleverer: a number matches what it prints,
+an enum its name, a `Reference<>` its target's RefId (base36, as displayed) and RefName, a bool `true` /
+`false`. The item's own RefName is searchable as the value of `RefName` even though it is not a `[Neuro]`
+field. A field's name is tested once, on the field - not again on each element of a list it holds - and a
+value only on a leaf, so a struct or list that matched by name shows `{n items}` / `{TypeName}` as its value.
+
+The walk is `NeuroVisitor` with primitives on, which also hands over **enums** - both visitors do, since
+0.2.1, whenever `visitPrimitiveValues` is true. `NeuroDataSearch` is the whole of it for a script:
+`new NeuroDataSearch(references).Search(item, "damage", NeuroDataSearch.Scope.Both, results)`, and the
+`IEnumerable<IReferencable>` overload for many items. `NeuroDataSearch.DescribeValue` is the text a value
+matches on.
+
+## Changing one field across a whole table
+
+Right-click a number field in the Neuro Editor for **Multiply all…**, **Add to all…** and **Set all…** — the
+same field, on every item of the table being edited. A popup asks for the number, says how many fields in
+how many items it is about to touch, and previews what the one in front of you becomes. Applying saves every
+item it changed and records **one** undo step for the whole sweep.
+
+It works at any depth — `Attack > Damage` inside a nested struct, a field of a list element — because the
+field is identified by a `NeuroFieldPath`, the chain of Neuro field names from the root, which is then
+followed on the other items with `NeuroEditVisitor`. That walk hands out a writable `ref` all the way down,
+so a number inside a struct inside a list lands back where it came from. **An index in the path is a
+wildcard**: right-clicking `Rounds[2] > Count` changes the Count of *every* round of every item, not only the
+third — which is the reading a bulk edit wants, and why the count is on screen before you apply.
+
+Not offered where it would not mean anything: a read-only field, and anything inside a **dictionary** (the
+walk reports a key and its value under the same name and index, so no path picks out one of them).
+
+**A number is whatever is registered as one.** `int`/`uint`/`long`/`ulong`/`short`/`ushort`/`byte`/`sbyte`/
+`float`/`double` are built in. Register your own next to its `NeuroSyncTypes.Register`, and a field of that
+type gets the menu too, including one drawn by your own `ICustomNeuroEditorProvider`:
+
+```csharp
+NeuroBulkFieldEdit.Register<fp>(value => (double)value, number => (fp)number);
+```
+
+The pair is the same conversion the type's drawer already does. Arithmetic happens on the type itself, not
+on whatever integer it is stored as, so a fixed-point value quantises exactly as saving the file would. An
+integer takes the nearest whole number (×1.5 on a 5 gives 8, not 7) and stops at the ends of its range.
+
+`NeuroBulkFieldEdit.Apply(provider, rootType, path, operation, operand, dryRun)` is the whole of it if you
+want to drive it from a script; `dryRun: true` counts without writing.
+
+Two hooks make this reachable from other inspectors: `IController.HasFieldContextMenu(Data)` and
+`PopulateFieldContextMenu(Data, evt)` put items on a single field's right-click menu (the `[ContextMenu]`
+mechanism above is per *object*). `NeuroObjectInspector` offers the bulk edit only when whoever drew it set
+`BulkFieldEdit` to say which table the item came from, so a preview or debug view has no such menu.
 
 **One-line structs.** `[InspectorStyle(Inline = true)]` on a struct or class draws it as a single row
 instead of a foldout - wherever it appears: a list entry becomes `0  [stat ▾] [value]`, a field becomes

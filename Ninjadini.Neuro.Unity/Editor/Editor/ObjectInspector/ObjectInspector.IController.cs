@@ -40,6 +40,15 @@ namespace Ninjadini.Neuro.Editor
             VisualElement CreateCustomFieldHeader(Data data) => null;
             
             VisualElement CreateCustomDrawer(Data data) => null;
+
+            /// Whether this one field has anything of its own on a right click - a bulk edit across the table,
+            /// say. Asked once per field as it is drawn: only a field that says yes gets a menu attached, so a
+            /// field with nothing to offer keeps whatever menu it already had (a text box's cut / copy / paste)
+            /// and does not sprout an empty one.
+            bool HasFieldContextMenu(Data data) => false;
+
+            /// Fills in that menu. The field's own items, where it has any, are already in it.
+            void PopulateFieldContextMenu(Data data, ContextualMenuPopulateEvent evt) { }
             
             void ApplyStyle(Data data, VisualElement element) { }
 

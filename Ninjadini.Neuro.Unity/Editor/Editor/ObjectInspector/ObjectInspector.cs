@@ -53,7 +53,8 @@ namespace Ninjadini.Neuro.Editor
                     //controller.OnValueChanged(obj);
                 } : null,
                 Controller = controller,
-                path = foldOutKey ?? type.Name
+                path = foldOutKey ?? type.Name,
+                FieldPath = NeuroFieldPath.Root
             });
         }
 
@@ -302,7 +303,8 @@ namespace Ninjadini.Neuro.Editor
                         Controller = data.Controller,
                         MemberInfo = propInfo,
                         InheritedFilters = NeuroReferenceFilters.GetOwn(propInfo) ?? data.InheritedFilters,
-                        path = data.path + ">" + propInfo.Name
+                        path = data.path + ">" + propInfo.Name,
+                        FieldPath = data.FieldPath?.Append(propInfo.Name)
                     };
                     CreateFieldHeader(fieldData, ref container);
                     ApplyHideName(ref fieldData);
@@ -500,7 +502,8 @@ namespace Ninjadini.Neuro.Editor
                 Controller = data.Controller,
                 MemberInfo = fieldInfo,
                 InheritedFilters = NeuroReferenceFilters.GetOwn(fieldInfo) ?? data.InheritedFilters,
-                path = data.path + ">" + fieldInfo.Name
+                path = data.path + ">" + fieldInfo.Name,
+                FieldPath = data.FieldPath?.Append(fieldInfo.Name)
             };
         }
 

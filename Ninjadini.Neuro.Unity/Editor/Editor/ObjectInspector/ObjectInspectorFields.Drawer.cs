@@ -707,7 +707,8 @@ namespace Ninjadini.Neuro.Editor
                     value[index] = v;
                     //data.Controller.OnValueChanged(value);
                 };
-                dataCopy.path = data.path + " > " + index; 
+                dataCopy.path = data.path + " > " + index;
+                dataCopy.FieldPath = data.FieldPath?.AppendElement(index);
                 element.Clear();
                 var subElement = CreateField(dataCopy);
                 subElement.style.backgroundColor = new StyleColor(new Color(0.26f, 0.26f, 0.26f));
@@ -993,6 +994,9 @@ namespace Ninjadini.Neuro.Editor
                 };
                 keyData.Controller = new DictionaryKeyController(data.Controller);
                 keyData.path = data.path + " > " + index;
+                // The walk a bulk edit follows reports a dictionary's key and its value under the same name and
+                // index, so there is no path that means one and not the other. Nothing inside one is followable.
+                keyData.FieldPath = null;
                 var keyElement = CreateField(keyData);
                 keyElement.style.width = NameFieldWidth;
                 keyElement.style.maxWidth = 200;
@@ -1012,7 +1016,8 @@ namespace Ninjadini.Neuro.Editor
                     keysAndValuesList[index] = kv;
                     SyncKeysAndValuesFromList(true);
                 };
-                valueData.path = data.path + " > " + index; 
+                valueData.path = data.path + " > " + index;
+                valueData.FieldPath = null; // see the key above
                 var valueElement = CreateField(valueData);
                 valueElement.style.flexGrow = 1f;
                 valueElement.style.backgroundColor = new StyleColor(new Color(0.26f, 0.26f, 0.26f));

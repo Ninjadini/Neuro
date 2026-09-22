@@ -10,8 +10,25 @@ namespace Ninjadini.Neuro.Editor
         ObjectInspector.Data data;
         NeuroReferences references;
         Type elementType;
+        Type rootType;
         Label label;
         NeuroReferencablesDropdownField dropdown;
+        Button createBtn;
+        bool showCreateBtn = true;
+
+        /// <summary>
+        /// Whether the '+' button that creates, assigns and goes to a new item is offered while the field is null.
+        /// Turn it off when the drawer wrapping this field has its own way of creating one.
+        /// </summary>
+        public bool ShowCreateBtn
+        {
+            get => showCreateBtn;
+            set
+            {
+                showCreateBtn = value;
+                UpdateCreateBtn();
+            }
+        }
 
         public static NeuroReferenceFieldElement CreateFromSerialisedProperty<T>(SerializedProperty property) where T : class, IReferencable
         {
@@ -40,15 +57,52 @@ namespace Ninjadini.Neuro.Editor
             dropdown = new NeuroReferencablesDropdownField(references);
             dropdown.IncludeNullOption = true;
             dropdown.label = data.name;
-            var rootType = NeuroReferences.GetRootReferencable(elementType);
+            rootType = NeuroReferences.GetRootReferencable(elementType);
             dropdown.SetFilters(data.InheritedFilters ?? NeuroReferenceFilters.GetOwn(data.MemberInfo), rootType);
             dropdown.SetValue(rootType, GetRefId());
             dropdown.RegisterValueChangedCallback(OnDropDownChanged);
 
             Add(dropdown);
             
+            AddCreateBtn();
             AddGoToReferenceBtn();
             schedule.Execute(OnUpdate).Every(ObjectInspectorFields.RefreshRate);
+        }
+
+        void AddCreateBtn()
+        {
+            if (typeof(ISingletonReferencable).IsAssignableFrom(elementType))
+            {
+                return;
+            }
+            createBtn = new Button(OnCreateBtnClicked)
+            {
+                text = "+",
+                tooltip = $"Create a new {elementType.Name}, assign it here and go to it"
+            };
+            dropdown.Add(createBtn);
+            UpdateCreateBtn();
+        }
+
+        void UpdateCreateBtn()
+        {
+            if (createBtn != null)
+            {
+                createBtn.style.display = showCreateBtn && GetRefId() == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+        }
+
+        void OnCreateBtnClicked()
+        {
+            var navElement = FindNavElement();
+            navElement.CreateNewItem(elementType, createBtn, item =>
+            {
+                // assign before navigating - going to the new item redraws the editor this field lives in.
+                data.SetValue(SetRefId(item.RefId));
+                dropdown.SetValue(rootType, item.RefId, false);
+                UpdateCreateBtn();
+                navElement.SetSelectedItem(NeuroReferences.GetRootReferencable(item.Value.GetType()), item.RefId);
+            });
         }
 
         void AddGoToReferenceBtn()
@@ -57,21 +111,26 @@ namespace Ninjadini.Neuro.Editor
             {
                 dropdown.AddGoToReferenceBtn(delegate(Type type, uint u)
                 {
-                    var p = parent;
-                    while (p != null)
-                    {
-                        if (p is NeuroEditorNavElement navElement)
-                        { 
-                            navElement.SetSelectedItem(type, u);
-                            return;
-                        }
-                        p = p.parent;
-                    }
-                    var window = EditorWindow.GetWindow<NeuroEditorWindow>();
-                    window.Show();
-                    window.EditorElement.SetSelectedItem(type, u);
+                    FindNavElement().SetSelectedItem(type, u);
                 });
             }
+        }
+
+        /// The Neuro editor this field is drawn in, or the Neuro editor window's when it is drawn elsewhere (a Unity inspector).
+        NeuroEditorNavElement FindNavElement()
+        {
+            var p = parent;
+            while (p != null)
+            {
+                if (p is NeuroEditorNavElement navElement)
+                {
+                    return navElement;
+                }
+                p = p.parent;
+            }
+            var window = EditorWindow.GetWindow<NeuroEditorWindow>();
+            window.Show();
+            return window.EditorElement;
         }
 
         void OnUpdate()
@@ -81,6 +140,7 @@ namespace Ninjadini.Neuro.Editor
             {
                 dropdown.SetValueWithoutNotify(newId);
             }
+            UpdateCreateBtn();
         }
 
         void OnDropDownChanged(ChangeEvent<uint> evt)
@@ -89,6 +149,7 @@ namespace Ninjadini.Neuro.Editor
             {
                 var value = SetRefId(evt.newValue);
                 data.SetValue(value);
+                UpdateCreateBtn();
             }
         }
 

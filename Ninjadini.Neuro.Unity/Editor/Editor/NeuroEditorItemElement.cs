@@ -104,6 +104,13 @@ namespace Ninjadini.Neuro.Editor
                 Add(objectInspector);
                 objectInspector.AnyValueChanged = OnAnyValueChanged;
             }
+            // Which table a right clicked number field can be swept across - this one, whatever is selected.
+            objectInspector.BulkFieldEdit = new NeuroBulkFieldEditContext()
+            {
+                DataProvider = dataProvider,
+                RootType = dataFile.RootType,
+                GetWindow = FindEditorWindow
+            };
 
             refLinksElement.Draw(dataProvider, type, value);
             objectInspector.Draw(type, value, OnValueSet);
@@ -149,18 +156,21 @@ namespace Ninjadini.Neuro.Editor
         /// The change has already been made to dataFile by the time this is called.
         void RecordUndo(string action)
         {
-            EditorWindow window = null;
+            NeuroEditorUndoRedos.RecordChange(dataFile, action, FindEditorWindow());
+        }
+
+        EditorWindow FindEditorWindow()
+        {
             var p = parent;
             while (p != null)
             {
                 if (p is NeuroEditorNavElement w)
                 {
-                    window = w.EditorWindow;
-                    break;
+                    return w.EditorWindow;
                 }
                 p = p.parent;
             }
-            NeuroEditorUndoRedos.RecordChange(dataFile, action, window);
+            return null;
         }
 
         const string RefIdTooltip = "RefId - editing this moves the item to a new id and repoints everything that referenced it";

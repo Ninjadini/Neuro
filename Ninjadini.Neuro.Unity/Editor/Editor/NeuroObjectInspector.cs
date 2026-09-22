@@ -19,6 +19,10 @@ namespace Ninjadini.Neuro.Editor
 
         public Action AnyValueChanged;
 
+        /// Set by whoever is drawing an item out of a table, to offer "multiply all" and friends on the number
+        /// fields. Left null - as it is for a preview or a debug view - there is no such menu.
+        public NeuroBulkFieldEditContext BulkFieldEdit;
+
         ICustomNeuroObjectInspectorController neuroController;
         object drawnObj;
 
@@ -105,6 +109,13 @@ namespace Ninjadini.Neuro.Editor
             }
             return null;
         }
+        bool IController.HasFieldContextMenu(Data data) => NeuroBulkFieldEditMenu.CanOffer(BulkFieldEdit, data);
+
+        void IController.PopulateFieldContextMenu(Data data, ContextualMenuPopulateEvent evt)
+        {
+            NeuroBulkFieldEditMenu.Populate(BulkFieldEdit, data, evt);
+        }
+
         bool IController.CanEdit(Type type, object value) => neuroController?.CanEdit(type, value) ?? true;
         bool IController.CanSetToNull(Type type, object value)
         {

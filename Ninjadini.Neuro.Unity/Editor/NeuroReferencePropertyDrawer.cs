@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using Ninjadini.Neuro.Sync;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -29,6 +30,32 @@ namespace Ninjadini.Neuro.Editor
                 refIdProp.serializedObject.ApplyModifiedProperties();
             });
             dropdown.SetValue(type, refId, false);
+            Button createBtn = null;
+            if (CanCreate(type))
+            {
+                createBtn = new Button()
+                {
+                    text = "+",
+                    tooltip = $"Create a new {type?.Name}, assign it here and go to it"
+                };
+                createBtn.clicked += () => CreateNewAndAssign(type, refIdProp.serializedObject.targetObjects, refIdProp.propertyPath, createBtn);
+                dropdown.Add(createBtn);
+            }
+            void OnPropertyValueChanged(SerializedProperty prop)
+            {
+                // The dropdown isn't bound, so a change made elsewhere (the '+' button, undo) has to be pulled in.
+                var id = prop.uintValue;
+                if (dropdown.value != id)
+                {
+                    dropdown.SetValue(type, id, false);
+                }
+                if (createBtn != null)
+                {
+                    createBtn.style.display = id == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+                }
+            }
+            OnPropertyValueChanged(refIdProp);
+            dropdown.TrackPropertyValue(refIdProp, OnPropertyValueChanged);
             dropdown.AddGoToReferenceBtn(delegate(Type type, uint u)
             {
                 var window = EditorWindow.GetWindow<NeuroEditorWindow>();
@@ -58,6 +85,36 @@ namespace Ninjadini.Neuro.Editor
                 }
             }
             return type;
+        }
+
+        static bool CanCreate(Type type)
+        {
+            return type != null && !typeof(ISingletonReferencable).IsAssignableFrom(type);
+        }
+
+        /// Creates a new item of <paramref name="type"/>, assigns it to the property and opens it in the Neuro editor.
+        /// Takes the targets and path rather than the SerializedProperty, which can be disposed by the time an
+        /// abstract type's subtype has been picked.
+        static void CreateNewAndAssign(Type type, UnityEngine.Object[] targets, string propertyPath, VisualElement popupAnchor)
+        {
+            var window = EditorWindow.GetWindow<NeuroEditorWindow>();
+            window.Show();
+            var navElement = window.EditorElement;
+            navElement.CreateNewItem(type, popupAnchor, item =>
+            {
+                if (targets.Any(t => t == null))
+                {
+                    return;
+                }
+                using var serializedObject = new SerializedObject(targets);
+                var prop = serializedObject.FindProperty(propertyPath);
+                if (prop != null)
+                {
+                    prop.uintValue = item.RefId;
+                    serializedObject.ApplyModifiedProperties();
+                }
+                navElement.SetSelectedItem(NeuroReferences.GetRootReferencable(item.Value.GetType()), item.RefId);
+            });
         }
 
         List<string> guiNames = new List<string>();
@@ -106,7 +163,8 @@ namespace Ninjadini.Neuro.Editor
                     prevIndex = guiItems.Count;
                 }
             }
-            position.width -= 24;
+            var showCreateBtn = refId == 0 && CanCreate(type);
+            position.width -= showCreateBtn ? 48 : 24;
             var newIndex = EditorGUI.Popup(position, label.text, prevIndex, guiNames.ToArray());
             if (newIndex != prevIndex)
             {
@@ -120,6 +178,17 @@ namespace Ninjadini.Neuro.Editor
 
             position.x += position.width;
             position.width = 24;
+            if (showCreateBtn)
+            {
+                if (GUI.Button(position, new GUIContent("+", $"Create a new {type.Name}, assign it here and go to it")))
+                {
+                    // Deferred - the popup and window changes it makes can't happen mid OnGUI.
+                    var targets = property.serializedObject.targetObjects;
+                    var propertyPath = refIdProp.propertyPath;
+                    EditorApplication.delayCall += () => CreateNewAndAssign(type, targets, propertyPath, null);
+                }
+                position.x += position.width;
+            }
             if (GUI.Button(position, ">"))
             {
                 var window = EditorWindow.GetWindow<NeuroEditorWindow>();

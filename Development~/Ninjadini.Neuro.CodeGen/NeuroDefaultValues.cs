@@ -97,12 +97,18 @@ namespace Ninjadini.Neuro.CodeGen
                 case ParenthesizedExpressionSyntax parenthesized:
                     return Render(model, parenthesized.Expression, type, depth + 1);
                 case LiteralExpressionSyntax literal:
-                    // Written out as typed, so a `1.5f` stays a float and a `1u` stays unsigned.
-                    return new Rendered(literal.ToString(), false);
+                    // Written out as typed, so a `1.5f` stays a float and a `1u` stays unsigned. A literal
+                    // of another type than the field - `1` on a uint, `5` on a long - would leave `Sync<T>`
+                    // with two candidates for T and a CS0411 in the generated file, so it takes the cast.
+                    return IsOfType(model, literal, type)
+                        ? new Rendered(literal.ToString(), false)
+                        : RenderConstant(model, expression, type);
                 case PrefixUnaryExpressionSyntax unary when unary.Operand is LiteralExpressionSyntax
                                                             && (unary.IsKind(SyntaxKind.UnaryMinusExpression)
                                                                 || unary.IsKind(SyntaxKind.UnaryPlusExpression)):
-                    return new Rendered(unary.ToString(), false);
+                    return IsOfType(model, unary, type)
+                        ? new Rendered(unary.ToString(), false)
+                        : RenderConstant(model, expression, type);
                 case DefaultExpressionSyntax _:
                     return new Rendered("default", false);
                 case IdentifierNameSyntax _:
@@ -118,6 +124,18 @@ namespace Ninjadini.Neuro.CodeGen
                     return RenderCreation(model, expression, implicitCreation.ArgumentList, implicitCreation.Initializer, type, depth);
             }
             return RenderConstant(model, expression, type);
+        }
+
+        /// Whether the expression already has the field's own type, so it can be handed to `Sync<T>` as
+        /// written. Without a semantic model there is nothing to compare against and the text is trusted.
+        static bool IsOfType(SemanticModel model, ExpressionSyntax expression, ITypeSymbol type)
+        {
+            if (model == null || type == null)
+            {
+                return true;
+            }
+            var expressionType = model.GetTypeInfo(expression).Type;
+            return expressionType == null || SymbolEqualityComparer.Default.Equals(expressionType, type);
         }
 
         /// A static field or get-property - `Vector2Int.one`, `float.NaN`, an enum member, a const. A field
