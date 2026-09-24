@@ -20,9 +20,11 @@ namespace Ninjadini.Neuro.Editor
         /// subgroups; items keep the order given, groups are sorted by name.
         public string GroupSeparator;
 
-        /// Names this field for the popup's 'Remember' tick, e.g. "NeuroEditorNav.Type". The tick and the
-        /// search it keeps are per key and last the editor session. Leave null for no tick.
-        public string RememberSearchKey;
+        /// When on, the popup reopens with the search last typed into it, for as long as this field lives.
+        /// See <see cref="ForgetSearch"/>.
+        public bool RememberSearch;
+
+        string lastSearch;
 
         public SearchablePopupField()
         {
@@ -63,11 +65,26 @@ namespace Ninjadini.Neuro.Editor
                 }
                 var window = new SearchListPopupWindow(Math.Max(320, (int)rect.width), choices, StrFunc, OnChoiceSelected, null, IsCurrent);
                 window.GroupSeparator = GroupSeparator;
-                window.RememberSearchKey = RememberSearchKey;
+                if (RememberSearch)
+                {
+                    window.InitialSearch = lastSearch;
+                    window.SearchChanged = OnSearchChanged;
+                }
                 SetupWindow(window);
                 UnityEditor.PopupWindow.Show(rect, window);
                 evt.StopPropagation();
             }
+        }
+
+        void OnSearchChanged(string term)
+        {
+            lastSearch = term;
+        }
+
+        /// Drops the remembered search, e.g. once the field lists something else.
+        public void ForgetSearch()
+        {
+            lastSearch = null;
         }
 
         protected virtual void SetupWindow(SearchListPopupWindow window)
@@ -112,13 +129,11 @@ namespace Ninjadini.Neuro.Editor
             /// choices list holds and then call <see cref="SetFooterText"/> / <see cref="RefreshList"/> to show it.
             public Action<SearchListPopupWindow> FooterButtonClicked;
 
-            /// When set, a 'Remember' tick sits beside the search field. Ticked, the search is kept under this
-            /// key (in SessionState) and filled back in the next time a window with the same key opens; clearing
-            /// the search forgets it, unticking forgets both. Set before the window is shown.
-            public string RememberSearchKey;
+            /// The search the window opens with. Set before the window is shown.
+            public string InitialSearch;
 
-            const string RememberStatePrefix = "Neuro.SearchPopup.Remember.";
-            const string SearchStatePrefix = "Neuro.SearchPopup.Search.";
+            /// Called with each change to the search. Set before the window is shown.
+            public Action<string> SearchChanged;
 
             const float GroupIndent = 14;
             const string CurrentMarker = "✔ ";
@@ -186,39 +201,11 @@ namespace Ninjadini.Neuro.Editor
                 searchField = new ToolbarSearchField();
                 searchField.style.right = 2;
                 searchField.RegisterValueChangedCallback(OnSearchFieldChanged);
-                string initialSearch = null;
-                if (string.IsNullOrEmpty(RememberSearchKey))
+                if (!string.IsNullOrEmpty(InitialSearch))
                 {
-                    container.Add(searchField);
+                    searchField.SetValueWithoutNotify(InitialSearch);
                 }
-                else
-                {
-                    var searchRow = new VisualElement();
-                    searchRow.style.flexDirection = FlexDirection.Row;
-                    searchRow.style.alignItems = Align.Center;
-                    searchRow.style.flexShrink = 0;
-                    searchField.style.flexGrow = 1;
-                    searchField.style.flexShrink = 1;
-                    searchField.style.width = StyleKeyword.Auto;
-                    searchRow.Add(searchField);
-
-                    var remember = SessionState.GetBool(RememberStatePrefix + RememberSearchKey, false);
-                    var rememberToggle = new Toggle("Remember") { value = remember };
-                    rememberToggle.tooltip = "Reopen this dropdown with the search last typed into it";
-                    rememberToggle.style.flexShrink = 0;
-                    rememberToggle.style.marginRight = 6;
-                    rememberToggle.labelElement.style.minWidth = StyleKeyword.Auto;
-                    rememberToggle.labelElement.style.paddingRight = 4;
-                    rememberToggle.RegisterValueChangedCallback(OnRememberToggled);
-                    searchRow.Add(rememberToggle);
-                    container.Add(searchRow);
-
-                    if (remember)
-                    {
-                        initialSearch = SessionState.GetString(SearchStatePrefix + RememberSearchKey, "");
-                        searchField.SetValueWithoutNotify(initialSearch);
-                    }
-                }
+                container.Add(searchField);
                 searchField.schedule.Execute(FocusSearchField).ExecuteLater(50);
                 
                 listView.makeItem = MakeItem;
@@ -261,7 +248,7 @@ namespace Ninjadini.Neuro.Editor
                     }
                     container.Add(footer);
                 }
-                RefreshChoices(initialSearch);
+                RefreshChoices(InitialSearch);
             }
 
             void FocusSearchField()
@@ -275,36 +262,6 @@ namespace Ninjadini.Neuro.Editor
                 }
             }
 
-            void OnRememberToggled(ChangeEvent<bool> evt)
-            {
-                if (evt.newValue)
-                {
-                    SessionState.SetBool(RememberStatePrefix + RememberSearchKey, true);
-                    SaveRememberedSearch(searchTerm);
-                }
-                else
-                {
-                    SessionState.EraseBool(RememberStatePrefix + RememberSearchKey);
-                    SessionState.EraseString(SearchStatePrefix + RememberSearchKey);
-                }
-            }
-
-            void SaveRememberedSearch(string term)
-            {
-                if (string.IsNullOrEmpty(RememberSearchKey) || !SessionState.GetBool(RememberStatePrefix + RememberSearchKey, false))
-                {
-                    return;
-                }
-                if (string.IsNullOrEmpty(term))
-                {
-                    SessionState.EraseString(SearchStatePrefix + RememberSearchKey);
-                }
-                else
-                {
-                    SessionState.SetString(SearchStatePrefix + RememberSearchKey, term);
-                }
-            }
-            
             public void SetItemHeight(float height)
             {
                 listView.fixedItemHeight = height;
@@ -409,7 +366,7 @@ namespace Ninjadini.Neuro.Editor
             void OnSearchFieldChanged(ChangeEvent<string> evt)
             {
                 RefreshChoices(evt.newValue);
-                SaveRememberedSearch(evt.newValue);
+                SearchChanged?.Invoke(evt.newValue);
             }
             
             void RefreshChoices(string searchTerm = null)

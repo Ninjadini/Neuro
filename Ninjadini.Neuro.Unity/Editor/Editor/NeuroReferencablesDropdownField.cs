@@ -207,6 +207,7 @@ namespace Ninjadini.Neuro.Editor
             if (type != type_)
             {
                 type = type_;
+                ForgetSearch();
                 OnDrawingTypeChanged();
             }
             RefreshChoices();
