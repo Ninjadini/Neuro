@@ -70,6 +70,7 @@ namespace Ninjadini.Neuro.Editor
             typeDropdown.style.flexShrink = 1f;
             typeDropdown.BeforePopupShown = OnBeforeTypesPopupShown;
             typeDropdown.GroupSeparator = TypeGroupSeparator;
+            typeDropdown.RememberSearchKey = "NeuroEditorNav.Type";
             typeDropdown.RegisterValueChangedCallback(OnTypeDropDownChanged);
             topBar.Add(typeDropdown);
 
@@ -115,6 +116,7 @@ namespace Ninjadini.Neuro.Editor
             var secondBar = NeuroUiUtils.AddHorizontal(this);
             secondBar.style.flexShrink = 0f;
             itemDropdown = new NeuroReferencablesDropdownField(dataProvider.References);
+            itemDropdown.RememberSearchKey = "NeuroEditorNav.Item";
             itemDropdown.style.flexGrow = 1f;
             itemDropdown.style.flexShrink = 1f;
             itemDropdown.RegisterValueChangedCallback(OnItemDropDownChanged);
