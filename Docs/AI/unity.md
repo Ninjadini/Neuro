@@ -171,6 +171,12 @@ silent no-op) if Addressables isn't set up or the asset is under `Resources`. To
 Loads go by GUID, so changing the key does not break anything. That needs the group to keep
 *Include GUIDs in Catalog* on, which is the default.
 
+To sweep the whole database after the fact, use **Tools/Neuro/Make Asset Addresses Addressable**
+(`AssetAddressablesFixer`). It visits every `AssetAddress` in every item, lists the assets that are
+neither Addressable nor under `Resources`, and on confirm adds them to the default group, logging
+which item and field used each one. Addresses that match no asset at all are logged as warnings.
+`AssetAddressablesFixer.FindNonAddressable` is the same check without the change, for a script.
+
 ```csharp
 [AssetType(typeof(Sprite))]                  // optional; filters the editor's picker
 [Neuro(1)] public AssetAddress Icon;

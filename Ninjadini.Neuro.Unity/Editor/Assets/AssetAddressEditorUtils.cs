@@ -112,7 +112,7 @@ namespace Ninjadini.Neuro.Editor
             }
             else
             {
-                var match = Regex.Match(address, @"[a-z0-9]{32}\[(.+?)\]$");
+                var match = Regex.Match(address, @"^([a-z0-9]{32})\[(.+)\]$");
                 if (match.Success)
                 {
                     pathOrGuid = match.Groups[1].Value;
