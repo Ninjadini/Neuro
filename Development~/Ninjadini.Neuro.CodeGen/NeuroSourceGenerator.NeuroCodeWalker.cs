@@ -359,9 +359,15 @@ namespace Ninjadini.Neuro.CodeGen
                         IsEnum = fieldType.TypeKind == TypeKind.Enum,
                         IsReadonly = fieldSymbol.IsReadOnly
                     });
-                    if (fieldType.TypeKind == TypeKind.Enum)
+                    // A nullable enum still needs its enum registered - T? syncs through the enum's own
+                    // NeuroSyncEnumTypes, and nothing else would register one from another assembly.
+                    var nullableType = fieldType as INamedTypeSymbol;
+                    var enumType = nullableType != null && nullableType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T
+                        ? nullableType.TypeArguments[0]
+                        : fieldType;
+                    if (enumType.TypeKind == TypeKind.Enum)
                     {
-                        var fullName = NeuroCodeGenUtils.GetFullName(fieldType);
+                        var fullName = NeuroCodeGenUtils.GetFullName(enumType);
                         if (enumTypesAdded.Add(fullName))
                         {
                             enumTypes.Add(fullName);

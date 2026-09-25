@@ -49,7 +49,9 @@ namespace Ninjadini.Neuro.Sync
                 enumNames = new Dictionary<int, string>(valuesArray.Length);
                 foreach (var enumValue in valuesArray)
                 {
-                    enumNames[(int)enumValue] = enumValue.ToString();
+                    // Convert, not a cast: a boxed enum only unboxes as its own underlying type, so
+                    // (int) threw for any enum declared on byte, sbyte, short and the like.
+                    enumNames[Convert.ToInt32(enumValue)] = enumValue.ToString();
                 }
             }
             return enumNames.GetValueOrDefault(value, "");

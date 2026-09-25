@@ -344,6 +344,30 @@ if(_NeuroSyncNS.NeuroSyncEnumTypes<MyEnum>.IsEmpty())
     }
         
     [Test]
+    public void TestNullableEnumTag()
+    {
+        var src = @"
+using Ninjadini.Neuro;
+        partial class TestClass
+        {
+            [Neuro(1)] public MyEnum? e;
+        }
+        enum MyEnum
+        {
+            A,
+            B,
+            C
+        }
+";
+        TestUtils.TestSourceGenerates(src, 
+            @"
+if(_NeuroSyncNS.NeuroSyncEnumTypes<MyEnum>.IsEmpty())
+         _NeuroSyncNS.NeuroSyncEnumTypes<MyEnum>.Register((e) => (int)e, (i) => (MyEnum)i);
+"
+        );
+    }
+        
+    [Test]
     public void TestEnumWithDefaultValue()
     {
         var src = @"

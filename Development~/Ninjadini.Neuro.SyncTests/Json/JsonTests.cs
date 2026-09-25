@@ -19,6 +19,17 @@ namespace Ninjadini.Neuro.SyncTests
             UberTestClass.RegisterAll();
         }
         
+        enum SByteEnum : sbyte { Neg = -1, Zero = 0, Two = 2 }
+
+        [Test]
+        public void EnumNamesForNonIntEnum()
+        {
+            // A boxed enum unboxes only as its own underlying type, so the name table must not cast to int.
+            NeuroSyncEnumTypes<SByteEnum>.Register(e => (int)e, i => (SByteEnum)i);
+            Assert.That(NeuroSyncEnumTypes<SByteEnum>.GetName(2), Is.EqualTo("Two"));
+            Assert.That(NeuroSyncEnumTypes<SByteEnum>.GetName(-1), Is.EqualTo("Neg"));
+        }
+
         [Test]
         public void TestJsonWrite()
         {

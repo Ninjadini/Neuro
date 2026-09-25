@@ -229,7 +229,7 @@ namespace Ninjadini.Neuro.Editor
             {
                 textInputBaseField.isDelayed = true;
             }
-            var vObj = value ?? Activator.CreateInstance<T>();
+            var vObj = value ?? StructDefault(data.type) ?? Activator.CreateInstance<T>();
             field.value = (T)(toFieldEditor != null ? toFieldEditor(vObj) : vObj);
             field.RegisterValueChangedCallback(delegate(ChangeEvent<T> evt)
             {
@@ -246,10 +246,20 @@ namespace Ninjadini.Neuro.Editor
                 if (value != newValue && !NeuroUiUtils.IsFocused(field))
                 {
                     value = newValue;
-                    field.SetValueWithoutNotify(newValue != null ? (T)(toFieldEditor != null ? toFieldEditor(newValue) : newValue) : default(T));
+                    var shown = newValue ?? StructDefault(data.type);
+                    field.SetValueWithoutNotify(shown != null ? (T)(toFieldEditor != null ? toFieldEditor(shown) : shown) : default(T));
                 }
             }).Every(RefreshRate);
             return field;
+        }
+
+        /// What a struct field shows while its value is null - a nullable left unset - built from the
+        /// data's own type rather than the field's T: an EnumField's T is System.Enum itself, which
+        /// has no instance to make, so Activator.CreateInstance<T>() threw for every nullable enum.
+        /// Null for a class type, which keeps its old handling.
+        static object StructDefault(Type dataType)
+        {
+            return dataType.IsValueType ? Activator.CreateInstance(dataType) : null;
         }
 
         public static VisualElement CreateDrawer<T, V>(ObjectInspector.Data data, BaseField<T> field, Func<V, T> toFieldEditor = null, Func<T, V> fromFieldEditor = null)
