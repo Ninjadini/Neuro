@@ -415,7 +415,11 @@ public class ArmourOnlyAttribute : NeuroReferenceFilterAttribute
 Reference dropdown labels/icons: implement `INeuroRefDropDownCustomizable` /
 `INeuroRefDropDownIconCustomizable`. Full custom drawers: `ICustomNeuroEditorProvider.CreateCustomDrawer`
 returns a `VisualElement` for types you take over, `null` otherwise, with helpers on
-`ObjectInspectorFields`.
+`ObjectInspectorFields`. To add something **alongside** the normal fields rather than replace them there are
+two headers: `CreateCustomHeader(inspector, data, value)` goes at the top of an object's fields (only objects
+- a list is not one), and `CreateCustomFieldHeader(inspector, data)` goes directly above one field, lists
+included - match on `data.MemberInfo` and read the holder off `inspector.DrawnObj` when the field is on the
+root item.
 
 This API is documented as liable to change and is rarely what you want — prefer `INeuroContentValidator`
 over drawing your own validation UI. If you are actually writing a drawer, read

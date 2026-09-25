@@ -8,7 +8,11 @@ namespace Ninjadini.Neuro.Editor
     {
         public int Priority => 0;
         
+        /// Drawn at the top of an object's fields, above them all - as well as the fields, not instead of them.
         VisualElement CreateCustomHeader(NeuroObjectInspector inspector, ObjectInspector.Data data, object value) => null;
+        /// Drawn just above one field, under its [Header] if it has one - as well as the field, not instead of it.
+        /// Match on data.MemberInfo; it is asked for every field of every object drawn, lists included.
+        VisualElement CreateCustomFieldHeader(NeuroObjectInspector inspector, ObjectInspector.Data data) => null;
         VisualElement CreateCustomDrawer(NeuroObjectInspector inspector, ObjectInspector.Data data) => null;
 
         public delegate void BindRefItemDelegate(VisualElement element, uint id);
