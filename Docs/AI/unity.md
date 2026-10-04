@@ -254,6 +254,21 @@ NeuroEditorDataProvider.Shared.SaveData(item);
 `FindNextId(type)`, `SetRefName(...)`, `ChangeRefId(...)` (returns everything it repointed) and
 `Reload()`.
 
+## Pointing the Neuro editor at an item
+
+```csharp
+var windows = Resources.FindObjectsOfTypeAll<NeuroEditorWindow>();
+var editor = windows.Length > 0 ? windows[0].EditorElement : null;
+editor?.SetSelectedItem(NeuroReferences.GetRootReferencable(item.GetType()), item.RefId);
+```
+
+Pass the root type - a subtype silently does nothing. `EditorElement` is null until the window has
+drawn once. Each call adds a back-history entry, so compare `SelectedType` / `SelectedItemId` first
+if it fires often. `GetWindow<NeuroEditorWindow>()` opens and focuses one - avoid it from Play mode.
+
+To make the editor follow what the game shows, have runtime code raise a static event and subscribe
+from an `[InitializeOnLoad]` class in an Editor folder; for scene objects, `Selection.selectionChanged`.
+
 ## Stripping data for builds
 
 ```csharp
