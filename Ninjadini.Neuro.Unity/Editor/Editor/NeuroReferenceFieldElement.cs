@@ -59,6 +59,9 @@ namespace Ninjadini.Neuro.Editor
             dropdown.label = data.name;
             rootType = NeuroReferences.GetRootReferencable(elementType);
             dropdown.SetFilters(data.InheritedFilters ?? NeuroReferenceFilters.GetOwn(data.MemberInfo), rootType);
+            dropdown.SetFilterButtonsAndSorts(
+                data.InheritedFilterButtons ?? NeuroReferenceFilters.GetOwn<NeuroReferenceFilterButtonsAttribute>(data.MemberInfo),
+                data.InheritedSorts ?? NeuroReferenceFilters.GetOwn<NeuroReferenceSortAttribute>(data.MemberInfo));
             dropdown.SetValue(rootType, GetRefId());
             dropdown.RegisterValueChangedCallback(OnDropDownChanged);
 

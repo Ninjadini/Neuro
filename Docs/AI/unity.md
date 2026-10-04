@@ -382,8 +382,8 @@ one field must all accept an item. The dropdown never restricts the data; instea
 filter rejects is a content validation problem (`NeuroReferenceFilterValidator`, built in), so it shows
 red in the editor's Tests section and fails `NeuroContentTestsRunner`. Pass `Validate = false` for a
 filter that is only a convenience. The dropdown says when it is narrowed: a footer reads
-"Showing 32 of 50, filtered by [ArmourOnly]", with a **Show all** button beside it that drops the
-filter for that one popup (it is back on next time the dropdown is opened).
+"Showing 32 of 50, filtered by [ArmourOnly]", with an **Ignore [ArmourOnly]** button beside it that
+drops the filter for that one popup (it is back on next time the dropdown is opened).
 
 **It reaches down.** Put it on a list, struct or class field and every reference nested under that field
 inherits it - each `Stat` inside a `List<StatValue>`, say - which is how a shared struct gets a different
@@ -410,6 +410,57 @@ public class ArmourOnlyAttribute : NeuroReferenceFilterAttribute
 [ArmourOnly] [Neuro(1)] public Reference<Item> Chest;
 [ArmourOnly(Validate = false)] [Neuro(2)] public Reference<Item> Preferred;   // dropdown only
 [ArmourOnly] [Neuro(3)] public List<ItemStack> Wardrobe;   // every ItemStack.Item inside inherits it
+```
+
+**Filter buttons and sorts.** Two more attributes shape the same popup without restricting anything.
+`NeuroReferenceFilterButtonsAttribute.GetButtons(refs)` yields `NeuroReferenceFilterButton`s (a name and
+an `Include` predicate) - one attribute may yield many, so data-driven buttons (one per tag, per slot)
+need one class. They show as a row of toggles under the search: **All** first, one active at a time,
+each with its count. `NeuroReferenceSortAttribute` (`Name`, `Compare(a, b, refs)`, ties fall back to id)
+adds a sort toggle after the built-in **Id** and **Name**, which sit beside the search field (narrowed to
+60% of the popup to make room). Both choices are remembered per referencable
+type in `SessionState` - shared by the Neuro Editor's item picker and every field listing that type,
+gone on an editor restart - and they also order the item picker's ← / → buttons. The text search is
+deliberately not remembered.
+
+Put either attribute **on the referencable class** to offer it wherever that type is listed; it is found
+by type and `AppliesTo` is never called. On a field (or an enclosing list/struct field, nearest member
+wins, each kind resolved on its own) it adds buttons/sorts for that field after the class's own, and
+`AppliesTo(Type)` skips other reference types sharing the container - same rules as the filter. Buttons
+narrow inside any `NeuroReferenceFilterAttribute`; a button that would show nothing, or the same as All,
+there is left out of that popup, and a remembered button that is missing or empty in a field falls back
+to All for that list without being forgotten. The current value always stays listed, marked
+"(not in <button>)". Buttons are never a validation rule. Toolkit's `StatTypeTagButtons` on `Stat` is the
+data-driven shape.
+
+**When to add them.** Give a referencable type filter buttons once its table holds more than a screenful
+and its items fall into a few kinds the author thinks in - a subtype, a category tag, a slot, an enum.
+Put them on the class, so the Neuro Editor's item picker gets them too; reach for the field form only
+when one field wants a split nothing else does. Prefer one data-driven attribute (a button per subtype,
+per tag) over hand-listing buttons, so a new kind shows up without a code change. Add a sort when authors
+look for items by a number the data holds or derives - a price, an unlock level, a tier - rather than by
+id or name. Keep both cheap: they run over the whole table each time the dropdown opens. Where a
+`NeuroReferenceFilterAttribute` already cuts a field to one kind, it needs no buttons of its own; the
+class's buttons drop out there by themselves.
+
+```csharp
+public class ItemSlotButtonsAttribute : NeuroReferenceFilterButtonsAttribute
+{
+    public override IEnumerable<NeuroReferenceFilterButton> GetButtons(NeuroReferences refs)
+    {
+        foreach (ItemSlot slot in Enum.GetValues(typeof(ItemSlot)))
+            yield return new NeuroReferenceFilterButton(slot.ToString(), item => ((Item)item).Slot == slot);
+    }
+}
+public class SortByPriceAttribute : NeuroReferenceSortAttribute
+{
+    public override string Name => "Price";
+    public override int Compare(IReferencable a, IReferencable b, NeuroReferences refs)
+        => ((Item)a).Price.CompareTo(((Item)b).Price);
+}
+
+[ItemSlotButtons] [SortByPrice]
+[NeuroGlobalType(5)] public class Item : Referencable { ... }
 ```
 
 Reference dropdown labels/icons: implement `INeuroRefDropDownCustomizable` /

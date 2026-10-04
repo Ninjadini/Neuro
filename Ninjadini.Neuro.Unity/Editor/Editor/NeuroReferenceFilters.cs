@@ -18,13 +18,16 @@ namespace Ninjadini.Neuro.Editor
         const BindingFlags MemberFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
         /// <summary>The filter attributes declared on this member, or null if it has none.</summary>
-        public static NeuroReferenceFilterAttribute[] GetOwn(MemberInfo member)
+        public static NeuroReferenceFilterAttribute[] GetOwn(MemberInfo member) => GetOwn<NeuroReferenceFilterAttribute>(member);
+
+        /// <summary>The <typeparamref name="T"/> attributes declared on this member, or null if it has none.</summary>
+        public static T[] GetOwn<T>(MemberInfo member) where T : Attribute
         {
             if (member == null)
             {
                 return null;
             }
-            var result = member.GetCustomAttributes<NeuroReferenceFilterAttribute>(true).ToArray();
+            var result = member.GetCustomAttributes<T>(true).ToArray();
             return result.Length > 0 ? result : null;
         }
 
@@ -120,6 +123,13 @@ namespace Ninjadini.Neuro.Editor
         /// target object, so an attribute on an enclosing list or struct field is honoured.
         /// </summary>
         public static NeuroReferenceFilterAttribute[] FromSerializedProperty(SerializedProperty property)
+            => FromSerializedProperty<NeuroReferenceFilterAttribute>(property);
+
+        /// <summary>
+        /// The nearest <typeparamref name="T"/> attributes along a serialized property's path - the same walk as
+        /// <see cref="FromSerializedProperty(SerializedProperty)"/>, for the filter buttons and sorts.
+        /// </summary>
+        public static T[] FromSerializedProperty<T>(SerializedProperty property) where T : Attribute
         {
             var target = property?.serializedObject?.targetObject;
             if (target == null)
@@ -155,7 +165,7 @@ namespace Ninjadini.Neuro.Editor
             }
             for (var i = members.Count - 1; i >= 0; i--)
             {
-                var own = GetOwn(members[i]);
+                var own = GetOwn<T>(members[i]);
                 if (own != null)
                 {
                     return own;

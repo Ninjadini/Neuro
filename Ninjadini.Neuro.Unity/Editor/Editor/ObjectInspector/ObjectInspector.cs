@@ -303,6 +303,8 @@ namespace Ninjadini.Neuro.Editor
                         Controller = data.Controller,
                         MemberInfo = propInfo,
                         InheritedFilters = NeuroReferenceFilters.GetOwn(propInfo) ?? data.InheritedFilters,
+                        InheritedFilterButtons = NeuroReferenceFilters.GetOwn<NeuroReferenceFilterButtonsAttribute>(propInfo) ?? data.InheritedFilterButtons,
+                        InheritedSorts = NeuroReferenceFilters.GetOwn<NeuroReferenceSortAttribute>(propInfo) ?? data.InheritedSorts,
                         path = data.path + ">" + propInfo.Name,
                         FieldPath = data.FieldPath?.Append(propInfo.Name)
                     };
@@ -502,6 +504,8 @@ namespace Ninjadini.Neuro.Editor
                 Controller = data.Controller,
                 MemberInfo = fieldInfo,
                 InheritedFilters = NeuroReferenceFilters.GetOwn(fieldInfo) ?? data.InheritedFilters,
+                InheritedFilterButtons = NeuroReferenceFilters.GetOwn<NeuroReferenceFilterButtonsAttribute>(fieldInfo) ?? data.InheritedFilterButtons,
+                InheritedSorts = NeuroReferenceFilters.GetOwn<NeuroReferenceSortAttribute>(fieldInfo) ?? data.InheritedSorts,
                 path = data.path + ">" + fieldInfo.Name,
                 FieldPath = data.FieldPath?.Append(fieldInfo.Name)
             };

@@ -24,6 +24,9 @@ namespace Ninjadini.Neuro.Editor
             dropdown.label = string.IsNullOrEmpty(preferredLabel) ? field.Name : preferredLabel;
             dropdown.IncludeNullOption = true;
             dropdown.SetFilters(NeuroReferenceFilters.FromSerializedProperty(property), type);
+            dropdown.SetFilterButtonsAndSorts(
+                NeuroReferenceFilters.FromSerializedProperty<NeuroReferenceFilterButtonsAttribute>(property),
+                NeuroReferenceFilters.FromSerializedProperty<NeuroReferenceSortAttribute>(property));
             dropdown.RegisterValueChangedCallback(delegate(ChangeEvent<uint> evt)
             {
                 refIdProp.uintValue = evt.newValue;

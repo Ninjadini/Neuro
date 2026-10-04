@@ -20,12 +20,6 @@ namespace Ninjadini.Neuro.Editor
         /// subgroups; items keep the order given, groups are sorted by name.
         public string GroupSeparator;
 
-        /// When on, the popup reopens with the search last typed into it, for as long as this field lives.
-        /// See <see cref="ForgetSearch"/>.
-        public bool RememberSearch;
-
-        string lastSearch;
-
         public SearchablePopupField()
         {
             RegisterCallback<PointerDownEvent>(OnDropDownBtnDown, TrickleDown.TrickleDown);
@@ -65,26 +59,10 @@ namespace Ninjadini.Neuro.Editor
                 }
                 var window = new SearchListPopupWindow(Math.Max(320, (int)rect.width), choices, StrFunc, OnChoiceSelected, null, IsCurrent);
                 window.GroupSeparator = GroupSeparator;
-                if (RememberSearch)
-                {
-                    window.InitialSearch = lastSearch;
-                    window.SearchChanged = OnSearchChanged;
-                }
                 SetupWindow(window);
                 UnityEditor.PopupWindow.Show(rect, window);
                 evt.StopPropagation();
             }
-        }
-
-        void OnSearchChanged(string term)
-        {
-            lastSearch = term;
-        }
-
-        /// Drops the remembered search, e.g. once the field lists something else.
-        public void ForgetSearch()
-        {
-            lastSearch = null;
         }
 
         protected virtual void SetupWindow(SearchListPopupWindow window)
@@ -129,11 +107,16 @@ namespace Ninjadini.Neuro.Editor
             /// choices list holds and then call <see cref="SetFooterText"/> / <see cref="RefreshList"/> to show it.
             public Action<SearchListPopupWindow> FooterButtonClicked;
 
-            /// The search the window opens with. Set before the window is shown.
-            public string InitialSearch;
+            /// Optional element placed between the search field and the list, e.g. filter and sort buttons.
+            /// Set before the window is shown; a handler inside it that changes the choices list calls
+            /// <see cref="RefreshList"/> to show the change.
+            public VisualElement HeaderElement;
 
-            /// Called with each change to the search. Set before the window is shown.
-            public Action<string> SearchChanged;
+            /// Optional element placed to the right of the search field, which then shrinks to
+            /// <see cref="SearchFieldWidthWithSide"/> of the row to make room. Set before the window is shown.
+            public VisualElement SearchSideElement;
+
+            const float SearchFieldWidthWithSide = 60f;
 
             const float GroupIndent = 14;
             const string CurrentMarker = "✔ ";
@@ -201,12 +184,32 @@ namespace Ninjadini.Neuro.Editor
                 searchField = new ToolbarSearchField();
                 searchField.style.right = 2;
                 searchField.RegisterValueChangedCallback(OnSearchFieldChanged);
-                if (!string.IsNullOrEmpty(InitialSearch))
+                if (SearchSideElement != null)
                 {
-                    searchField.SetValueWithoutNotify(InitialSearch);
+                    var searchRow = new VisualElement();
+                    searchRow.style.flexDirection = FlexDirection.Row;
+                    searchRow.style.alignItems = Align.Center;
+                    searchRow.style.flexShrink = 0;
+                    searchField.style.right = StyleKeyword.Null;
+                    searchField.style.width = Length.Percent(SearchFieldWidthWithSide);
+                    searchField.style.minWidth = 0;
+                    searchField.style.flexShrink = 0;
+                    searchRow.Add(searchField);
+                    SearchSideElement.style.flexGrow = 1;
+                    SearchSideElement.style.flexShrink = 1;
+                    searchRow.Add(SearchSideElement);
+                    container.Add(searchRow);
                 }
-                container.Add(searchField);
+                else
+                {
+                    container.Add(searchField);
+                }
                 searchField.schedule.Execute(FocusSearchField).ExecuteLater(50);
+                if (HeaderElement != null)
+                {
+                    HeaderElement.style.flexShrink = 0;
+                    container.Add(HeaderElement);
+                }
                 
                 listView.makeItem = MakeItem;
                 listView.bindItem = BindItem;
@@ -248,18 +251,12 @@ namespace Ninjadini.Neuro.Editor
                     }
                     container.Add(footer);
                 }
-                RefreshChoices(InitialSearch);
+                RefreshChoices();
             }
 
             void FocusSearchField()
             {
                 searchField.Focus();
-                // A remembered search comes back selected, so typing replaces it rather than appending.
-                var textInput = searchField.Q<TextField>();
-                if (textInput != null && !string.IsNullOrEmpty(textInput.value))
-                {
-                    textInput.SelectAll();
-                }
             }
 
             public void SetItemHeight(float height)
@@ -366,7 +363,6 @@ namespace Ninjadini.Neuro.Editor
             void OnSearchFieldChanged(ChangeEvent<string> evt)
             {
                 RefreshChoices(evt.newValue);
-                SearchChanged?.Invoke(evt.newValue);
             }
             
             void RefreshChoices(string searchTerm = null)

@@ -115,7 +115,6 @@ namespace Ninjadini.Neuro.Editor
             var secondBar = NeuroUiUtils.AddHorizontal(this);
             secondBar.style.flexShrink = 0f;
             itemDropdown = new NeuroReferencablesDropdownField(dataProvider.References);
-            itemDropdown.RememberSearch = true;
             itemDropdown.style.flexGrow = 1f;
             itemDropdown.style.flexShrink = 1f;
             itemDropdown.RegisterValueChangedCallback(OnItemDropDownChanged);

@@ -22,6 +22,10 @@ namespace Ninjadini.Neuro.Editor
             /// The nearest enclosing member's NeuroReferenceFilterAttributes, carried down to nested
             /// references (list elements, struct fields). Null when nothing above declared one.
             public NeuroReferenceFilterAttribute[] InheritedFilters;
+            /// Same as <see cref="InheritedFilters"/>, for the dropdown's filter buttons and sorts. Each kind is
+            /// resolved on its own: a nearer member's sort does not hide an outer member's buttons.
+            public NeuroReferenceFilterButtonsAttribute[] InheritedFilterButtons;
+            public NeuroReferenceSortAttribute[] InheritedSorts;
 
             public object GetValue()
             {

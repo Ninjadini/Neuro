@@ -24,7 +24,7 @@ public class MyOtherReferencableObject : Referencable, INeuroRefDropDownIconCust
 ```
 
 ### Filtering a reference drop down
-Narrow which items a `Reference<T>` field offers. Subclass `NeuroReferenceFilterAttribute` and put it on the field; the Neuro Editor and the Unity inspector drawer both honour it. The current value is always listed, marked "(filtered out)" if it no longer passes, so nothing becomes invisible. A stored value the filter rejects is reported by the built-in `NeuroReferenceFilterValidator` (editor Tests section and `NeuroContentTestsRunner`); pass `Validate = false` to only narrow the dropdown. The dropdown shows a footer ("Showing 32 of 50, filtered by [ArmourOnly]") while it is narrowed, with a "Show all" button next to it that lifts the filter for that one popup so the rest can still be picked; it reverts the next time the dropdown is opened. On a list, struct or class field it is inherited by every reference nested beneath it, the nearest attributed member winning; override `AppliesTo(Type)` so other reference types in the same container ignore it.
+Narrow which items a `Reference<T>` field offers. Subclass `NeuroReferenceFilterAttribute` and put it on the field; the Neuro Editor and the Unity inspector drawer both honour it. The current value is always listed, marked "(filtered out)" if it no longer passes, so nothing becomes invisible. A stored value the filter rejects is reported by the built-in `NeuroReferenceFilterValidator` (editor Tests section and `NeuroContentTestsRunner`); pass `Validate = false` to only narrow the dropdown. The dropdown shows a footer ("Showing 32 of 50, filtered by [ArmourOnly]") while it is narrowed, with an "Ignore [ArmourOnly]" button next to it that lifts the filter for that one popup so the rest can still be picked; it reverts the next time the dropdown is opened. On a list, struct or class field it is inherited by every reference nested beneath it, the nearest attributed member winning; override `AppliesTo(Type)` so other reference types in the same container ignore it.
 ```
 public class ArmourOnlyAttribute : NeuroReferenceFilterAttribute
 {
@@ -44,6 +44,30 @@ public class Loadout : Referencable
     [ArmourOnly]                     // inherited by the Item reference inside every ItemStack
     [Neuro(3)] public List<ItemStack> Wardrobe;
 }
+```
+
+### Filter buttons and sorting in a reference drop down
+`NeuroReferenceFilterButtonsAttribute` adds a row of filter buttons under the drop down's search ("All" first, one active at a time, each with its count), and `NeuroReferenceSortAttribute` adds a sort button after the built-in "Id" and "Name", beside the search field. Put them on the referencable class to have them wherever that type is listed, the Neuro Editor's item picker included, or on a field for that field only. The chosen button and sort are remembered per type until the editor restarts. Neither restricts the data: buttons narrow within any `NeuroReferenceFilterAttribute`, and the current value always stays listed.
+```
+public class ItemSlotButtonsAttribute : NeuroReferenceFilterButtonsAttribute
+{
+    // one attribute can yield many buttons
+    public override IEnumerable<NeuroReferenceFilterButton> GetButtons(NeuroReferences references)
+    {
+        foreach (ItemSlot slot in Enum.GetValues(typeof(ItemSlot)))
+            yield return new NeuroReferenceFilterButton(slot.ToString(), item => ((Item)item).Slot == slot);
+    }
+}
+
+public class SortByPriceAttribute : NeuroReferenceSortAttribute
+{
+    public override string Name => "Price";
+    public override int Compare(IReferencable a, IReferencable b, NeuroReferences references)
+        => ((Item)a).Price.CompareTo(((Item)b).Price);
+}
+
+[ItemSlotButtons, SortByPrice]
+public class Item : Referencable { ... }
 ```
 
 ### Basic editor customisation
