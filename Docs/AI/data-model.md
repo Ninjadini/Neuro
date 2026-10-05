@@ -69,7 +69,8 @@ Two kinds of field never carry a default at all:
 
 - **Class typed fields** (including `string` and `List<>`) read back as null when the data omits them.
   An initialiser there is not an error - `= new List<int>()` is worth writing for other reasons - it
-  just is not a default.
+  just is not a default. To have the editor start a newly created one half filled in, see
+  `[NeuroCreateWith]` in [unity.md](unity.md#customising-the-editor-ui).
 - **Structs that do not implement `IEquatable<>` of themselves**, which the defaulted `Sync` overload
   requires - among the Unity types that is `LayerMask`, `RangeInt`, `Ray`, `Ray2D`, `BoundingSphere`,
   `Keyframe`, `GradientColorKey` and `GradientAlphaKey`. `T?` is one of these too, and always reads back

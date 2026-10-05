@@ -111,6 +111,27 @@ public struct Size2 { [Neuro(1)] public int x; [Neuro(2)] public int y; }
 NeuroSyncEditorFields.SetInline(typeof(float2), showFieldNames: true);
 ```
 
+### Starting a new value half filled in
+Ticking a null field (or adding to a list) normally creates an empty object. `[NeuroCreateWith]` names a static
+method that makes it instead, so the parts that are nearly always the same are already there.
+```
+[NeuroCreateWith(nameof(NewEnterCondition))]   // tick the field: a crowns >= condition, no subtype picker
+[Neuro(9)] public ICondition EnterCondition;
+
+static ICondition NewEnterCondition() => new UserStatCondition
+{
+    Stat = StatIds.CrownsStat,
+    Comparison = ComparisonOperators.GreaterThanOrEquals,
+};
+
+[NeuroCreateWith(nameof(NewWave))]   // returns one element, so each wave added to the list starts filled in
+[Neuro(10)] public List<Wave> Waves;
+
+static Wave NewWave(Stage owner) => new Wave { Delay = owner.DefaultWaveDelay };   // optional: the object holding the field
+```
+The method can be private, and must return a new object each time. Editor only - it changes nothing about
+how the data is saved. A misspelt or mistyped method fails the `NeuroCreateWithTests` edit-mode test.
+
 ### Full editor customisation
 Say you want to show the 3 values in one line without the name labels.
 And it will say an error message if any of the values have lower than 1 value

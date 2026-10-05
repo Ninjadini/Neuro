@@ -302,6 +302,7 @@ namespace Ninjadini.Neuro.Editor
                             : null,
                         Controller = data.Controller,
                         MemberInfo = propInfo,
+                        Owner = obj,
                         InheritedFilters = NeuroReferenceFilters.GetOwn(propInfo) ?? data.InheritedFilters,
                         InheritedFilterButtons = NeuroReferenceFilters.GetOwn<NeuroReferenceFilterButtonsAttribute>(propInfo) ?? data.InheritedFilterButtons,
                         InheritedSorts = NeuroReferenceFilters.GetOwn<NeuroReferenceSortAttribute>(propInfo) ?? data.InheritedSorts,
@@ -503,6 +504,7 @@ namespace Ninjadini.Neuro.Editor
                 },
                 Controller = data.Controller,
                 MemberInfo = fieldInfo,
+                Owner = obj,
                 InheritedFilters = NeuroReferenceFilters.GetOwn(fieldInfo) ?? data.InheritedFilters,
                 InheritedFilterButtons = NeuroReferenceFilters.GetOwn<NeuroReferenceFilterButtonsAttribute>(fieldInfo) ?? data.InheritedFilterButtons,
                 InheritedSorts = NeuroReferenceFilters.GetOwn<NeuroReferenceSortAttribute>(fieldInfo) ?? data.InheritedSorts,
@@ -620,7 +622,14 @@ namespace Ninjadini.Neuro.Editor
                 return;
             }
             object newObj = null;
-            data.Controller?.SwitchObjectType(data.getter(), newType, ref newObj);
+            var oldObj = data.getter();
+            data.Controller?.SwitchObjectType(oldObj, newType, ref newObj);
+            // picking a type for a null value is creating one: the [NeuroCreateWith] default, if it is that type.
+            if (newObj == null && oldObj == null
+                && NeuroCreateWith.TryCreate(data, data.type, out var made) && made.GetType() == newType)
+            {
+                newObj = made;
+            }
             if (newObj != null)
             {
                 data.setter(newObj);
@@ -686,6 +695,12 @@ namespace Ninjadini.Neuro.Editor
 
         void ActivatorClicked(Type type, VisualElement fromElement, Action<object> createdCallback)
         {
+            // the field's own [NeuroCreateWith] has already picked the subtype, so it skips the picker too.
+            if (NeuroCreateWith.TryCreate(data, type, out var made))
+            {
+                createdCallback(made);
+                return;
+            }
             if (data.Controller != null)
             {
                 data.Controller.CreateObject(type, fromElement, delegate(object obj)

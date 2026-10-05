@@ -64,7 +64,9 @@ namespace Ninjadini.Neuro.Editor
                 {
                     Action performChange = () =>
                     {
-                        var newValue = evt.newValue ? Activator.CreateInstance(elementType) : null;
+                        var newValue = !evt.newValue ? null
+                            : NeuroCreateWith.TryCreate(data, elementType, out var made) ? made
+                            : Activator.CreateInstance(elementType);
                         data.SetValue(newValue);
                         UpdateCall(newValue != null);
                         if (subElement is ObjectInspector objectInspector)
@@ -644,7 +646,8 @@ namespace Ninjadini.Neuro.Editor
                 {
                     if (data.getter() is not IList list || list.Count == 0)
                     {
-                        var vv = CreateListType(data, 1);
+                        var vv = (IList)CreateListType(data, 1);
+                        FillAddedElements(data, vv, Enumerable.Range(0, 1));
                         data.SetValue(vv);
                         UpdateCall(true);
                     }
@@ -679,7 +682,9 @@ namespace Ninjadini.Neuro.Editor
                 {
                     Action performChange = () =>
                     {
-                        var vv = evt.newValue ? CreateListType(data, 0) : null;
+                        var vv = !evt.newValue ? null
+                            : NeuroCreateWith.TryCreate(data, data.type, out var made) ? made
+                            : CreateListType(data, 0);
                         data.SetValue(vv);
                         UpdateCall(true);
                     };
@@ -730,6 +735,7 @@ namespace Ninjadini.Neuro.Editor
                 {
                     var newValue = CreateListType(data, value.Count + indexes.Count()) as IList;
                     value.CopyTo((Array)newValue, 0);
+                    FillAddedElements(data, newValue, indexes);
                     value = newValue;
                     data.SetValue(newValue);
                 };
@@ -753,6 +759,8 @@ namespace Ninjadini.Neuro.Editor
             else
             {
                 listView.SetViewController(new ListViewController());
+                // raised after the list grows and before the size change below saves it.
+                listView.itemsAdded += indexes => FillAddedElements(data, value, indexes);
                 listView.viewController.itemsSourceSizeChanged += () =>
                 {
                     data.SetValue(value);
@@ -780,6 +788,21 @@ namespace Ninjadini.Neuro.Editor
                 });
             }
             return listView;
+        }
+
+        /// Fills new, still empty elements with the list field's [NeuroCreateWith] value, when it makes one.
+        static void FillAddedElements(ObjectInspector.Data data, IList list, IEnumerable<int> indexes)
+        {
+            var elementType = data.type.HasElementType ? data.type.GetElementType() : data.type.GetGenericArguments()[0];
+            var empty = elementType.IsValueType ? Activator.CreateInstance(elementType) : null;
+            foreach (var index in indexes)
+            {
+                if (index < list.Count && Equals(list[index], empty)
+                    && NeuroCreateWith.TryCreate(data, elementType, out var made))
+                {
+                    list[index] = made;
+                }
+            }
         }
 
         static object CreateListType(ObjectInspector.Data data, int count = 0)
@@ -955,7 +978,9 @@ namespace Ninjadini.Neuro.Editor
                 {
                     Action performChange = () =>
                     {
-                        var vv = evt.newValue ? CreateListType(data, 0) : null;
+                        var vv = !evt.newValue ? null
+                            : NeuroCreateWith.TryCreate(data, data.type, out var made) ? made
+                            : CreateListType(data, 0);
                         data.SetValue(vv);
                         UpdateCall(true);
                     };

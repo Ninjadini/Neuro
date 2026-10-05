@@ -13,6 +13,9 @@ namespace Ninjadini.Neuro.Editor
             public Action<object> setter;
             public IController Controller;
             public MemberInfo MemberInfo;
+            /// The object <see cref="MemberInfo"/> sits on - for a list element, the object holding the list.
+            /// Null at the root.
+            public object Owner;
             public string path;
             /// Where this field sits in the root object, as a chain that can be followed on any other object of
             /// the same type - which is what lets a field be edited across a whole table. Null where it can not

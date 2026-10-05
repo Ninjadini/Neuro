@@ -311,6 +311,43 @@ copy that is then written back to its field. Items are greyed out where the cont
 Implemented in `ObjectInspector.ContextMenu.cs`; only an object whose type has such methods takes the
 right-click, so an object without them never swallows a menu the host UI has of its own.
 
+**Starting values for new objects.** `[NeuroCreateWith(nameof(Method))]` on a field names a static method
+that makes the value the editor creates under it, in place of an empty `new T()` - so ticking a null
+`ICondition` can hand back a half-filled `UserStatCondition` instead of opening the subtype picker on an
+empty one. Runtime attribute, editor-only effect; nothing is serialised differently.
+
+```csharp
+[NeuroCreateWith(nameof(NewEnterCondition))]
+[Neuro(9)] public ICondition EnterCondition;
+
+static ICondition NewEnterCondition() => new UserStatCondition
+{
+    Stat = StatIds.CrownsStat,
+    Comparison = ComparisonOperators.GreaterThanOrEquals,
+};
+```
+
+- **Lookup**: a static method, public or not, on the field's declaring type or a base of it -
+  `[NeuroCreateWith(typeof(Other), nameof(Other.Make))]` points elsewhere. One overload only.
+- **Parameters**: none, or one - the field's owner (the object the field sits on; for a list element the
+  object holding the list), passed when it is an instance of the parameter type, null otherwise.
+- **The return type picks the slot.** Returning the field's type makes the field's value; on a list,
+  array or dictionary field, returning the element (dictionary: value) type makes each element instead.
+  Declare it exactly - a method returning `object` fits nothing.
+- **When it runs**: ticking a null field's toggle (class, `T?`, list or dictionary), picking a subtype for
+  a null value from the dropdown when the method makes that subtype, and adding to a list or array (the
+  footer `+` and the empty list's `+`; new elements still null or default are filled). Not when switching
+  an existing value's subtype - that keeps the old values - and not for root items in the Neuro Editor's
+  `New` button.
+- **Return a new object every call.** The editor stores whatever it gets, so a cached instance would be
+  shared by every item created from it.
+- A method that is missing or the wrong shape logs an error and the editor falls back to `new T()`; one
+  that throws is logged the same way. `NeuroCreateWithTests` (edit-mode, ships with the editor assembly)
+  fails on any `[NeuroCreateWith]` that does not resolve or whose return type fits neither slot.
+
+Implemented in `NeuroCreateWith` (editor) plus the creation paths in `ObjectInspector` /
+`ObjectInspectorFields`; `ObjectInspector.Data.Owner` carries the owner down.
+
 ## Searching the data
 
 **⌕ Search**, next to the type dropdown in the Neuro Editor, finds a piece of text in field names (the code
