@@ -13,6 +13,18 @@ namespace Ninjadini.Neuro
             return Address == other.Address;
         }
 
+        public override bool Equals(object obj)
+        {
+            return obj is AssetAddress other && Equals(other);
+        }
+
+        // Without this a dictionary keyed by an AssetAddress falls back to ValueType.GetHashCode,
+        // which boxes the struct on every lookup.
+        public override int GetHashCode()
+        {
+            return Address != null ? Address.GetHashCode() : 0;
+        }
+
         public bool HasAddress() => !string.IsNullOrEmpty(Address);
 
         public bool IsEmpty() => string.IsNullOrEmpty(Address);
