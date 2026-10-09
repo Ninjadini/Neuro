@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Ninjadini.Neuro.Sync;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -728,7 +729,32 @@ namespace Ninjadini.Neuro.Editor
                 var subElement = CreateField(dataCopy);
                 subElement.style.backgroundColor = new StyleColor(new Color(0.26f, 0.26f, 0.26f));
                 element.Add(subElement);
+                if (data.setter != null && canEdit)
+                {
+                    AddCloneElementButton(element, subElement, () => CloneElementAt(index));
+                }
             };
+            void CloneElementAt(int index)
+            {
+                var copy = CloneElement(value[index]);
+                if (value.IsFixedSize)
+                {
+                    var newValue = CreateListType(data, value.Count + 1) as IList;
+                    for (int i = 0, l = value.Count; i < l; i++)
+                    {
+                        newValue[i > index ? i + 1 : i] = value[i];
+                    }
+                    newValue[index + 1] = copy;
+                    data.SetValue(newValue);
+                }
+                else
+                {
+                    value.Insert(index + 1, copy);
+                    data.SetValue(value);
+                }
+                UpdateCall(true);
+                listView.SetSelection(index + 1);
+            }
             if (data.type.IsArray)
             {
                 listView.itemsAdded += indexes =>
@@ -788,6 +814,48 @@ namespace Ninjadini.Neuro.Editor
                 });
             }
             return listView;
+        }
+
+        /// Hangs the clone button at the top right of a list element. An object's foldout header has the room
+        /// to its right; anything drawn as a single row is shortened to make room for it.
+        static void AddCloneElementButton(VisualElement element, VisualElement subElement, Action clicked)
+        {
+            const int width = 20;
+            var btn = NeuroUiUtils.AddButton(element, "❏", clicked);
+            btn.tooltip = "Clone this element, inserting the copy below it";
+            btn.style.position = Position.Absolute;
+            btn.style.top = 1;
+            btn.style.right = 1;
+            btn.style.width = width;
+            btn.style.height = 18;
+            btn.style.paddingLeft = btn.style.paddingRight = 0;
+            btn.style.marginLeft = btn.style.marginRight = btn.style.marginTop = btn.style.marginBottom = 0;
+            if (subElement is not ObjectInspector || subElement.Children().FirstOrDefault() is not Foldout)
+            {
+                subElement.style.marginRight = width + 2;
+            }
+        }
+
+        /// A deep copy of a list element: Neuro types round-trip through bytes, anything else (primitives,
+        /// strings, enums, Unity objects, unregistered structs) is copied as the value it is.
+        static object CloneElement(object value)
+        {
+            if (value == null || value is string || value is UnityEngine.Object)
+            {
+                return value;
+            }
+            var type = value.GetType();
+            if (type.IsPrimitive || type.IsEnum)
+            {
+                return value;
+            }
+            NeuroSyncTypes.TryRegisterAssembly(type.Assembly);
+            if (!NeuroSyncTypes.CheckIfTypeRegisteredUsingReflection(type))
+            {
+                return value;
+            }
+            var bytes = new NeuroBytesWriter().WriteObject(value).ToArray();
+            return new NeuroBytesReader().ReadObject(bytes, type);
         }
 
         /// Fills new, still empty elements with the list field's [NeuroCreateWith] value, when it makes one.

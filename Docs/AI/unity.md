@@ -300,6 +300,13 @@ horizontal row of a dropdown, an enum and a number that read fine on their own).
 compile but do nothing here: `[Delayed]`, `[InspectorName]`, `[ColorUsage]`, `[GradientUsage]`,
 `[NonReorderable]`, `[ContextMenuItem]`.
 
+**Cloning a list element.** Every element of an editable list or array has a `❏` button at the top right of
+its first row - beside the null tick on an object's foldout header - that inserts a deep copy directly
+below it and selects it. Neuro types are copied through a bytes round trip (`CloneElement` in
+`ObjectInspectorFields.Drawer.cs`), so the copy shares no lists or child objects with the original and
+keeps its subtype; primitives, strings, enums, Unity objects and unregistered structs are copied as the
+value. Dictionaries don't get one - a copy would collide on its key.
+
 **`[ContextMenu]` methods** work as they do on a component: an instance method with no parameters marked
 `[ContextMenu("Path")]` shows when its object is right-clicked - its foldout header, its fields' labels,
 the space around them (a text box keeps its own cut / copy / paste). This works in any `ObjectInspector`,
