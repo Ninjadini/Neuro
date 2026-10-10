@@ -18,7 +18,7 @@ namespace Ninjadini.Neuro.Editor
         
         Data data;
         object drawnObj;
-        protected SearchablePopupField<string> subtypesDropDown;
+        protected SearchablePopupField<Type> subtypesDropDown;
         protected Foldout foldout;
         protected Toggle existsToggle;
         protected VisualElement fieldsParent;
@@ -569,7 +569,7 @@ namespace Ninjadini.Neuro.Editor
                 {
                     EnsureSubTypesDropdown();
                     subtypesDropDown.SetEnabled(false);
-                    subtypesDropDown.value = GetSubtypeChoiceName(type);
+                    subtypesDropDown.value = type;
                 }
                 else
                 {
@@ -584,44 +584,18 @@ namespace Ninjadini.Neuro.Editor
                 return;
             }
             EnsureSubTypesDropdown();
-            subtypesDropDown.choices = allClasses.Select(GetSubtypeChoiceName).ToList();
-            subtypesDropDown.SetValueWithoutNotify(GetSubtypeChoiceName(type) ?? "null");
-        }
-        
-        static string GetClassName(Type type)
-        {
-            return type?.DeclaringType == null ? type?.Name : $"{type.DeclaringType.Name}.{type.Name}";
-        }
-
-        /// How a subtype is listed in the pickers: its own [DisplayName] if it has one - "Stage / Spawn" files it
-        /// under a "Stage" header, like the Neuro Editor's type dropdown - else its class name. Not inherited, and
-        /// not read off a [NeuroGlobalType], whose [DisplayName] is its path in the type dropdown instead.
-        public static string GetSubtypeChoiceName(Type type)
-        {
-            var displayName = type == null || type.IsDefined(typeof(NeuroGlobalTypeAttribute), false)
-                ? null
-                : type.GetCustomAttribute<DisplayNameAttribute>(false)?.DisplayName;
-            return string.IsNullOrEmpty(displayName) ? GetClassName(type) : displayName;
-        }
-
-        /// The last segment of a grouped choice name, for the closed dropdown, which has no room for the path.
-        static string GetChoiceLeafName(string choiceName)
-        {
-            if (choiceName == null)
-            {
-                return null;
-            }
-            var index = choiceName.LastIndexOf(NeuroEditorNavElement.TypeGroupSeparator, StringComparison.Ordinal);
-            return index < 0 ? choiceName : choiceName.Substring(index + NeuroEditorNavElement.TypeGroupSeparator.Length).Trim();
+            subtypesDropDown.choices = allClasses.ToList();
+            subtypesDropDown.SetValueWithoutNotify(type);
         }
 
         void EnsureSubTypesDropdown()
         {
             if (subtypesDropDown == null)
             {
-                subtypesDropDown = new SearchablePopupField<string>();
-                subtypesDropDown.GroupSeparator = NeuroEditorNavElement.TypeGroupSeparator;
-                subtypesDropDown.formatSelectedValueCallback = GetChoiceLeafName;
+                subtypesDropDown = new SearchablePopupField<Type>();
+                subtypesDropDown.SetFormatFunc(NeuroUnityEditorSettings.GetSubtypeChoiceName);
+                subtypesDropDown.GroupSeparator = SearchablePopupField.PathSeparator;
+                subtypesDropDown.ShowLeafWhenClosed = true;
                 subtypesDropDown.RegisterValueChangedCallback(OnSubtypeDropDownChanged);
             }
 
@@ -636,11 +610,9 @@ namespace Ninjadini.Neuro.Editor
             NeuroUiUtils.SetDisplay(subtypesDropDown, true);
         }
 
-        void OnSubtypeDropDownChanged(ChangeEvent<string> evt)
+        void OnSubtypeDropDownChanged(ChangeEvent<Type> evt)
         {
-            var allClasses = data.Controller?.GetPossibleCreationTypesOf(data.type) ?? FindAllPossibleCreationTypesOf(data.type).ToArray();
-            // the choices are spelled with GetSubtypeChoiceName, which is not Type.Name for a nested type or a [DisplayName].
-            var newType = allClasses.FirstOrDefault(t => GetSubtypeChoiceName(t) == evt.newValue);
+            var newType = evt.newValue;
             if (newType == null)
             {
                 return;
@@ -799,7 +771,7 @@ namespace Ninjadini.Neuro.Editor
                 var width = Math.Max(320, (int)rect.width);
                 var window = new SearchablePopupField<Type>.SearchListPopupWindow(width,
                     allClasses.ToList(),
-                    GetSubtypeChoiceName,
+                    NeuroUnityEditorSettings.GetSubtypeChoiceName,
                     (t) =>
                     {
                         if (t != null)
@@ -813,7 +785,7 @@ namespace Ninjadini.Neuro.Editor
                     },
                     () => createdCallback(null)
                 );
-                window.GroupSeparator = NeuroEditorNavElement.TypeGroupSeparator;
+                window.GroupSeparator = SearchablePopupField.PathSeparator;
                 UnityEditor.PopupWindow.Show(rect, window);
             }
         }

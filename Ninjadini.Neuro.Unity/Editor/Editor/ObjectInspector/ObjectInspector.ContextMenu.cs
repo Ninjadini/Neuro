@@ -66,7 +66,7 @@ namespace Ninjadini.Neuro.Editor
             {
                 return;
             }
-            prefix ??= GetClassName(obj.GetType()) + "/";
+            prefix ??= NeuroEditorUtils.GetTypeName(obj.GetType()) + "/";
             if (evt.menu.MenuItems().Count > 0)
             {
                 evt.menu.AppendSeparator();

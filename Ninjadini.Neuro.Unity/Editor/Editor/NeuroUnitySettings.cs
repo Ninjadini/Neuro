@@ -89,16 +89,35 @@ namespace Ninjadini.Neuro.Editor
             {
                 return typeSetting.DropDownName;
             }
-            var displayNameAttribute = type.GetCustomAttribute<System.ComponentModel.DisplayNameAttribute>();
-            if(!string.IsNullOrEmpty(displayNameAttribute?.DisplayName))
+            var displayName = GetOwnDisplayName(type);
+            if(!string.IsNullOrEmpty(displayName))
             {
-                return displayNameAttribute.DisplayName;
+                return displayName;
             }
             if (typeof(ISingletonReferencable).IsAssignableFrom(type))
             {
                 return type.Name;
             }
             return type.Name +" []";
+        }
+
+        /// How a subtype is listed in the subtype pickers: its own [DisplayName] if it has one - "Stage / Spawn"
+        /// files it under a "Stage" header, like GetTypeDropDownName's paths - else its class name. Not read off a
+        /// [NeuroGlobalType], whose [DisplayName] is its GetTypeDropDownName path instead.
+        public static string GetSubtypeChoiceName(Type type)
+        {
+            if (type == null)
+            {
+                return "null";
+            }
+            var displayName = type.IsDefined(typeof(NeuroGlobalTypeAttribute), false) ? null : GetOwnDisplayName(type);
+            return string.IsNullOrEmpty(displayName) ? NeuroEditorUtils.GetTypeName(type) : displayName;
+        }
+
+        /// Never inherited: an unnamed subclass is listed as itself, not under its parent's name.
+        static string GetOwnDisplayName(Type type)
+        {
+            return type.GetCustomAttribute<System.ComponentModel.DisplayNameAttribute>(false)?.DisplayName;
         }
 
         public void Save()

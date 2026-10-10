@@ -8,9 +8,29 @@ using UnityEngine.UIElements;
 
 namespace Ninjadini.Neuro.Editor
 {
+    public static class SearchablePopupField
+    {
+        /// The GroupSeparator the editor's type pickers use: "Core / Stats []" shows as "Stats []" under a "Core"
+        /// header, the same `/` convention as Unity's own menu paths.
+        public const string PathSeparator = "/";
+
+        /// The last part of a grouped choice's text - "Stats []" for "Core / Stats []". The text as it is when there
+        /// is no separator.
+        public static string GetLeaf(string text, string separator)
+        {
+            if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(separator))
+            {
+                return text;
+            }
+            var index = text.LastIndexOf(separator, StringComparison.Ordinal);
+            return index < 0 ? text : text.Substring(index + separator.Length).Trim();
+        }
+    }
+
     public class SearchablePopupField<TValueChoice> : PopupField<TValueChoice>
     {
         Func<TValueChoice, string> getStringFunc;
+        bool showLeafWhenClosed;
         
         public Action BeforePopupShown;
         public Action<TValueChoice> ValueChanged;
@@ -19,6 +39,18 @@ namespace Ninjadini.Neuro.Editor
         /// "Events []" under an "Audio" header nested under "Core". A group's own items come before its
         /// subgroups; items keep the order given, groups are sorted by name.
         public string GroupSeparator;
+
+        /// With a GroupSeparator, the closed field shows only the last part of the choice's text - "Stats []"
+        /// rather than "Core / Stats []" - for a field with no room for the whole path. The popup is unchanged.
+        public bool ShowLeafWhenClosed
+        {
+            get => showLeafWhenClosed;
+            set
+            {
+                showLeafWhenClosed = value;
+                UpdateSelectedValueFormat();
+            }
+        }
 
         public SearchablePopupField()
         {
@@ -29,12 +61,19 @@ namespace Ninjadini.Neuro.Editor
         {
             this.getStringFunc = getStringFunc;
             formatListItemCallback = getStringFunc;
-            formatSelectedValueCallback = getStringFunc;
+            UpdateSelectedValueFormat();
+        }
+
+        void UpdateSelectedValueFormat()
+        {
+            formatSelectedValueCallback = showLeafWhenClosed
+                ? choice => SearchablePopupField.GetLeaf(StrFunc(choice), GroupSeparator)
+                : getStringFunc;
         }
         
         string StrFunc(TValueChoice choice)
         {
-            return getStringFunc != null ? getStringFunc(choice) : choice.ToString();
+            return getStringFunc != null ? getStringFunc(choice) : choice?.ToString();
         }
 
         bool IsCurrent(TValueChoice choice)
