@@ -287,7 +287,10 @@ public class TroopBuildProcessor : INeuroBundledDataResourcesForBuildProcessor
 ## Customising the editor UI
 
 Cheap wins: `[DisplayName]` (on a **type** - renames it in dropdowns, and `"Core / Stats []"` nests it under
-a "Core" header like a Unity menu path; it is ignored on a field),
+a "Core" header like a Unity menu path; it is ignored on a field. On a `[NeuroGlobalType]` it is the type's
+entry in the Neuro Editor's type dropdown; on a subtype it is how the subtype picker and the "create" popup
+list it, so `"Stage / Spawn creeps"` groups a big `IAction` family the same way. Read off the class itself,
+never inherited - an unnamed subclass shows its class name),
 `[Tooltip]` / `[Description]` (type or field), `[Header("> foldout")]` (a leading `>` turns the header into
 a foldout holding every field down to the next `>` header - a plain `[Header]` after it lands inside, and a
 bare `[Header(">")]` closes it),
