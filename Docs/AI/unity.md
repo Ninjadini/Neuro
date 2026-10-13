@@ -527,6 +527,15 @@ public class SortByPriceAttribute : NeuroReferenceSortAttribute
 [NeuroGlobalType(5)] public class Item : Referencable { ... }
 ```
 
+**Narrowing a subtype picker.** `NeuroSubtypeFilterAttribute` is the same idea for a polymorphic field's
+subtype dropdown and the "create" popup (a null field, a new list element): subclass it, decide per
+`Include(Type subtype)`, and put it on the base class or interface - every field declared as that type picks
+it up (read off the type and its base classes, not off interfaces a class implements). It is only a
+convenience: the popup's footer reads "Showing 24 of 57, filtered by [HideInternalActions]" with a
+**Show all** button that lists the rest for that one popup, the current value's type is always listed, a
+filter that would leave nothing is ignored, and nothing is validated. Toolkit's `[HideInternalActions]` on
+`IAction` is the shape.
+
 Reference dropdown labels/icons: implement `INeuroRefDropDownCustomizable` /
 `INeuroRefDropDownIconCustomizable`. Full custom drawers: `ICustomNeuroEditorProvider.CreateCustomDrawer`
 returns a `VisualElement` for types you take over, `null` otherwise, with helpers on

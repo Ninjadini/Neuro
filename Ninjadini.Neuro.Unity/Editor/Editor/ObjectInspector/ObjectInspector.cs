@@ -18,7 +18,7 @@ namespace Ninjadini.Neuro.Editor
         
         Data data;
         object drawnObj;
-        protected SearchablePopupField<Type> subtypesDropDown;
+        protected NeuroSubtypePopupField subtypesDropDown;
         protected Foldout foldout;
         protected Toggle existsToggle;
         protected VisualElement fieldsParent;
@@ -584,7 +584,7 @@ namespace Ninjadini.Neuro.Editor
                 return;
             }
             EnsureSubTypesDropdown();
-            subtypesDropDown.choices = allClasses.ToList();
+            subtypesDropDown.SetTypes(data.type, allClasses);
             subtypesDropDown.SetValueWithoutNotify(type);
         }
 
@@ -592,7 +592,7 @@ namespace Ninjadini.Neuro.Editor
         {
             if (subtypesDropDown == null)
             {
-                subtypesDropDown = new SearchablePopupField<Type>();
+                subtypesDropDown = new NeuroSubtypePopupField();
                 subtypesDropDown.SetFormatFunc(NeuroUnityEditorSettings.GetSubtypeChoiceName);
                 subtypesDropDown.GroupSeparator = SearchablePopupField.PathSeparator;
                 subtypesDropDown.ShowLeafWhenClosed = true;
@@ -754,10 +754,11 @@ namespace Ninjadini.Neuro.Editor
                 EditorUtility.DisplayDialog("", $"Could not find any valid sub types of {type}", "OK");
                 return;
             }
-            ShowCreateInstanceWindow(allClasses, fromElement, createdCallback);
+            ShowCreateInstanceWindow(allClasses, fromElement, createdCallback, type);
         }
         
-        public static void ShowCreateInstanceWindow(Type[] allClasses, VisualElement fromElement, Action<object> createdCallback)
+        /// <param name="baseType">The type being created, whose [NeuroSubtypeFilter]s narrow the list; null for none.</param>
+        public static void ShowCreateInstanceWindow(Type[] allClasses, VisualElement fromElement, Action<object> createdCallback, Type baseType = null)
         {
             if (allClasses.Length == 1)
             {
@@ -769,8 +770,9 @@ namespace Ninjadini.Neuro.Editor
                 rect.y -= rect.height;
 
                 var width = Math.Max(320, (int)rect.width);
+                var shownList = allClasses.ToList();
                 var window = new SearchablePopupField<Type>.SearchListPopupWindow(width,
-                    allClasses.ToList(),
+                    shownList,
                     NeuroUnityEditorSettings.GetSubtypeChoiceName,
                     (t) =>
                     {
@@ -786,6 +788,11 @@ namespace Ninjadini.Neuro.Editor
                     () => createdCallback(null)
                 );
                 window.GroupSeparator = SearchablePopupField.PathSeparator;
+                var visible = NeuroSubtypeFilters.Visible(baseType, allClasses, null, out var filterName);
+                if (visible != null)
+                {
+                    NeuroSubtypeFilters.SetupWindow(window, shownList, allClasses, visible, filterName);
+                }
                 UnityEditor.PopupWindow.Show(rect, window);
             }
         }
