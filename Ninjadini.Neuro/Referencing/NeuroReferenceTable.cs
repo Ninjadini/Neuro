@@ -45,10 +45,14 @@ public class NeuroReferenceTable<T> : INeuroReferenceTable where T: class,  IRef
         }
     }
 
+    /// Replaces whatever is registered under refId - a loaded item or another loader - so reading a
+    /// references list over a loaded table patches it (see NeuroBytesReader.ReadReferencesListInto).
     public void Register(uint refId, INeuroReferencedItemLoader loader)
     {
         _byId.Remove(refId);
         _loaders[refId] = loader;
+        // The new loader may name a new item, or rename the one it replaces.
+        _nameToId = null;
     }
         
     public void Unregister(uint refId)

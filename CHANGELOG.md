@@ -57,6 +57,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   editor's reference tooling did not see it at all - declare the root type and cast where needed.
 
 ### Fixed
+- Registering a loader over an item (what reading a references list does) now drops the table's cached
+  RefName lookup, so a new or renamed item is found by its name.
 - Reading a list of objects into an object that already held one no longer mixes the items up. Json matched
   each item against the wrong existing instance, so items were read into a neighbour's object or freshly
   allocated; binary left the previous object in place where the data said `null`.
