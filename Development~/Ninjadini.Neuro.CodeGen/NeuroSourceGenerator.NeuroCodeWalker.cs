@@ -163,6 +163,40 @@ namespace Ninjadini.Neuro.CodeGen
                 }
             }
 
+            /// An enum anywhere in a field's type needs its NeuroSyncEnumTypes registered - the enum
+            /// itself, a T?, and the element of a List, a Dictionary (key or value) or an array, however
+            /// deep - because every one syncs through NeuroSyncEnumTypes<T> and nothing else would
+            /// register one from another assembly. A List<MyEnum> missed here throws a
+            /// NullReferenceException from GetInt the first time it is written.
+            void CollectEnumTypes(ITypeSymbol type)
+            {
+                if (type == null)
+                {
+                    return;
+                }
+                if (type.TypeKind == TypeKind.Enum)
+                {
+                    var fullName = NeuroCodeGenUtils.GetFullName(type);
+                    if (enumTypesAdded.Add(fullName))
+                    {
+                        enumTypes.Add(fullName);
+                    }
+                    return;
+                }
+                if (type is IArrayTypeSymbol arrayType)
+                {
+                    CollectEnumTypes(arrayType.ElementType);
+                    return;
+                }
+                if (type is INamedTypeSymbol namedType && namedType.IsGenericType)
+                {
+                    foreach (var typeArgument in namedType.TypeArguments)
+                    {
+                        CollectEnumTypes(typeArgument);
+                    }
+                }
+            }
+
             static string CreateTagsList(List<TagNameLocation> list, string noun)
             {
                 return NeuroTagReport.Describe(ToEntries(list), noun);
@@ -359,20 +393,7 @@ namespace Ninjadini.Neuro.CodeGen
                         IsEnum = fieldType.TypeKind == TypeKind.Enum,
                         IsReadonly = fieldSymbol.IsReadOnly
                     });
-                    // A nullable enum still needs its enum registered - T? syncs through the enum's own
-                    // NeuroSyncEnumTypes, and nothing else would register one from another assembly.
-                    var nullableType = fieldType as INamedTypeSymbol;
-                    var enumType = nullableType != null && nullableType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T
-                        ? nullableType.TypeArguments[0]
-                        : fieldType;
-                    if (enumType.TypeKind == TypeKind.Enum)
-                    {
-                        var fullName = NeuroCodeGenUtils.GetFullName(enumType);
-                        if (enumTypesAdded.Add(fullName))
-                        {
-                            enumTypes.Add(fullName);
-                        }
-                    }
+                    CollectEnumTypes(fieldType);
                     classToGenerate.HasPrivateFields |= fieldSymbol.DeclaredAccessibility != Accessibility.Public;
                 }
                 if (classToGenerate != null)

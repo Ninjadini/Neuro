@@ -27,7 +27,7 @@ namespace Ninjadini.Neuro.Sync
         {
             if (_getInt == null)
             {
-                NeuroSyncTypes<T>.TryAutoRegisterTypeOrThrow();
+                EnsureRegistered();
             }
             return _getInt(value);
         }
@@ -36,9 +36,30 @@ namespace Ninjadini.Neuro.Sync
         {
             if (_getEnum == null)
             {
-                NeuroSyncTypes<T>.TryAutoRegisterTypeOrThrow();
+                EnsureRegistered();
             }
             return _getEnum(value);
+        }
+
+        static void EnsureRegistered()
+        {
+            NeuroSyncTypes<T>.TryAutoRegisterTypeOrThrow();
+            if (_getInt != null)
+            {
+                return;
+            }
+            // The assembly's generated register did not cover this enum (it only reaches ones the
+            // generator saw in a field type - an older generator missed List<T> elements), or it had
+            // already run before NeuroSyncTypes<T> installed its enum delegate, which makes
+            // TryAutoRegisterTypeOrThrow return without registering anything. Fall back to a boxed
+            // Convert / Enum.ToObject pair: slower than the generated casts, but correct for any
+            // underlying type.
+            var type = typeof(T);
+            if (!type.IsEnum)
+            {
+                throw new InvalidOperationException($"{nameof(NeuroSyncEnumTypes<T>)} used with a non-enum type {type}");
+            }
+            Register(v => Convert.ToInt32(v), i => (T)Enum.ToObject(type, i));
         }
         
         public static string GetName(int value)

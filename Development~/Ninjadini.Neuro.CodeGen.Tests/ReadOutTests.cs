@@ -368,6 +368,52 @@ if(_NeuroSyncNS.NeuroSyncEnumTypes<MyEnum>.IsEmpty())
     }
         
     [Test]
+    public void TestListOfEnumRegistersEnum()
+    {
+        var src = @"
+using Ninjadini.Neuro;
+        partial class TestClass
+        {
+            [Neuro(1)] public System.Collections.Generic.List<MyEnum> list;
+        }
+        enum MyEnum
+        {
+            A,
+            B,
+            C
+        }
+";
+        TestUtils.TestSourceGenerates(src, 
+            @"
+if(_NeuroSyncNS.NeuroSyncEnumTypes<MyEnum>.IsEmpty())
+         _NeuroSyncNS.NeuroSyncEnumTypes<MyEnum>.Register((e) => (int)e, (i) => (MyEnum)i);
+"
+        );
+    }
+        
+    [Test]
+    public void TestDictionaryOfEnumsRegistersBothEnums()
+    {
+        var src = @"
+using Ninjadini.Neuro;
+        partial class TestClass
+        {
+            [Neuro(1)] public System.Collections.Generic.Dictionary<KeyEnum, ValueEnum> dict;
+        }
+        enum KeyEnum { A, B }
+        enum ValueEnum { X, Y }
+";
+        TestUtils.TestSourceGenerates(src, 
+            @"
+if(_NeuroSyncNS.NeuroSyncEnumTypes<KeyEnum>.IsEmpty())
+         _NeuroSyncNS.NeuroSyncEnumTypes<KeyEnum>.Register((e) => (int)e, (i) => (KeyEnum)i);
+        if(_NeuroSyncNS.NeuroSyncEnumTypes<ValueEnum>.IsEmpty())
+         _NeuroSyncNS.NeuroSyncEnumTypes<ValueEnum>.Register((e) => (int)e, (i) => (ValueEnum)i);
+"
+        );
+    }
+        
+    [Test]
     public void TestEnumWithDefaultValue()
     {
         var src = @"
