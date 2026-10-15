@@ -266,17 +266,15 @@ namespace Ninjadini.Neuro.Editor
             {
                 return;
             }
-            history.AddToHistory(selectedItem);
+            typeDropdown.SetValueWithoutNotify(typeDropdown.choices[index]);
             if (refId != 0)
             {
-                selectedType = type;
-                typeDropdown.SetValueWithoutNotify(typeDropdown.choices[index]);
-                itemDropdown.SetValue(selectedType, refId);
-                UpdateAddBtn();
+                SetSelectedType(type);
+                SetSelectedItem(dataProvider.Find(type, refId));
             }
             else
             {
-                typeDropdown.value = typeDropdown.choices[index];
+                SelectFirstItemOfType(type);
             }
         }
 
@@ -302,19 +300,26 @@ namespace Ninjadini.Neuro.Editor
         void OnTypeDropDownChanged(ChangeEvent<string> evt)
         {
             var index = typeDropdown.choices.IndexOf(evt.newValue);
-            var type = allTypes[index];
+            SelectFirstItemOfType(allTypes[index]);
+        }
+
+        void SelectFirstItemOfType(Type type)
+        {
+            if (selectedType != type)
+            {
+                SetSelectedType(type);
+                itemDropdown.SetValue(selectedType, 0, false);
+                var firstItem = itemDropdown.choices.FirstOrDefault();
+                SetSelectedItem(firstItem != 0 ? dataProvider.Find(type, firstItem) : null);
+            }
+        }
+
+        void SetSelectedType(Type type)
+        {
             if (selectedType != type)
             {
                 selectedType = type;
-                itemDropdown.SetValue(selectedType, 0, false);
-                var firstItem = itemDropdown.choices.FirstOrDefault();
-                itemDropdown.value = firstItem;
-                if (firstItem == 0)
-                {
-                    OnItemDropDownChanged(ChangeEvent<uint>.GetPooled(0, 0));
-                }
-                classSettingsElement.UpdateClassSettingPanel(selectedType);
-                UpdateAddBtn();
+                classSettingsElement.UpdateClassSettingPanel(type);
             }
         }
 
