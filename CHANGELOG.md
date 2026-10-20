@@ -2,6 +2,24 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.2]
+
+### Added
+- `[NeuroCreateWith]` - a static method fills new values in the editor instead of an empty `new T()`.
+- `NeuroSubtypeFilterAttribute` - narrows the subtypes the editor's pickers offer; subtype pickers also
+  take `[DisplayName]` names and `/` categories.
+- `NeuroReferenceFilterButtonsAttribute` / `NeuroReferenceSortAttribute` - custom filter and sort buttons
+  on reference dropdowns.
+- `ICustomNeuroEditorProvider.CreateCustomFieldHeader` - custom content above a single field.
+- Clone button on list elements.
+- Reference dropdowns can remember the last search.
+- `Tools > Neuro > Make Asset Addresses Addressable` - makes every asset an `AssetAddress` points at Addressable.
+- Nullable enum support. `AssetAddress` now implements `Equals` / `GetHashCode`.
+
+### Fixed
+- Enums used only inside a list, array or dictionary were never registered.
+- A field declared as a concrete subtype of a polymorphic type did not serialize correctly.
+
 ## [0.2.1]
 
 ### Added
