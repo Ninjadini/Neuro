@@ -485,6 +485,12 @@ namespace Ninjadini.Neuro
                 
                 NeuroSyncSubTypes<T>.Sync(this, subTag, ref value);
             }
+            else if (NeuroSyncTypes<T>.SizeType == NeuroConstants.ChildWithType)
+            {
+                // Declared as the subclass itself: no tag needed, but its own delegate covers only its own
+                // fields - the sub type sync adds the base classes'.
+                NeuroSyncSubTypes<T>.Sync(this, NeuroSyncSubTypes<T>.GetTag(typeof(T)), ref value);
+            }
             else
             {
                 NeuroJsonSyncTypes<T>.GetOrThrow()(this, ref value);

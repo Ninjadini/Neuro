@@ -413,7 +413,8 @@ namespace Ninjadini.Neuro
             if (nodeIndex >= 0)
             {
                 var previous = EnterNode(nodeIndex, nodes.Array[nodeIndex]);
-                if (NeuroSyncSubTypes<T>.Exists())
+                var isSubClass = NeuroSyncTypes<T>.SizeType == NeuroConstants.ChildWithType;
+                if (isSubClass || NeuroSyncSubTypes<T>.Exists())
                 {
                     var subTypeNode = FindNode(NeuroJsonWriter.FieldName_ClassTag);
                     if (subTypeNode.Type != NeuroJsonTokenizer.NodeType.Unknown)
@@ -423,8 +424,16 @@ namespace Ninjadini.Neuro
                         ExitNode(previous);
                         return;
                     }
+                    if (isSubClass)
+                    {
+                        // Declared as the subclass itself, so written with no tag - its own delegate reads
+                        // only its own fields, the sub type sync adds the base classes'.
+                        NeuroSyncSubTypes<T>.Sync(this, NeuroSyncSubTypes<T>.GetTag(typeof(T)), ref value);
+                        ExitNode(previous);
+                        return;
+                    }
                 }
-                
+
                 NeuroJsonSyncTypes<T>.GetOrThrow()(this, ref value);
                 ExitNode(previous);
             }

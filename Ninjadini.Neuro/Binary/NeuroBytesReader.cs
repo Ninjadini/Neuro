@@ -457,6 +457,12 @@ namespace Ninjadini.Neuro
                         var tag = proto.ReadUint();
                         NeuroSyncSubTypes<T>.Sync(this, tag, ref value);
                     }
+                    else if (NeuroSyncTypes<T>.SizeType == NeuroConstants.ChildWithType)
+                    {
+                        // Declared as a subclass and written untagged because the value was exactly that -
+                        // the sub type sync reads the base classes' fields as well as its own.
+                        NeuroSyncSubTypes<T>.Sync(this, NeuroSyncSubTypes<T>.GetTag(typeof(T)), ref value);
+                    }
                     else
                     {
                         NeuroSyncTypes<T>.GetOrThrow()(this, ref value);

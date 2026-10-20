@@ -308,13 +308,23 @@ namespace Ninjadini.Neuro
                 return;
             }
             var sizeType = NeuroSyncTypes<T>.SizeType;
-            if (sizeType == NeuroConstants.Child && value.GetType() != typeof(T))
+            var isChild = sizeType == NeuroConstants.Child || sizeType == NeuroConstants.ChildWithType;
+            if (isChild && value.GetType() != typeof(T))
             {
                 WriteHeader(key, NeuroConstants.ChildWithType);
                 lastKey = 0;
                 var subTag = NeuroSyncSubTypes<T>.GetTag(value.GetType());
                 proto.Write(subTag);
                 NeuroSyncSubTypes<T>.Sync(this, subTag, ref value);
+            }
+            else if (sizeType == NeuroConstants.ChildWithType)
+            {
+                // Declared as the subclass itself (`BuildingDamageCondition Building` under an ICondition
+                // root) and holding exactly that: a plain Child header, no tag. Its own delegate covers only
+                // its own fields though - the sub type sync adds the base classes'.
+                WriteHeader(key, NeuroConstants.Child);
+                lastKey = 0;
+                NeuroSyncSubTypes<T>.Sync(this, NeuroSyncSubTypes<T>.GetTag(typeof(T)), ref value);
             }
             else
             {
