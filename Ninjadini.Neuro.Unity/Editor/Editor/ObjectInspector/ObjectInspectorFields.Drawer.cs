@@ -43,6 +43,10 @@ namespace Ninjadini.Neuro.Editor
             var dataCopy = data;
             dataCopy.name = "";
             dataCopy.type = elementType;
+            // The inner field is built (hidden) while the value is null too, and a drawer for a struct
+            // unboxes what it is given - a custom one (fp's) threw on null and blanked the whole object.
+            var emptyValue = Activator.CreateInstance(elementType);
+            dataCopy.getter = () => data.getter() ?? emptyValue;
             var subElement = CreateField(dataCopy);
             horizontal.Add(subElement);
 
