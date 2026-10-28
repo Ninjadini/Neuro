@@ -36,10 +36,16 @@ namespace Ninjadini.Neuro.Editor
             /// Custom header of class types
             VisualElement CreateCustomHeader(Data data, object value) => null;
             
-            /// Custom header of given fields
-            VisualElement CreateCustomFieldHeader(Data data) => null;
-            
             VisualElement CreateCustomDrawer(Data data) => null;
+
+            /// Called with every field once it is made - custom drawers included - to add to it or wrap it.
+            /// Return the element to place, which may be the one passed in. Not called where Data.Inline is set,
+            /// see DecorateInlineField.
+            VisualElement DecorateField(Data data, VisualElement element) => element;
+
+            /// DecorateField for a field drawn as one cell of a row (Data.Inline): whatever comes back sits in
+            /// that row, so grow it sideways rather than stacking things on it.
+            VisualElement DecorateInlineField(Data data, VisualElement element) => element;
 
             /// Whether this one field has anything of its own on a right click - a bulk edit across the table,
             /// say. Asked once per field as it is drawn: only a field that says yes gets a menu attached, so a

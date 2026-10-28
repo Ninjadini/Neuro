@@ -15,9 +15,63 @@ namespace Ninjadini.Neuro.Editor
         
         public static VisualElement CreateField(in ObjectInspector.Data data)
         {
+            return Decorate(data, CreateUndecoratedField(data));
+        }
+
+        /// CreateField without the controller's DecorateField, for a caller that styles the field itself and
+        /// then decorates - so its look stays on the field and only the layout goes on a decorator's wrapper.
+        internal static VisualElement CreateUndecoratedField(in ObjectInspector.Data data)
+        {
             var element = CreateFieldElement(data);
             AddFieldContextMenu(data, element);
             return element;
+        }
+
+        /// IController.DecorateField, or DecorateInlineField for a cell of a row.
+        /// After the context menu, so it stays on the field itself and not on whatever a decorator puts beside it.
+        internal static VisualElement Decorate(in ObjectInspector.Data data, VisualElement element)
+        {
+            var controller = data.Controller;
+            if (element == null || controller == null)
+            {
+                return element;
+            }
+            var result = data.Inline
+                ? controller.DecorateInlineField(data, element)
+                : controller.DecorateField(data, element);
+            return result ?? element;
+        }
+
+        /// For a decorator: <paramref name="extra"/> stacked above the field, in a column that takes its place.
+        public static VisualElement WrapAbove(VisualElement field, VisualElement extra)
+        {
+            var column = new VisualElement();
+            column.Add(extra);
+            column.Add(field);
+            return column;
+        }
+
+        /// For a decorator: <paramref name="extra"/> under the field, in a column that takes its place.
+        public static VisualElement WrapBelow(VisualElement field, VisualElement extra)
+        {
+            var column = new VisualElement();
+            column.Add(field);
+            column.Add(extra);
+            return column;
+        }
+
+        /// For a decorator, inline or not: <paramref name="extra"/> on the field's right, in a row that takes its
+        /// place. The field grows into whatever room the extra leaves.
+        public static VisualElement WrapBeside(VisualElement field, VisualElement extra)
+        {
+            var row = new VisualElement();
+            row.style.flexDirection = FlexDirection.Row;
+            field.style.flexGrow = 1;
+            field.style.flexShrink = 1;
+            extra.style.flexShrink = 0;
+            row.Add(field);
+            row.Add(extra);
+            return row;
         }
 
         static VisualElement CreateFieldElement(in ObjectInspector.Data data)
@@ -62,10 +116,10 @@ namespace Ninjadini.Neuro.Editor
         
         public static VisualElement CreateFieldWithStandardStyle(in ObjectInspector.Data data)
         {
-            return AddStandardStyle(CreateField(data));
+            return Decorate(data, AddStandardStyle(CreateUndecoratedField(data)));
         }
 
-        static VisualElement AddStandardStyle(VisualElement element)
+        internal static VisualElement AddStandardStyle(VisualElement element)
         {
             if (element != null)
             {

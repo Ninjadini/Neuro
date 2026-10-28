@@ -260,12 +260,14 @@ namespace Ninjadini.Neuro.Editor
                 }
                 CreateFieldHeader(fieldData, ref container);
                 ApplyHideName(ref fieldData);
-                var element = ObjectInspectorFields.CreateFieldWithStandardStyle(fieldData);
-                if (element != null)
+                var field = ObjectInspectorFields.AddStandardStyle(ObjectInspectorFields.CreateUndecoratedField(fieldData));
+                if (field != null)
                 {
-                    element.userData = fieldInfo;
-                    ObjectInspectorFields.ApplyTooltip(element, fieldInfo, fieldInfo.FieldType);
-                    ApplyHiddenNameTooltip(fieldData, element);
+                    field.userData = fieldInfo;
+                    ObjectInspectorFields.ApplyTooltip(field, fieldInfo, fieldInfo.FieldType);
+                    ApplyHiddenNameTooltip(fieldData, field);
+                    // the look stays on the field, the layout goes on whatever a decorator wrapped it in.
+                    var element = ObjectInspectorFields.Decorate(fieldData, field);
                     ApplyStyles(fieldData, element);
                     ResolveContainer(container, fieldData).Add(element);
                 }
@@ -311,12 +313,13 @@ namespace Ninjadini.Neuro.Editor
                     };
                     CreateFieldHeader(fieldData, ref container);
                     ApplyHideName(ref fieldData);
-                    var element = ObjectInspectorFields.CreateField(fieldData);
-                    if (element != null)
+                    var field = ObjectInspectorFields.CreateUndecoratedField(fieldData);
+                    if (field != null)
                     {
-                        element.userData = propInfo;
-                        ObjectInspectorFields.ApplyTooltip(element, propInfo, propInfo.PropertyType);
-                        ApplyHiddenNameTooltip(fieldData, element);
+                        field.userData = propInfo;
+                        ObjectInspectorFields.ApplyTooltip(field, propInfo, propInfo.PropertyType);
+                        ApplyHiddenNameTooltip(fieldData, field);
+                        var element = ObjectInspectorFields.Decorate(fieldData, field);
                         ApplyStyles(fieldData, element);
                         ResolveContainer(container, fieldData).Add(element);
                     }
@@ -355,13 +358,15 @@ namespace Ninjadini.Neuro.Editor
             {
                 fieldData.name = isFirst ? data.name : "";
             }
-            var element = ObjectInspectorFields.CreateField(fieldData);
-            if (element == null)
+            fieldData.Inline = true;
+            var field = ObjectInspectorFields.CreateUndecoratedField(fieldData);
+            if (field == null)
             {
                 return;
             }
-            element.userData = fieldInfo;
-            ObjectInspectorFields.ApplyTooltip(element, fieldInfo, fieldInfo.FieldType);
+            field.userData = fieldInfo;
+            ObjectInspectorFields.ApplyTooltip(field, fieldInfo, fieldInfo.FieldType);
+            var element = ObjectInspectorFields.Decorate(fieldData, field);
             ApplyStyles(fieldData, element);
             if (!(ObjectInspectorFields.GetVisualStyle(fieldInfo)?.Horizontal > 0))
             {
@@ -549,11 +554,6 @@ namespace Ninjadini.Neuro.Editor
                     lbl.style.unityFontStyleAndWeight = FontStyle.Bold;
                     container.Add(lbl);
                 }
-            }
-            var result = data.Controller?.CreateCustomFieldHeader(data);
-            if (result != null)
-            {
-                container.Add(result);
             }
         }
 

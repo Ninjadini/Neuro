@@ -29,6 +29,10 @@ namespace Ninjadini.Neuro.Editor
             /// resolved on its own: a nearer member's sort does not hide an outer member's buttons.
             public NeuroReferenceFilterButtonsAttribute[] InheritedFilterButtons;
             public NeuroReferenceSortAttribute[] InheritedSorts;
+            /// Drawn as one cell of a row of fields - an inline type's fields, or a custom drawer laying fields
+            /// side by side - rather than on a line of its own. Set by whoever draws the row; it picks
+            /// IController.DecorateInlineField over DecorateField, and is not carried down to nested fields.
+            public bool Inline;
 
             public object GetValue()
             {

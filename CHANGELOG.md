@@ -2,6 +2,17 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- `ICustomNeuroEditorProvider.DecorateField` / `DecorateInlineField` - handed each field once it is made, to
+  add to it or wrap it; every provider gets a turn. `ObjectInspector.Data.Inline` marks a cell of a row, and
+  `ObjectInspectorFields.WrapAbove` / `WrapBelow` / `WrapBeside` are the common wraps.
+
+### Removed
+- `ICustomNeuroEditorProvider.CreateCustomFieldHeader` - a `DecorateField` returning
+  `ObjectInspectorFields.WrapAbove(element, header)` does the same.
+
 ## [0.2.2]
 
 ### Added

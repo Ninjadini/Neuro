@@ -47,7 +47,8 @@ namespace Ninjadini.Neuro.Editor
             // unboxes what it is given - a custom one (fp's) threw on null and blanked the whole object.
             var emptyValue = Activator.CreateInstance(elementType);
             dataCopy.getter = () => data.getter() ?? emptyValue;
-            var subElement = CreateField(dataCopy);
+            // the same field again, so it is not decorated again - this whole drawer already is.
+            var subElement = CreateUndecoratedField(dataCopy);
             horizontal.Add(subElement);
 
             var nullType = NeuroUiUtils.AddLabel(horizontal, elementType.Name);
@@ -729,6 +730,7 @@ namespace Ninjadini.Neuro.Editor
                 };
                 dataCopy.path = data.path + " > " + index;
                 dataCopy.FieldPath = data.FieldPath?.AppendElement(index);
+                dataCopy.Inline = false; // an element has a line of its own, even in a list that sits in a row
                 element.Clear();
                 var subElement = CreateField(dataCopy);
                 subElement.style.backgroundColor = new StyleColor(new Color(0.26f, 0.26f, 0.26f));
@@ -1104,6 +1106,7 @@ namespace Ninjadini.Neuro.Editor
                 // The walk a bulk edit follows reports a dictionary's key and its value under the same name and
                 // index, so there is no path that means one and not the other. Nothing inside one is followable.
                 keyData.FieldPath = null;
+                keyData.Inline = true; // the key and its value share a row
                 var keyElement = CreateField(keyData);
                 keyElement.style.width = NameFieldWidth;
                 keyElement.style.maxWidth = 200;
@@ -1125,6 +1128,7 @@ namespace Ninjadini.Neuro.Editor
                 };
                 valueData.path = data.path + " > " + index;
                 valueData.FieldPath = null; // see the key above
+                valueData.Inline = true;
                 var valueElement = CreateField(valueData);
                 valueElement.style.flexGrow = 1f;
                 valueElement.style.backgroundColor = new StyleColor(new Color(0.26f, 0.26f, 0.26f));
@@ -1175,6 +1179,8 @@ namespace Ninjadini.Neuro.Editor
             bool ObjectInspector.IController.ShouldDrawProperty(PropertyInfo propertyInfo, object holderObject) => _parent?.ShouldDrawProperty(propertyInfo, holderObject) ?? false;
             bool ObjectInspector.IController.CanEdit(Type type, object value) => _parent?.CanEdit(type, value) ?? true;
             VisualElement ObjectInspector.IController.CreateCustomDrawer(ObjectInspector.Data data) => _parent?.CreateCustomDrawer(data);
+            VisualElement ObjectInspector.IController.DecorateField(ObjectInspector.Data data, VisualElement element) => _parent?.DecorateField(data, element) ?? element;
+            VisualElement ObjectInspector.IController.DecorateInlineField(ObjectInspector.Data data, VisualElement element) => _parent?.DecorateInlineField(data, element) ?? element;
             void ObjectInspector.IController.ApplyStyle(ObjectInspector.Data data, VisualElement element) => _parent?.ApplyStyle(data, element);
             bool ObjectInspector.IController.CanSetToNull(Type type, object value) => false;
         }

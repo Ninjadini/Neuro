@@ -90,22 +90,24 @@ namespace Ninjadini.Neuro.Editor
             return null;
         }
         
-        VisualElement IController.CreateCustomFieldHeader(Data data)
+        VisualElement IController.DecorateField(Data data, VisualElement element)
         {
-            var custom = neuroController?.CreateCustomFieldHeader(data);
-            if (custom != null)
-            {
-                return custom;
-            }
+            element = neuroController?.DecorateField(data, element) ?? element;
             foreach (var customProvider in CustomProviders)
             {
-                custom = customProvider.CreateCustomFieldHeader(this, data);
-                if (custom != null)
-                {
-                    return custom;
-                }
+                element = customProvider.DecorateField(this, data, element) ?? element;
             }
-            return null;
+            return element;
+        }
+
+        VisualElement IController.DecorateInlineField(Data data, VisualElement element)
+        {
+            element = neuroController?.DecorateInlineField(data, element) ?? element;
+            foreach (var customProvider in CustomProviders)
+            {
+                element = customProvider.DecorateInlineField(this, data, element) ?? element;
+            }
+            return element;
         }
 
         VisualElement IController.CreateCustomDrawer(Data data)

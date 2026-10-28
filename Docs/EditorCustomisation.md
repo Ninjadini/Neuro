@@ -132,6 +132,43 @@ static Wave NewWave(Stage owner) => new Wave { Delay = owner.DefaultWaveDelay };
 The method can be private, and must return a new object each time. Editor only - it changes nothing about
 how the data is saved. A misspelt or mistyped method fails the `NeuroCreateWithTests` edit-mode test.
 
+### Decorating a field
+To add something to a field the normal drawing makes - a button beside it, a preview above it - rather than
+draw it yourself, implement `DecorateField`. It is handed every field once it is made, list elements and
+custom drawers included, and returns what to place: the element as it is, or something wrapping it.
+```
+public class MyGameNeuroEditorProvider : ICustomNeuroEditorProvider
+{
+    VisualElement ICustomNeuroEditorProvider.DecorateField(NeuroObjectInspector inspector, ObjectInspector.Data data, VisualElement element)
+    {
+        if (data.MemberInfo?.Name == nameof(Stage.Waves) && data.Owner is Stage stage && data.GetValue() == stage.Waves)
+        {
+            // Owner is the object holding the field. The value check skips the list's elements,
+            // which carry the list's MemberInfo too.
+            return ObjectInspectorFields.WrapAbove(element, new Label($"{stage.Waves.Count} waves"));
+        }
+        return element; // everything else, untouched
+    }
+
+    VisualElement ICustomNeuroEditorProvider.DecorateInlineField(NeuroObjectInspector inspector, ObjectInspector.Data data, VisualElement element)
+    {
+        if (data.type == typeof(Color))
+        {
+            return ObjectInspectorFields.WrapBeside(element, new Button(() => CopyHex(data)) { text = "#" });
+        }
+        return element;
+    }
+}
+```
+Every provider gets a turn, in `Priority` order, each handed what the last one returned, so two can decorate
+the same field. The field keeps the inspector's own look and right-click menu; only its layout (`[Space]`, a
+`Horizontal` width) moves onto your wrapper.
+
+`DecorateInlineField` is the same call for a field that is one cell of a row (`data.Inline`): an
+`[InspectorStyle(Inline = true)]` type's fields, a dictionary entry's key and value, or your own drawer's row
+(see `Inline = true` below). What you return sits in that row, so grow it sideways - `WrapBeside` - rather
+than stacking things on it.
+
 ### Full editor customisation
 Say you want to show the 3 values in one line without the name labels.
 And it will say an error message if any of the values have lower than 1 value
@@ -175,6 +212,7 @@ public class MyGameNeuroEditorProvider : ICustomNeuroEditorProvider
             // Draw a
             var fieldInfo = typeof(FloatABC).GetField(nameof(FloatABC.a));
             var fieldDrawerData = CreateDataForField(data, value, fieldInfo);
+            fieldDrawerData.Inline = true; // one cell of a row: decorators get DecorateInlineField for it
             fieldDrawerData.name = data.name; // it would normally print a, but here we just want the parent field's name
             var fieldElement = ObjectInspectorFields.CreateField(fieldDrawerData);
             Add(fieldElement);
@@ -182,6 +220,7 @@ public class MyGameNeuroEditorProvider : ICustomNeuroEditorProvider
             // draw b
             fieldInfo = typeof(FloatABC).GetField(nameof(FloatABC.b));
             fieldDrawerData = CreateDataForField(data, value, fieldInfo);
+            fieldDrawerData.Inline = true;
             fieldDrawerData.name = ""; // it would normally print b, but here we just want 3 fields with no naming
             fieldElement = ObjectInspectorFields.CreateField(fieldDrawerData);
             Add(fieldElement);
@@ -189,6 +228,7 @@ public class MyGameNeuroEditorProvider : ICustomNeuroEditorProvider
             // draw c
             fieldInfo = typeof(FloatABC).GetField(nameof(FloatABC.c));
             fieldDrawerData = CreateDataForField(data, value, fieldInfo);
+            fieldDrawerData.Inline = true;
             fieldDrawerData.name = ""; // it would normally print c, but here we just want 3 fields with no naming
             fieldElement = ObjectInspectorFields.CreateField(fieldDrawerData);
             Add(fieldElement);

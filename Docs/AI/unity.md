@@ -539,11 +539,22 @@ filter that would leave nothing is ignored, and nothing is validated. Toolkit's 
 Reference dropdown labels/icons: implement `INeuroRefDropDownCustomizable` /
 `INeuroRefDropDownIconCustomizable`. Full custom drawers: `ICustomNeuroEditorProvider.CreateCustomDrawer`
 returns a `VisualElement` for types you take over, `null` otherwise, with helpers on
-`ObjectInspectorFields`. To add something **alongside** the normal fields rather than replace them there are
-two headers: `CreateCustomHeader(inspector, data, value)` goes at the top of an object's fields (only objects
-- a list is not one), and `CreateCustomFieldHeader(inspector, data)` goes directly above one field, lists
-included - match on `data.MemberInfo` and read the holder off `inspector.DrawnObj` when the field is on the
-root item.
+`ObjectInspectorFields`. To add something **alongside** the normal drawing rather than replace it:
+
+- `CreateCustomHeader(inspector, data, value)` goes at the top of an object's fields (only objects - a list
+  is not one, and the root item is only reached this way).
+- `DecorateField(inspector, data, element)` is handed every field once it is made - list elements and custom
+  drawers included - and returns what to place: the element itself, or something wrapping it. Every provider
+  gets a turn, in `Priority` order, each handed the last one's result (unlike the `Create*` calls, where the
+  first non-null wins). Match on `data.MemberInfo` / `data.type`, read the holder off `data.Owner`, and hand
+  anything else straight back; a list's elements carry the list's `MemberInfo`, so check `data.GetValue()`
+  when you mean the list. `ObjectInspectorFields.WrapAbove` / `WrapBelow` / `WrapBeside` are the common
+  wraps. The inspector's own look (background, tooltip) stays on the field and only its layout (`[Space]`,
+  `Horizontal` width) moves to the wrapper, and the right-click menu stays on the field.
+- `DecorateInlineField` is the same for a field that is one cell of a row - `data.Inline`: an inline type's
+  fields, a dictionary entry's key and value, or a custom drawer's own row, which sets `Inline = true` on the
+  `Data` it hands `ObjectInspectorFields.CreateField`. Whatever comes back sits in the row, so grow it
+  sideways (`WrapBeside`). Kept apart so a block decorator matched by name never stacks things inside a row.
 
 This API is documented as liable to change and is rarely what you want — prefer `INeuroContentValidator`
 over drawing your own validation UI. If you are actually writing a drawer, read
